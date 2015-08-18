@@ -1,0 +1,23 @@
+From manuel.arguelles at gmail.com  Tue May 19 23:14:47 2009
+From: manuel.arguelles at gmail.com (Manuel =?iso-8859-1?q?Arg=FCelles?=)
+Date: Tue, 19 May 2009 16:14:47 -0500
+Subject: [Rtspproxy-devel] Testing
+Message-ID: <200905191614.47498.manuel.arguelles@gmail.com>
+
+Hello,
+
+Is there a way to test the rtsp proxy without a mobile device? I'm trying to 
+use xine but it seems that I can't set up the proxy information. Is there any 
+other client that I can use to test it?
+
+Regards
+
+-- 
+Paco
+
+
+
+
+
+
+

@@ -1,0 +1,510 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r402 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r402%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio%3A%20.%20support&In-Reply-To=%3C200601222332.k0MNWj7X026663%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000085.html">
+   <LINK REL="Next"  HREF="000087.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r402 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r402%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio%3A%20.%20support&In-Reply-To=%3C200601222332.k0MNWj7X026663%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r402 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support">rbieniek at berlios.de
+       </A><BR>
+    <I>Mon Jan 23 00:32:45 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000085.html">[Rtspproxy-devel] r401 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite jmx jmx/mbeans proxy
+</A></li>
+        <LI>Next message: <A HREF="000087.html">[Rtspproxy-devel] r403 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#86">[ date ]</a>
+              <a href="thread.html#86">[ thread ]</a>
+              <a href="subject.html#86">[ subject ]</a>
+              <a href="author.html#86">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-23 00:32:26 +0100 (Mon, 23 Jan 2006)
+New Revision: 402
+
+Added:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/SessionAwareDatagramAcceptor.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/StatefulDatagramSession.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramAcceptorDelegate.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionImpl.java
+Log:
+- Started work on session-aware datagram acceptor
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/SessionAwareDatagramAcceptor.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/SessionAwareDatagramAcceptor.java	2006-01-19 15:06:34 UTC (rev 401)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/SessionAwareDatagramAcceptor.java	2006-01-22 23:32:26 UTC (rev 402)
+@@ -0,0 +1,36 @@
++/**
++ *   @(#) $Id: DatagramAcceptor.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio;
++
++import org.apache.mina.common.support.DelegatedIoAcceptor;
++
++import rtspproxy.transport.socket.nio.support.SessionAwareDatagramAcceptorDelegate;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class SessionAwareDatagramAcceptor extends DelegatedIoAcceptor {
++	/**
++	 * create an instance
++	 */
++	public SessionAwareDatagramAcceptor() {
++		init( new SessionAwareDatagramAcceptorDelegate(this) );
++	}
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/StatefulDatagramSession.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/StatefulDatagramSession.java	2006-01-19 15:06:34 UTC (rev 401)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/StatefulDatagramSession.java	2006-01-22 23:32:26 UTC (rev 402)
+@@ -0,0 +1,38 @@
++/**
++ *   @(#) $Id: DatagramAcceptor.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio;
++
++import org.apache.mina.common.IoSession;
++
++public interface StatefulDatagramSession extends IoSession {
++	/**
++	 * set the per-session timeout. If the timeout expires on both up- and downstream
++	 * directions without passing messages along, the session gets closed.
++	 * @param timeout the timeout value in millisecods
++	 */
++	public void setSessionTimeout(int timeout);
++
++	/**
++	 * get the per-session timeout. If the timeout expires on both up- and downstream
++	 * directions without passing messages along, the session gets closed.
++	 * @return timeout the timeout value in millisecods
++	 */
++	public int getSessionTimeout();
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramAcceptorDelegate.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramAcceptorDelegate.java	2006-01-19 15:06:34 UTC (rev 401)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramAcceptorDelegate.java	2006-01-22 23:32:26 UTC (rev 402)
+@@ -0,0 +1,101 @@
++/**
++ *   @(#) $Id: DatagramAcceptor.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio.support;
++
++import java.io.IOException;
++import java.net.SocketAddress;
++import java.util.HashMap;
++
++import org.apache.mina.common.IoAcceptor;
++import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.support.BaseIoAcceptor;
++
++import rtspproxy.transport.socket.nio.DatagramAcceptor;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ * 
++ */
++public class SessionAwareDatagramAcceptorDelegate extends BaseIoAcceptor implements
++		IoAcceptor {
++
++	private IoAcceptor wrapper;
++
++	private HashMap&lt;SocketAddress, HandlerInfo&gt; acceptors = new HashMap&lt;SocketAddress, HandlerInfo&gt;();
++
++	/**
++	 * create an instance
++	 */
++	public SessionAwareDatagramAcceptorDelegate(IoAcceptor wrapper) {
++		this.wrapper = wrapper;
++	}
++
++	public void bind(SocketAddress addr, IoHandler handler,
++			IoFilterChainBuilder chainBuilder) throws IOException {
++		DatagramAcceptor acceptor = new DatagramAcceptor();
++		SessionAwareDatagramHandler sessionHandler = new SessionAwareDatagramHandler(addr, handler, chainBuilder);
++		
++		acceptor.bind(addr, sessionHandler, null);
++		synchronized (acceptors) {
++			acceptors.put(addr, new HandlerInfo(acceptor, sessionHandler));
++		}
++	}
++
++	public void unbind(SocketAddress addr) {
++		synchronized (acceptors) {
++			HandlerInfo info = acceptors.get(addr);
++			
++			if(info != null) {
++				info.acceptor.unbind(addr);
++				info.handler.unbind();
++				acceptors.remove(addr);
++			}
++		}
++	}
++
++	private static class HandlerInfo {
++		private DatagramAcceptor acceptor;
++		private SessionAwareDatagramHandler handler;
++		
++		private HandlerInfo(DatagramAcceptor acceptor, SessionAwareDatagramHandler handler) {
++			this.acceptor = acceptor;
++			this.handler = handler;
++		}
++	}
++
++	@Override
++	public IoFilterChainBuilder getFilterChainBuilder() {
++		// TODO Auto-generated method stub
++		return super.getFilterChainBuilder();
++	}
++
++	@Override
++	public void setFilterChainBuilder(IoFilterChainBuilder builder) {
++		// TODO Auto-generated method stub
++		super.setFilterChainBuilder(builder);
++	}
++
++	@Override
++	public IoSession newSession(SocketAddress arg0, SocketAddress arg1) {
++		// TODO Auto-generated method stub
++		return super.newSession(arg0, arg1);
++	}
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramHandler.java	2006-01-19 15:06:34 UTC (rev 401)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramHandler.java	2006-01-22 23:32:26 UTC (rev 402)
+@@ -0,0 +1,115 @@
++/**
++ *   @(#) $Id: DatagramAcceptor.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio.support;
++
++import java.net.SocketAddress;
++import java.util.HashMap;
++
++import org.apache.mina.common.IdleStatus;
++import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoHandlerAdapter;
++import org.apache.mina.common.IoSession;
++
++class SessionAwareDatagramHandler extends IoHandlerAdapter implements IoHandler {
++
++	private SocketAddress localAddress;
++	private IoHandler wrapped;
++	private IoFilterChainBuilder chainBuilder;
++	
++	private StatefulDatagramSessionImpl defaultSession;
++	private HashMap&lt;SocketAddress, StatefulDatagramSessionImpl&gt; sessions = 
++		new HashMap&lt;SocketAddress, StatefulDatagramSessionImpl&gt;();
++	
++	/**
++	 * create an instance
++	 */
++	SessionAwareDatagramHandler(SocketAddress localAddress, IoHandler wrapped, 
++			IoFilterChainBuilder chainBuilder) {
++		this.localAddress = localAddress;
++		this.wrapped = wrapped;
++		this.chainBuilder = chainBuilder;
++	}
++	
++	public void exceptionCaught(IoSession session, Throwable t) {
++		StatefulDatagramSessionImpl relay = getRelaySession(session.getRemoteAddress());
++		
++		relay.setDownsideSession(session);
++		relay.fireExceptionCaught(relay, t);
++	}
++
++	public void messageReceived(IoSession session, Object message) throws Exception {
++		StatefulDatagramSessionImpl relay = getRelaySession(session.getRemoteAddress());
++		
++		relay.setDownsideSession(session);
++		relay.fireMessageReceived(relay, message);
++	}
++
++	public void messageSent(IoSession session, Object message) throws Exception {
++		StatefulDatagramSessionImpl relay = (StatefulDatagramSessionImpl)session;
++		
++		relay.getDownsideSession().write(message);
++	}
++
++	/**
++	 * handle the acceptor unbind operation. Do this by closing all open sessions.
++	 */
++	public void unbind() {
++		// TODO Auto-generated method stub
++		
++	}
++
++	/**
++	 * get a session for a remote peer. If there is no session for the remote peer,
++	 * a fresh one gets created and lifecycle methods are called.
++	 * @param addr the remotem peer address. If null, the default session is used.
++	 */
++	private StatefulDatagramSessionImpl getRelaySession(SocketAddress addr) {
++		StatefulDatagramSessionImpl session = null;
++		
++		if(addr == null) {
++			session = this.defaultSession;
++			
++			if(session == null) {
++				session = createSession(addr);
++				
++				this.defaultSession = session;
++			}
++		} else {
++			session = this.sessions.get(addr);
++			
++			if(session == null) {
++				session = createSession(addr);
++				
++				this.sessions.put(addr, session);
++			}
++		}
++		
++		return session;
++	}
++	
++	/**
++	 * create a session for a remote peer. Lifecycle methods are fired accordingly
++	 */
++	private StatefulDatagramSessionImpl createSession(SocketAddress addr) {
++		StatefulDatagramSessionImpl session = null;
++		
++		return session;
++	}
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionImpl.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionImpl.java	2006-01-19 15:06:34 UTC (rev 401)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionImpl.java	2006-01-22 23:32:26 UTC (rev 402)
+@@ -0,0 +1,116 @@
++/**
++ *   @(#) $Id: DatagramAcceptor.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio.support;
++
++import java.net.SocketAddress;
++
++import org.apache.mina.common.IoFilterChain;
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoSessionManager;
++import org.apache.mina.common.TransportType;
++import org.apache.mina.common.support.BaseIoSession;
++
++import rtspproxy.transport.socket.nio.StatefulDatagramSession;
++
++class StatefulDatagramSessionImpl extends BaseIoSession implements
++		StatefulDatagramSession {
++
++	private SocketAddress localAddr;
++	private SocketAddress remoteAddr;
++	private IoHandler handler;
++	private IoSession downsideSession;
++	
++	/**
++	 * only constructable from within this package
++	 */
++	StatefulDatagramSessionImpl(IoHandler handler, SocketAddress localAddr, SocketAddress remoteAddr) {
++		this.handler = handler;
++		this.localAddr = localAddr;
++		this.remoteAddr = remoteAddr;
++	}
++	
++	@Override
++	protected void updateTrafficMask() {
++		// TODO Auto-generated method stub
++
++	}
++
++	public IoSessionManager getManager() {
++		// TODO Auto-generated method stub
++		return null;
++	}
++
++	public IoHandler getHandler() {
++		// TODO Auto-generated method stub
++		return null;
++	}
++
++	public IoFilterChain getFilterChain() {
++		// TODO Auto-generated method stub
++		return null;
++	}
++
++	public TransportType getTransportType() {
++		// TODO Auto-generated method stub
++		return null;
++	}
++
++	public SocketAddress getRemoteAddress() {
++		return this.localAddr;
++	}
++
++	public SocketAddress getLocalAddress() {
++		return this.remoteAddr;
++	}
++
++	public int getScheduledWriteRequests() {
++		// TODO Auto-generated method stub
++		return 0;
++	}
++
++	public void setSessionTimeout(int timeout) {
++		// TODO Auto-generated method stub
++		
++	}
++
++	public int getSessionTimeout() {
++		// TODO Auto-generated method stub
++		return 0;
++	}
++
++	public void fireExceptionCaught(StatefulDatagramSessionImpl relay, Throwable t) {
++		// TODO Auto-generated method stub
++		
++	}
++
++	public void fireMessageReceived(StatefulDatagramSessionImpl relay, Object message) {
++		// TODO Auto-generated method stub
++		
++	}
++
++	IoSession getDownsideSession() {
++		return downsideSession;
++	}
++
++	void setDownsideSession(IoSession downsideSession) {
++		this.downsideSession = downsideSession;
++	}
++
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000085.html">[Rtspproxy-devel] r401 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite jmx jmx/mbeans proxy
+</A></li>
+	<LI>Next message: <A HREF="000087.html">[Rtspproxy-devel] r403 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#86">[ date ]</a>
+              <a href="thread.html#86">[ thread ]</a>
+              <a href="subject.html#86">[ subject ]</a>
+              <a href="author.html#86">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

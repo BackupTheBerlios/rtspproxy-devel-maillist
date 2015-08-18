@@ -1,0 +1,1234 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r360 - trunk/src/main/java/rtspproxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r360%20-%20trunk/src/main/java/rtspproxy&In-Reply-To=%3C200512240954.jBO9sbi4020475%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000044.html">
+   <LINK REL="Next"  HREF="000046.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r360 - trunk/src/main/java/rtspproxy</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r360%20-%20trunk/src/main/java/rtspproxy&In-Reply-To=%3C200512240954.jBO9sbi4020475%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r360 - trunk/src/main/java/rtspproxy">merlimat at berlios.de
+       </A><BR>
+    <I>Sat Dec 24 10:54:37 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000044.html">[Rtspproxy-devel] r359 - trunk/src/main/java/rtspproxy/config
+</A></li>
+        <LI>Next message: <A HREF="000046.html">[Rtspproxy-devel] r361 - trunk/src/main/java/rtspproxy/filter/authentication/scheme
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#45">[ date ]</a>
+              <a href="thread.html#45">[ thread ]</a>
+              <a href="subject.html#45">[ subject ]</a>
+              <a href="author.html#45">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-24 10:54:24 +0100 (Sat, 24 Dec 2005)
+New Revision: 360
+
+Modified:
+   trunk/src/main/java/rtspproxy/ProxyService.java
+   trunk/src/main/java/rtspproxy/ProxyServiceRegistry.java
+   trunk/src/main/java/rtspproxy/RdtClientService.java
+   trunk/src/main/java/rtspproxy/RdtServerService.java
+   trunk/src/main/java/rtspproxy/Reactor.java
+   trunk/src/main/java/rtspproxy/RtcpClientService.java
+   trunk/src/main/java/rtspproxy/RtcpServerService.java
+   trunk/src/main/java/rtspproxy/RtpClientService.java
+   trunk/src/main/java/rtspproxy/RtpServerService.java
+   trunk/src/main/java/rtspproxy/RtspService.java
+Log:
+Added some methods to facilitate integration with JMX.
+
+Modified: trunk/src/main/java/rtspproxy/ProxyService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/ProxyService.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/ProxyService.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -32,10 +32,15 @@
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.config.Parameter;
++import rtspproxy.lib.Exceptions;
+ import rtspproxy.lib.NetworkInterface;
+ import rtspproxy.lib.Singleton;
+ 
+ /**
++ * ProxyService is the base abstract class for all the &quot;Services&quot; that can be
++ * found on the RtspProxy application.
++ * 
+  * @author Matteo Merli
+  */
+ public abstract class ProxyService extends Singleton implements Observer
+@@ -43,11 +48,22 @@
+ 
+ 	private static Logger log = Logger.getLogger( ProxyService.class );
+ 
++	/**
++	 * Main Socket address used by the service. It can be bound on several
++	 * different addresses and network interfaces, but it MUST have a default
++	 * address to be communicated to third parties.
++	 */
+ 	private InetSocketAddress socketAddress = null;
+ 
++	/**
++	 * Flag used to keep track of the service status.
++	 */
+ 	private volatile boolean isRunning = false;
+ 
+-	public static final String SERVICE = ProxyService.class.getName();
++	/**
++	 * Service hook name.
++	 */
++	protected static final String SERVICE = ProxyService.class.getName();
+ 
+ 	/**
+ 	 * Starts the service.
+@@ -62,7 +78,7 @@
+ 		}
+ 
+ 		String netInterface = getNetworkInterface();
+-		int[] ports = getBindPorts();
++		int port = getBindPort();
+ 
+ 		try {
+ 
+@@ -71,18 +87,16 @@
+ 			for ( InetAddress inetAddress : addressSet ) {
+ 				// Bind to all addresses
+ 
+-				for ( int port : ports ) {
+-					// Bind to all the specified ports
+-					socketAddress = new InetSocketAddress( inetAddress, port );
++				socketAddress = new InetSocketAddress( inetAddress, port );
+ 
+-					Reactor.getRegistry().bind( this, getIoHandler(), socketAddress,
+-							getFilterChainBuilder() );
+-				}
++				Reactor.getRegistry().bind( this, getIoHandler(), socketAddress,
++						getFilterChainBuilder() );
++
+ 			}
+ 
+ 			// Choose a bind address
+ 			InetAddress inetAddress = NetworkInterface.getBindAddress( addressSet );
+-			socketAddress = new InetSocketAddress( inetAddress, ports[0] );
++			socketAddress = new InetSocketAddress( inetAddress, port );
+ 
+ 			log.info( getName() + &quot; Started - Listening on: &quot; + socketAddress );
+ 
+@@ -99,7 +113,7 @@
+ 	 * 
+ 	 * @throws Exception
+ 	 */
+-	protected void stop() throws Exception
++	public void stop() throws Exception
+ 	{
+ 		if ( !isRunning ) {
+ 			log.warn( getName() + &quot; is not running.&quot; );
+@@ -110,18 +124,25 @@
+ 		isRunning = false;
+ 	}
+ 
+-	protected void restart() throws Exception
++	/**
++	 * Restart the service.
++	 * 
++	 * @throws Exception
++	 */
++	public void restart() throws Exception
+ 	{
+-		if ( !isRunning ) {
++		log.info( &quot;Restarting &quot; + getName() );
++		if ( isRunning )
++			stop();
++		else
+ 			log.warn( getName() + &quot; is not running.&quot; );
+-			return;
+-		}
+ 
+-		log.info( &quot;Restarting &quot; + getName() );
+-		stop();
+ 		start();
+ 	}
+ 
++	/**
++	 * @return true if the server is running
++	 */
+ 	public boolean isRunning()
+ 	{
+ 		return isRunning;
+@@ -138,10 +159,14 @@
+ 	 */
+ 	public abstract IoHandler getIoHandler();
+ 
++	/**
++	 * @return the filter chain builder to be be used by the IoAcceptor
++	 *         associated with the service.
++	 */
+ 	public IoFilterChainBuilder getFilterChainBuilder()
+ 	{
+ 		// By default there's no filter chain
+-		return null;
++		return IoFilterChainBuilder.NOOP;
+ 	}
+ 
+ 	/**
+@@ -151,25 +176,61 @@
+ 	 */
+ 	public abstract String getName();
+ 
++	/**
++	 * @return the network interface to bind this service on, as it appears in
++	 *         the configuratio registry (Config).
++	 */
+ 	public abstract String getNetworkInterface();
+ 
+-	public abstract int[] getBindPorts();
++	/**
++	 * @return the port to bind on, as it appear in the configuration registry.
++	 */
++	public abstract int getBindPort();
+ 
++	/**
++	 * @return the Parameter associated with the network interface used by the
++	 *         service.
++	 */
++	public abstract Parameter getNetworkInterfaceParameter();
++
++	/**
++	 * @return the Parameter associated with the port number used by the
++	 *         service.
++	 */
++	public abstract Parameter getPortParameter();
++
++	/**
++	 * @return the main IP address where the service is bound.
++	 */
+ 	public InetAddress getAddress()
+ 	{
+ 		return socketAddress.getAddress();
+ 	}
+ 
++	/**
++	 * @return the main TCP or UDP port where the service is bound.
++	 */
+ 	public int getPort()
+ 	{
+ 		return socketAddress.getPort();
+ 	}
+ 
++	/**
++	 * @return the TCP or UDP address (IP+port) where the service is bound.
++	 */
+ 	public SocketAddress getSocketAddress()
+ 	{
+ 		return socketAddress;
+ 	}
+ 
++	/**
++	 * Creates a new connection-less IoSession to a remote address. This is only
++	 * used to create UDP session.
++	 * 
++	 * @param remoteAddress
++	 *            the address of the remote host to connect to.
++	 * @return the newly created IoSession
++	 */
+ 	public IoSession newSession( SocketAddress remoteAddress )
+ 	{
+ 		return Reactor.getRegistry().getAcceptor( this ).newSession( remoteAddress,
+@@ -193,10 +254,15 @@
+ 	 */
+ 	public void update( Observable o, Object arg )
+ 	{
++		if ( !(o instanceof Parameter) )
++			throw new IllegalArgumentException( &quot;Only observe parameters&quot; );
++
+ 		try {
+ 			restart();
+ 		} catch ( Exception e ) {
+-			log.error( &quot;Error restarting &quot; + getName(), e );
++			log.error( &quot;Error restarting &quot; + getName() );
++			Exceptions.logStackTrace( e );
++			throw new RuntimeException( e );
+ 		}
+ 	}
+ }
+
+Modified: trunk/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/ProxyServiceRegistry.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/ProxyServiceRegistry.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -22,11 +22,15 @@
+ import java.net.InetSocketAddress;
+ import java.net.SocketAddress;
+ import java.util.HashSet;
++import java.util.Observable;
++import java.util.Observer;
+ import java.util.Set;
+ import java.util.concurrent.ConcurrentHashMap;
+ import java.util.concurrent.ConcurrentMap;
+ 
++import org.apache.log4j.Logger;
+ import org.apache.mina.common.IoAcceptor;
++import org.apache.mina.common.IoFilter;
+ import org.apache.mina.common.IoFilterChain;
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
+@@ -34,46 +38,93 @@
+ import org.apache.mina.filter.ThreadPoolFilter;
+ import org.apache.mina.transport.socket.nio.DatagramAcceptor;
+ import org.apache.mina.transport.socket.nio.SocketAcceptor;
+-import org.apache.mina.transport.vmpipe.VmPipeAcceptor;
+ 
++import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.lib.Singleton;
++
+ /**
+  * Custom implementation of the ServiceRegistry interface. Creates an acceptor
+  * for every service.
+  * 
+  * @author Matteo Merli
+  */
+-public class ProxyServiceRegistry
++public final class ProxyServiceRegistry extends Singleton implements Observer
+ {
+ 
+-	/**
+-	 * Thread pool instance that will be added to all acceptors.
+-	 */
+-	protected final ThreadPoolFilter threadPoolFilter = new ThreadPoolFilter();
++	private static Logger log = Logger.getLogger( ProxyServiceRegistry.class );
+ 
++	public static final String threadPoolFilterNAME = &quot;threadPoolFilter&quot;;
++
++	/** Thread pool instance that will be added to all acceptors. */
++	private final ThreadPoolFilter threadPoolFilter = new ThreadPoolFilter();
++
+ 	/** All the services, mapped by name. */
+ 	private final ConcurrentMap&lt;String, ProxyService&gt; services = new ConcurrentHashMap&lt;String, ProxyService&gt;();
+ 
+ 	/** Map a ProxyService to all its bound addresses. */
+ 	private final ConcurrentMap&lt;ProxyService, Set&lt;SocketAddress&gt;&gt; addresses = new ConcurrentHashMap&lt;ProxyService, Set&lt;SocketAddress&gt;&gt;();
+ 
++	/** Map a ProxyService to its own IoAcceptor. */
+ 	private final ConcurrentMap&lt;ProxyService, IoAcceptor&gt; acceptors = new ConcurrentHashMap&lt;ProxyService, IoAcceptor&gt;();
+ 
++	/**
++	 * Construct a new ProxyServiceRegistry. This class is a Singleton, so there
++	 * can be only one instance.
++	 */
++	public ProxyServiceRegistry()
++	{
++		int poolMaxSize = Config.threadPoolSize.getValue();
++		threadPoolFilter.setMaximumPoolSize( poolMaxSize );
++
++		// Subscribe to thread pool size changes notification
++		Config.threadPoolSize.addObserver( this );
++	}
++
++	/**
++	 * Bind a Service to a local address and specify the IoHandler that will
++	 * manage ingoing and outgoing messages.
++	 * 
++	 * @param service
++	 *            the ProxyService
++	 * @param ioHandler
++	 *            the IoHandler that will handle the messages
++	 * @param address
++	 *            the local address to bind on
++	 * @throws IOException
++	 */
+ 	public void bind( ProxyService service, IoHandler ioHandler, InetSocketAddress address )
+ 			throws IOException
+ 	{
+ 		bind( service, ioHandler, address, null );
+ 	}
+ 
++	/**
++	 * Bind a Service to a local address and specify the IoHandler that will
++	 * manage ingoing and outgoing messages.
++	 * &lt;p&gt;
++	 * In addition it should be specified an IoFilterChainBuilder. This builder
++	 * will be associated with the IoAcceptor itself (which is unique per
++	 * ProxyService) and not for every IoSession created.
++	 * 
++	 * @param service
++	 *            the ProxyService
++	 * @param ioHandler
++	 *            the IoHandler that will handle the messages
++	 * @param address
++	 *            the local address to bind on
++	 * @param filterChainBuilder
++	 *            the IoFilterChainBuilder instance
++	 * @throws IOException
++	 */
+ 	public void bind( ProxyService service, IoHandler ioHandler,
+ 			InetSocketAddress address, IoFilterChainBuilder filterChainBuilder )
+ 			throws IOException
+ 	{
+ 		IoAcceptor acceptor = newAcceptor( service );
+-		if ( filterChainBuilder == null ) {
+-			filterChainBuilder = IoFilterChainBuilder.NOOP;
+-		}
+-		acceptor.bind( address, ioHandler, new IoFilterChainBuilderWrapper( service,
++		acceptor.setFilterChainBuilder( new IoFilterChainBuilderWrapper( service,
+ 				filterChainBuilder ) );
++		acceptor.bind( address, ioHandler );
+ 
+ 		services.put( service.getName(), service );
+ 
+@@ -82,6 +133,13 @@
+ 		addresses.get( service ).add( address );
+ 	}
+ 
++	/**
++	 * Unbind the service from all of its bound addresses.
++	 * 
++	 * @param service
++	 *            the ProxyService
++	 * @throws Exception
++	 */
+ 	public synchronized void unbind( ProxyService service ) throws Exception
+ 	{
+ 		IoAcceptor acceptor = acceptors.get( service );
+@@ -102,6 +160,12 @@
+ 		addresses.remove( service );
+ 	}
+ 
++	/**
++	 * Unbind all the services registered in the ProxyServiceRegistry, from all
++	 * of they bound addresses.
++	 * 
++	 * @throws Exception
++	 */
+ 	public synchronized void unbindAll() throws Exception
+ 	{
+ 		Set&lt;ProxyService&gt; serviceList = new HashSet&lt;ProxyService&gt;( services.values() );
+@@ -110,16 +174,34 @@
+ 		}
+ 	}
+ 
+-	public synchronized Set getAllServices()
++	/**
++	 * @return a Set containing all the registered services.
++	 */
++	public Set&lt;ProxyService&gt; getAllServices()
+ 	{
+ 		return new HashSet&lt;ProxyService&gt;( services.values() );
+ 	}
+ 
++	/**
++	 * Return the instance of a ProxyService.
++	 * 
++	 * @param name
++	 *            the name of the ProxyService
++	 * @return the instance of the ProxyService
++	 */
+ 	public ProxyService getService( String name )
+ 	{
+ 		return services.get( name );
+ 	}
+ 
++	/**
++	 * Returns a reference to the IoAcceptor used by the specified ProxyService.
++	 * 
++	 * @param serviceName
++	 *            the name of the ProxyService
++	 * @return the IoAcceptor associated with the service or null if the
++	 *         serviceName is invalid
++	 */
+ 	public IoAcceptor getAcceptor( String serviceName )
+ 	{
+ 		ProxyService service = services.get( serviceName );
+@@ -129,11 +211,25 @@
+ 			return acceptors.get( service );
+ 	}
+ 
++	/**
++	 * Returns a reference to the IoAcceptor used by the specified ProxyService.
++	 * 
++	 * @param service
++	 *            the ProxyService
++	 * @return the IoAcceptor associated with the service
++	 */
+ 	public IoAcceptor getAcceptor( ProxyService service )
+ 	{
+ 		return acceptors.get( service );
+ 	}
+ 
++	/**
++	 * Gets a new IoAcceptor suitable for the specified ProxyService
++	 * 
++	 * @param service
++	 *            the ProxyService
++	 * @return a reference to the IoAcceptor
++	 */
+ 	private IoAcceptor newAcceptor( ProxyService service )
+ 	{
+ 		// First check if there's already an acceptor
+@@ -144,11 +240,9 @@
+ 		// Create a new one
+ 		TransportType transportType = service.getTransportType();
+ 		if ( transportType == TransportType.SOCKET )
+-			acceptor = new SocketAcceptor();
++			acceptor = new SocketAcceptor(); // socketAcceptor;
+ 		else if ( transportType == TransportType.DATAGRAM )
+-			acceptor = new DatagramAcceptor();
+-		else if ( transportType == TransportType.VM_PIPE )
+-			acceptor = new VmPipeAcceptor();
++			acceptor = new DatagramAcceptor(); // datagramAcceptor;
+ 		else
+ 			acceptor = null;
+ 
+@@ -157,14 +251,54 @@
+ 		return acceptor;
+ 	}
+ 
+-	private class IoFilterChainBuilderWrapper implements IoFilterChainBuilder
++	/**
++	 * Gets notification of changed parameters.
++	 * 
++	 * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
++	 */
++	public void update( Observable o, Object arg )
+ 	{
++		if ( !(o instanceof Parameter) )
++			throw new IllegalArgumentException( &quot;Only observe parameters&quot; );
+ 
++		if ( o == Config.threadPoolSize ) {
++			// Update the thread pool size
++			threadPoolFilter.setMaximumPoolSize( Config.threadPoolSize.getValue() );
++			log.info( &quot;Changed ThreadPool size. New max size: &quot;
++					+ threadPoolFilter.getMaximumPoolSize() );
++		}
++	}
++
++	/**
++	 * @return the shared thread pool filter instance
++	 */
++	public IoFilter getThreadPoolFilterInstance()
++	{
++		return threadPoolFilter;
++	}
++
++	/**
++	 * @return a reference to the (unique) ProxyServiceRegistry instance
++	 */
++	public static ProxyServiceRegistry getInstance()
++	{
++		return (ProxyServiceRegistry) Singleton.getInstance( ProxyServiceRegistry.class );
++	}
++
++	/**
++	 * Wrapper class for the IoFilterChainBuilder that always add the thread
++	 * pool filter as the filter in the chain.
++	 * &lt;p&gt;
++	 * The thread pool filter will be shared by all the services and acceptors.
++	 */
++	protected static class IoFilterChainBuilderWrapper implements IoFilterChainBuilder
++	{
++
+ 		private final ProxyService service;
+ 
+ 		private final IoFilterChainBuilder originalBuilder;
+ 
+-		private IoFilterChainBuilderWrapper( ProxyService service,
++		public IoFilterChainBuilderWrapper( ProxyService service,
+ 				IoFilterChainBuilder originalBuilder )
+ 		{
+ 			this.service = service;
+@@ -175,11 +309,10 @@
+ 		{
+ 			chain.getSession().setAttribute( ProxyService.SERVICE, service );
+ 
+-			try {
+-				originalBuilder.buildFilterChain( chain );
+-			} finally {
+-				chain.addFirst( &quot;threadPool&quot;, threadPoolFilter );
+-			}
++			IoFilter threadPoolFilter = ProxyServiceRegistry.getInstance()
++					.getThreadPoolFilterInstance();
++			chain.addFirst( threadPoolFilterNAME, threadPoolFilter );
++			originalBuilder.buildFilterChain( chain );
+ 		}
+ 	}
+ 
+
+Modified: trunk/src/main/java/rtspproxy/RdtClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RdtClientService.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/RdtClientService.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -22,24 +22,30 @@
+ import org.apache.mina.common.TransportType;
+ 
+ import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ClientRdtPacketHandler;
+ 
+ /**
++ * ProxyService that manages the RDT packets incoming from clients.
++ * 
+  * @author Matteo Merli
+  */
+-public class RdtClientService extends ProxyService
++public final class RdtClientService extends ProxyService
+ {
+ 
+ 	private IoHandler clientRdtPacketHandler = new ClientRdtPacketHandler();
+ 
+-	public static final String NAME = &quot;RdtClientService&quot;;
++	/** Service name */
++	private static final String NAME = &quot;RdtClientService&quot;;
+ 
+-	private static RdtClientService instance;
+-
+ 	public RdtClientService()
+ 	{
+ 		super();
+-		instance = this;
++
++		// Subscribe to parameter changes
++		Config.proxyClientInterface.addObserver( this );
++		Config.proxyClientRdtPort.addObserver( this );
+ 	}
+ 
+ 	@Override
+@@ -67,15 +73,29 @@
+ 	}
+ 
+ 	@Override
+-	public int[] getBindPorts()
++	public int getBindPort()
+ 	{
+-		int port = Config.proxyClientRdtPort.getValue();
+-		return new int[] { port };
++		return Config.proxyClientRdtPort.getValue();
+ 	}
+ 
++	/**
++	 * @return a reference to the (unique) instance of this class
++	 */
+ 	public static RdtClientService getInstance()
+ 	{
+-		return instance;
++		return (RdtClientService) Singleton.getInstance( RdtClientService.class );
+ 	}
+ 
++	@Override
++	public Parameter getNetworkInterfaceParameter()
++	{
++		return Config.proxyClientInterface;
++	}
++
++	@Override
++	public Parameter getPortParameter()
++	{
++		return Config.proxyClientRdtPort;
++	}
++
+ }
+
+Modified: trunk/src/main/java/rtspproxy/RdtServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RdtServerService.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/RdtServerService.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -22,23 +22,28 @@
+ import org.apache.mina.common.TransportType;
+ 
+ import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ServerRdtPacketHandler;
+ 
+ /**
++ * ProxyService that manages the RDT packets incoming from servers.
++ * 
+  * @author Matteo Merli
+  */
+-public class RdtServerService extends ProxyService
++public final class RdtServerService extends ProxyService
+ {
+ 	private IoHandler serverRdtPacketHandler = new ServerRdtPacketHandler();
+ 
+-	public static final String NAME = &quot;RdtServerService&quot;;
++	private static final String NAME = &quot;RdtServerService&quot;;
+ 
+-	private static RdtServerService instance;
+-
+ 	public RdtServerService()
+ 	{
+ 		super();
+-		instance = this;
++
++		// Subscribe to parameter changes
++		Config.proxyServerInterface.addObserver( this );
++		Config.proxyServerRdtPort.addObserver( this );
+ 	}
+ 
+ 	@Override
+@@ -66,15 +71,28 @@
+ 	}
+ 
+ 	@Override
+-	public int[] getBindPorts()
++	public int getBindPort()
+ 	{
+-		int port = Config.proxyServerRdtPort.getValue();
+-		return new int[] { port };
++		return Config.proxyServerRdtPort.getValue();
+ 	}
+ 
++	/**
++	 * @return a reference to the (unique) instance of this class
++	 */
+ 	public static RdtServerService getInstance()
+ 	{
+-		return instance;
++		return (RdtServerService) Singleton.getInstance( RdtServerService.class );
+ 	}
+ 
++	@Override
++	public Parameter getNetworkInterfaceParameter()
++	{
++		return Config.proxyServerInterface;
++	}
++	
++	@Override
++	public Parameter getPortParameter()
++	{
++		return Config.proxyServerRdtPort;
++	}
+ }
+
+Modified: trunk/src/main/java/rtspproxy/Reactor.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/Reactor.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/Reactor.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -22,6 +22,8 @@
+ 
+ import rtspproxy.config.Config;
+ import rtspproxy.config.ConfigReader;
++import rtspproxy.jmx.JmxAgent;
++import rtspproxy.lib.Exceptions;
+ 
+ /**
+  * 
+@@ -31,8 +33,10 @@
+ 
+ 	private static Logger log = Logger.getLogger( Reactor.class );
+ 
+-	private static ProxyServiceRegistry registry = new ProxyServiceRegistry();
++	private static ProxyServiceRegistry registry = null;
+ 
++	private static JmxAgent jmxAgent = null;
++
+ 	private static boolean isStandalone = false;
+ 
+ 	public static void setStandalone( boolean standalone )
+@@ -75,6 +79,8 @@
+ 
+ 		log.info( &quot;Starting &quot; + Config.getName() + &quot; &quot; + Config.getVersion() );
+ 
++		registry = new ProxyServiceRegistry();
++
+ 		// Register the &quot;<A HREF="rtsp://">rtsp://</A>&quot; protocol scheme
+ 		System.setProperty( &quot;java.protocol.handler.pkgs&quot;, &quot;rtspproxy&quot; );
+ 
+@@ -98,18 +104,28 @@
+ 
+ 		ProxyService rdtServerService = new RdtServerService();
+ 		rdtServerService.start();
++
++		boolean enableJmx = Config.proxyManagementEnable.getValue();
++		if ( enableJmx )
++			jmxAgent = new JmxAgent();
+ 	}
+ 
+ 	static public void stop()
+ 	{
+ 		try {
+-			registry.unbindAll();
++			if ( jmxAgent != null )
++				jmxAgent.stop();
++
++			if ( registry != null )
++				registry.unbindAll();
++			
++			log.info( &quot;Shutdown completed&quot; );
++
+ 		} catch ( Exception e ) {
+-			log.debug( &quot;Error shutting down: &quot; + e );
++			log.warn( &quot;Error shutting down: &quot; + e );
++			Exceptions.logStackTrace( e );
+ 		}
+ 
+-		log.info( &quot;Shutdown completed&quot; );
+-
+ 		if ( isStandalone )
+ 			Runtime.getRuntime().halt( 0 );
+ 	}
+
+Modified: trunk/src/main/java/rtspproxy/RtcpClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtcpClientService.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/RtcpClientService.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -22,23 +22,29 @@
+ import org.apache.mina.common.TransportType;
+ 
+ import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ClientRtcpPacketHandler;
+ 
+ /**
++ * ProxyService that manages the RTCP packets incoming from clients.
++ * 
+  * @author Matteo Merli
+  */
+-public class RtcpClientService extends ProxyService
++public final class RtcpClientService extends ProxyService
+ {
+ 	private IoHandler clientRtcpPacketHandler = new ClientRtcpPacketHandler();
+ 
+-	public static final String NAME = &quot;RtcpClientService&quot;;
+-	
+-	private static RtcpClientService instance;
++	/** The name of this service */
++	private static final String NAME = &quot;RtcpClientService&quot;;
+ 
+ 	public RtcpClientService()
+ 	{
+ 		super();
+-		instance = this;
++
++		// Subscribe to parameter changes
++		Config.proxyClientInterface.addObserver( this );
++		Config.proxyClientRtcpPort.addObserver( this );
+ 	}
+ 
+ 	@Override
+@@ -66,15 +72,29 @@
+ 	}
+ 
+ 	@Override
+-	public int[] getBindPorts()
++	public int getBindPort()
+ 	{
+-		int port = Config.proxyClientRtcpPort.getValue();
+-		return new int[] { port };
++		return Config.proxyClientRtcpPort.getValue();
+ 	}
+-	
++
++	/**
++	 * @return a reference to the (unique) instance of this class
++	 */
+ 	public static RtcpClientService getInstance()
+ 	{
+-		return instance;
++		return (RtcpClientService) Singleton.getInstance( RtcpClientService.class );
+ 	}
+ 
++	@Override
++	public Parameter getNetworkInterfaceParameter()
++	{
++		return Config.proxyClientInterface;
++	}
++
++	@Override
++	public Parameter getPortParameter()
++	{
++		return Config.proxyClientRtcpPort;
++	}
++
+ }
+
+Modified: trunk/src/main/java/rtspproxy/RtcpServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtcpServerService.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/RtcpServerService.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -22,23 +22,29 @@
+ import org.apache.mina.common.TransportType;
+ 
+ import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ServerRtcpPacketHandler;
+ 
+ /**
++ * ProxyService that manages the RTCP packets incoming from servers.
++ * 
+  * @author Matteo Merli
+  */
+-public class RtcpServerService extends ProxyService
++public final class RtcpServerService extends ProxyService
+ {
+ 	private IoHandler serverRtcpPacketHandler = new ServerRtcpPacketHandler();
+ 
+-	public static final String NAME = &quot;RtcpServerService&quot;;
+-	
+-	private static RtcpServerService instance;
++	/** The name of this service */
++	private static final String NAME = &quot;RtcpServerService&quot;;
+ 
+ 	public RtcpServerService()
+ 	{
+ 		super();
+-		instance = this;
++
++		// Subscribe to parameter changes
++		Config.proxyServerInterface.addObserver( this );
++		Config.proxyServerRtcpPort.addObserver( this );
+ 	}
+ 
+ 	@Override
+@@ -66,15 +72,29 @@
+ 	}
+ 
+ 	@Override
+-	public int[] getBindPorts()
++	public int getBindPort()
+ 	{
+-		int port = Config.proxyServerRtcpPort.getValue();
+-		return new int[] { port };
++		return Config.proxyServerRtcpPort.getValue();
+ 	}
+-	
++
++	/**
++	 * @return a reference to the (unique) instance of this class
++	 */
+ 	public static RtcpServerService getInstance()
+ 	{
+-		return instance;
++		return (RtcpServerService) Singleton.getInstance( RtcpServerService.class );
+ 	}
+ 
++	@Override
++	public Parameter getNetworkInterfaceParameter()
++	{
++		return Config.proxyServerInterface;
++	}
++
++	@Override
++	public Parameter getPortParameter()
++	{
++		return Config.proxyServerRtcpPort;
++	}
++
+ }
+
+Modified: trunk/src/main/java/rtspproxy/RtpClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtpClientService.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/RtpClientService.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -22,23 +22,26 @@
+ import org.apache.mina.common.TransportType;
+ 
+ import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ClientRtpPacketHandler;
+ 
+ /**
+  * @author Matteo Merli
+  */
+-public class RtpClientService extends ProxyService
++public final class RtpClientService extends ProxyService
+ {
+ 	private IoHandler clientRtpPacketHandler = new ClientRtpPacketHandler();
+ 
+-	public static final String NAME = &quot;RtpClientService&quot;;
+-	
+-	private static RtpClientService instance;
++	private static final String NAME = &quot;RtpClientService&quot;;
+ 
+ 	public RtpClientService()
+ 	{
+ 		super();
+-		instance = this;
++
++		// Subscribe to parameter changes
++		Config.proxyClientInterface.addObserver( this );
++		Config.proxyClientRtpPort.addObserver( this );
+ 	}
+ 
+ 	@Override
+@@ -66,15 +69,26 @@
+ 	}
+ 
+ 	@Override
+-	public int[] getBindPorts()
++	public int getBindPort()
+ 	{
+-		int port = Config.proxyClientRtpPort.getValue();
+-		return new int[] { port };
++		return Config.proxyClientRtpPort.getValue();
+ 	}
+-	
++
+ 	public static RtpClientService getInstance()
+ 	{
+-		return instance;
++		return (RtpClientService) Singleton.getInstance( RtpClientService.class );
+ 	}
++	
++	@Override
++	public Parameter getNetworkInterfaceParameter()
++	{
++		return Config.proxyClientInterface;
++	}
++	
++	@Override
++	public Parameter getPortParameter()
++	{
++		return Config.proxyClientRtpPort;
++	}
+ 
+ }
+
+Modified: trunk/src/main/java/rtspproxy/RtpServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtpServerService.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/RtpServerService.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -22,23 +22,26 @@
+ import org.apache.mina.common.TransportType;
+ 
+ import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ServerRtpPacketHandler;
+ 
+ /**
+  * @author Matteo Merli
+  */
+-public class RtpServerService extends ProxyService
++public final class RtpServerService extends ProxyService
+ {
+ 	private IoHandler serverRtpPacketHandler = new ServerRtpPacketHandler();
+ 
+-	public static final String NAME = &quot;RtpServerService&quot;;
+-	
+-	private static RtpServerService instance;
++	private static final String NAME = &quot;RtpServerService&quot;;
+ 
+ 	public RtpServerService()
+ 	{
+ 		super();
+-		instance = this;
++
++		// Subscribe to parameter changes
++		Config.proxyServerInterface.addObserver( this );
++		Config.proxyServerRtpPort.addObserver( this );
+ 	}
+ 
+ 	@Override
+@@ -66,15 +69,26 @@
+ 	}
+ 
+ 	@Override
+-	public int[] getBindPorts()
++	public int getBindPort()
+ 	{
+-		int port = Config.proxyServerRtpPort.getValue();
+-		return new int[] { port };
++		return Config.proxyServerRtpPort.getValue();
+ 	}
+-	
++
+ 	public static RtpServerService getInstance()
+ 	{
+-		return instance;
++		return (RtpServerService) Singleton.getInstance( RtpServerService.class );
+ 	}
+ 
++	@Override
++	public Parameter getNetworkInterfaceParameter()
++	{
++		return Config.proxyServerInterface;
++	}
++	
++	@Override
++	public Parameter getPortParameter()
++	{
++		return Config.proxyServerRtpPort;
++	}
++	
+ }
+
+Modified: trunk/src/main/java/rtspproxy/RtspService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtspService.java	2005-12-24 09:23:39 UTC (rev 359)
++++ trunk/src/main/java/rtspproxy/RtspService.java	2005-12-24 09:54:24 UTC (rev 360)
+@@ -18,31 +18,47 @@
+ 
+ package rtspproxy;
+ 
++import java.util.Observable;
++
++import org.apache.log4j.Logger;
++import org.apache.mina.common.IoAcceptor;
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.ProxyServiceRegistry.IoFilterChainBuilderWrapper;
+ import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
+ import rtspproxy.filter.RtspClientFilters;
++import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ClientSide;
+ 
+ /**
+  * @author Matteo Merli
+  */
+-public class RtspService extends ProxyService
++public final class RtspService extends ProxyService
+ {
++
++	private static Logger log = Logger.getLogger( RtspService.class );
++
+ 	private IoHandler rtspHandler = new ClientSide();
+ 
+-	private IoFilterChainBuilder filterChainBuilder = new RtspClientFilters();
++	private final IoFilterChainBuilder filterChainBuilder = new RtspClientFilters();
+ 
+-	public static final String NAME = &quot;RtspService&quot;;
+-	
+-	private static RtspService instance;
++	private static final String NAME = &quot;RtspService&quot;;
+ 
+ 	public RtspService()
+ 	{
+ 		super();
+-		instance = this;
++
++		// Subscribe to parameter changes
++		Config.proxyClientInterface.addObserver( this );
++		Config.proxyRtspPort.addObserver( this );
++
++		// Subscribe to filter chain changes notification
++		Config.proxyFilterAuthenticationEnable.addObserver( this );
++		Config.proxyFilterIpaddressEnable.addObserver( this );
++		Config.proxyFilterAccountingEnable.addObserver( this );
+ 	}
+ 
+ 	@Override
+@@ -76,14 +92,73 @@
+ 	}
+ 
+ 	@Override
+-	public int[] getBindPorts()
++	public int getBindPort()
+ 	{
+ 		return Config.proxyRtspPort.getValue();
+ 	}
+-	
++
+ 	public static RtspService getInstance()
+ 	{
+-		return instance;
++		return (RtspService) Singleton.getInstance( RtspService.class );
+ 	}
+ 
++	@Override
++	public Parameter getNetworkInterfaceParameter()
++	{
++		return Config.proxyClientInterface;
++	}
++
++	@Override
++	public Parameter getPortParameter()
++	{
++		return Config.proxyRtspPort;
++	}
++
++	@Override
++	public void update( Observable o, Object arg )
++	{
++		if ( !(o instanceof Parameter) )
++			throw new IllegalArgumentException( &quot;Only observe parameters&quot; );
++
++		if ( o == Config.proxyFilterAuthenticationEnable
++				|| o == Config.proxyFilterIpaddressEnable
++				|| o == Config.proxyFilterAccountingEnable ) {
++
++			/*
++			 * Change the filter chain builder to reflect new parameters
++			 * directives.
++			 */
++			IoAcceptor acceptor = ProxyServiceRegistry.getInstance().getAcceptor( this );
++			acceptor.setFilterChainBuilder( new IoFilterChainBuilderWrapper( this,
++					new RtspClientFilters() ) );
++
++			/*
++			 * Print a meaningful info message
++			 */
++			if ( o == Config.proxyFilterAuthenticationEnable ) {
++				if ( Config.proxyFilterAuthenticationEnable.getValue() == true )
++					log.info( &quot;Activated the Authentication filter.&quot; );
++				else
++					log.info( &quot;Disabled the Authentication filter.&quot; );
++			}
++			if ( o == Config.proxyFilterIpaddressEnable ) {
++				if ( Config.proxyFilterIpaddressEnable.getValue() == true )
++					log.info( &quot;Activated the IP address filter.&quot; );
++				else
++					log.info( &quot;Disabled the IP address filter.&quot; );
++			}
++			if ( o == Config.proxyFilterAccountingEnable ) {
++				if ( Config.proxyFilterAccountingEnable.getValue() == true )
++					log.info( &quot;Activated the Accounting filter.&quot; );
++				else
++					log.info( &quot;Disabled the Accounting filter.&quot; );
++			}
++
++		} else {
++			/*
++			 * Other parameters are observed by base class
++			 */
++			super.update( o, arg );
++		}
++	}
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000044.html">[Rtspproxy-devel] r359 - trunk/src/main/java/rtspproxy/config
+</A></li>
+	<LI>Next message: <A HREF="000046.html">[Rtspproxy-devel] r361 - trunk/src/main/java/rtspproxy/filter/authentication/scheme
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#45">[ date ]</a>
+              <a href="thread.html#45">[ thread ]</a>
+              <a href="subject.html#45">[ subject ]</a>
+              <a href="author.html#45">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

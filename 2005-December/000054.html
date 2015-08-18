@@ -1,0 +1,789 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r369 - in trunk: . src/main/java/rtspproxy/config src/resources/conf
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r369%20-%20in%20trunk%3A%20.%20src/main/java/rtspproxy/config%20src/resources/conf&In-Reply-To=%3C200512270039.jBR0dIdT008840%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000053.html">
+   <LINK REL="Next"  HREF="000055.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r369 - in trunk: . src/main/java/rtspproxy/config src/resources/conf</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r369%20-%20in%20trunk%3A%20.%20src/main/java/rtspproxy/config%20src/resources/conf&In-Reply-To=%3C200512270039.jBR0dIdT008840%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r369 - in trunk: . src/main/java/rtspproxy/config src/resources/conf">rbieniek at berlios.de
+       </A><BR>
+    <I>Tue Dec 27 01:39:18 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000053.html">[Rtspproxy-devel] r368 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000055.html">[Rtspproxy-devel] r370 - in trunk/src: main/java/rtspproxy/config resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#54">[ date ]</a>
+              <a href="thread.html#54">[ thread ]</a>
+              <a href="subject.html#54">[ subject ]</a>
+              <a href="author.html#54">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2005-12-27 01:37:27 +0100 (Tue, 27 Dec 2005)
+New Revision: 369
+
+Added:
+   trunk/src/main/java/rtspproxy/config/ListParameter.java
+   trunk/src/main/java/rtspproxy/config/XMLConfigReader.java
+   trunk/src/resources/conf/rtspproxy.conf.xml
+Modified:
+   trunk/pom.xml
+   trunk/src/main/java/rtspproxy/config/BooleanParameter.java
+   trunk/src/main/java/rtspproxy/config/Config.java
+   trunk/src/main/java/rtspproxy/config/IntegerListParameter.java
+   trunk/src/main/java/rtspproxy/config/IntegerParameter.java
+   trunk/src/main/java/rtspproxy/config/Parameter.java
+   trunk/src/main/java/rtspproxy/config/StringListParameter.java
+   trunk/src/main/java/rtspproxy/config/StringParameter.java
+Log:
+- started support for XML based configuration files. Configuration for simple 
+parameters is supported, configuration of additional filter / logging modules 
+is not supported yet.
+-- TODO: validate XML configuration file by a schema definition (XSD/RelaxNG)
+-- TODO: factor configuration out of the top-level reactor. The reactor should
+be started after it is configured anyway.
+-- TODO: implement unit test for XML configuration file.
+-- TODO: document XML configuration file
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/pom.xml	2005-12-27 00:37:27 UTC (rev 369)
+@@ -102,6 +102,12 @@
+ 		&lt;/dependency&gt;
+ 
+ 		&lt;dependency&gt;
++			&lt;groupId&gt;dom4j&lt;/groupId&gt;
++			&lt;artifactId&gt;dom4j&lt;/artifactId&gt;
++			&lt;version&gt;1.6.1&lt;/version&gt;
++		&lt;/dependency&gt;
++
++		&lt;dependency&gt;
+ 			&lt;groupId&gt;junit&lt;/groupId&gt;
+ 			&lt;artifactId&gt;junit&lt;/artifactId&gt;
+ 			&lt;version&gt;3.8.1&lt;/version&gt;
+
+Modified: trunk/src/main/java/rtspproxy/config/BooleanParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/BooleanParameter.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/BooleanParameter.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -14,9 +14,9 @@
+ 	private boolean defaultValue;
+ 
+ 	public BooleanParameter( String name, boolean defaultValue, boolean mutable,
+-			String description )
++			String description, String xpathExpr )
+ 	{
+-		super( name, mutable, description );
++		super( name, mutable, description, xpathExpr );
+ 		this.defaultValue = defaultValue;
+ 	}
+ 
+
+Modified: trunk/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/Config.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/Config.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -48,18 +48,24 @@
+ 			false, // default value
+ 			true, // mutable
+ 			&quot;This flag let you to enable or disable the debug &quot;
+-					+ &quot;output of the program.&quot; );
++					+ &quot;output of the program.&quot;,
++			&quot;/rtspproxy/log/debug&quot; // xpathExpr
++	);
+ 
+ 	public static final BooleanParameter logLogToFile = new BooleanParameter(
+ 			&quot;log.logtofile&quot;, // name
+ 			false, // default value
+ 			true, // mutable
+-			&quot;If you want to save to a file the debug output	set this to Yes&quot; );
++			&quot;If you want to save to a file the debug output	set this to Yes&quot;,
++			&quot;/rtspproxy/log/logToFile&quot; // xpathExpr
++	);
+ 
+ 	public static final StringParameter logFile = new StringParameter( &quot;log.file&quot;, // name
+ 			&quot;logs/rtspproxy.log&quot;, // default value
+ 			true, // mutable
+-			&quot;Here you specify the file to log to.&quot; );
++			&quot;Here you specify the file to log to.&quot;,
++			&quot;/rtspproxy/log/file&quot;  // xpathExpr
++	);
+ 
+ 	public static final IntegerParameter threadPoolSize = new IntegerParameter(
+ 			&quot;thread.pool.size&quot;, // name
+@@ -68,7 +74,9 @@
+ 			new Integer( 10 ), // default value
+ 			true, // mutable
+ 			&quot;Maximum size of the thread pool. The thread pool is shared &quot;
+-					+ &quot;between all services found in RtspProxy.&quot; );
++					+ &quot;between all services found in RtspProxy.&quot;,
++			&quot;/rtspproxy/threadPoolSize&quot; // xpathExpr
++	);
+ 
+ 	public static final IntegerParameter proxyRtspPort = new IntegerParameter(
+ 			&quot;proxy.rtsp.port&quot;, // name
+@@ -77,19 +85,25 @@
+ 			new Integer( Handler.DEFAULT_RTSP_PORT ), // default value
+ 			true, // mutable
+ 			&quot;This is the port which the proxy will listen for &quot;
+-					+ &quot;RTSP connection. The default is 554, like normal RTSP servers.&quot; );
++					+ &quot;RTSP connection. The default is 554, like normal RTSP servers.&quot;,
++			&quot;/rtspproxy/proxy/rtspPort&quot; // xpathExpr
++			);
+ 
+ 	public static final StringParameter proxyClientInterface = new StringParameter(
+ 			&quot;proxy.client.interface&quot;, // name
+ 			null, // default value
+ 			false, // mutable
+-			&quot;Specify a network interface. Default is to listen on all interfaces.&quot; );
++			&quot;Specify a network interface. Default is to listen on all interfaces.&quot; ,
++			&quot;/rtspproxy/proxy/client/interface&quot; // xpathExpr
++			);
+ 
+ 	public static final StringParameter proxyServerInterface = new StringParameter(
+ 			&quot;proxy.server.interface&quot;, // name
+ 			null, // default value
+ 			false, // mutable
+-			&quot;Specify a network interface. Default is to listen on all interfaces.&quot; );
++			&quot;Specify a network interface. Default is to listen on all interfaces.&quot;,
++			&quot;/rtspproxy/proxy/server/interface&quot; // pathExpr
++			);
+ 
+ 	public static final IntegerParameter proxyServerRtpPort = new IntegerParameter(
+ 			&quot;proxy.server.rtp.port&quot;, // name
+@@ -97,7 +111,9 @@
+ 			new Integer( 65536 ), // max value
+ 			new Integer( 8000 ), // default value
+ 			true, // mutable
+-			&quot;Port to listen for RTP packets arriving from servers.&quot; );
++			&quot;Port to listen for RTP packets arriving from servers.&quot;,
++			&quot;/rtspproxy/proxy/server/rtpPort&quot; // xpathExpr
++			);
+ 
+ 	public static final IntegerParameter proxyServerRtcpPort = new IntegerParameter(
+ 			&quot;proxy.server.rtcp.port&quot;, // name
+@@ -105,7 +121,9 @@
+ 			new Integer( 65536 ), // max value
+ 			new Integer( 8001 ), // default value
+ 			true, // mutable
+-			&quot;Port to listen for RTCP packets arriving from servers.&quot; );
++			&quot;Port to listen for RTCP packets arriving from servers.&quot;,
++			&quot;/rtspproxy/proxy/server/rtcpPort&quot; // xpathExpr
++			);
+ 
+ 	public static final IntegerParameter proxyClientRtpPort = new IntegerParameter(
+ 			&quot;proxy.client.rtp.port&quot;, // name
+@@ -113,7 +131,9 @@
+ 			new Integer( 65536 ), // max value
+ 			new Integer( 8002 ), // default value
+ 			true, // mutable
+-			&quot;Port to listen for RTP packets arriving from clients.&quot; );
++			&quot;Port to listen for RTP packets arriving from clients.&quot;,
++			&quot;/rtspproxy/proxy/client/rtpPort&quot; // xpathExpr
++			);
+ 
+ 	public static final IntegerParameter proxyClientRtcpPort = new IntegerParameter(
+ 			&quot;proxy.client.rtcp.port&quot;, // name
+@@ -121,7 +141,9 @@
+ 			new Integer( 65536 ), // max value
+ 			new Integer( 8003 ), // default value
+ 			true, // mutable
+-			&quot;Port to listen for RTCP packets arriving from clients.&quot; );
++			&quot;Port to listen for RTCP packets arriving from clients.&quot;,
++			&quot;/rtspproxy/proxy/client/rtcpPort&quot; // xpathExpr
++			);
+ 
+ 	public static final IntegerParameter proxyServerRdtPort = new IntegerParameter(
+ 			&quot;proxy.server.rdt.port&quot;, // name
+@@ -129,7 +151,9 @@
+ 			new Integer( 65536 ), // max value
+ 			new Integer( 8020 ), // default value
+ 			true, // mutable
+-			&quot;Port to listen for RDT packets arriving from servers.&quot; );
++			&quot;Port to listen for RDT packets arriving from servers.&quot;,
++			&quot;/rtspproxy/proxy/server/rdtPort&quot; // xpathExpr
++			);
+ 
+ 	public static final IntegerParameter proxyClientRdtPort = new IntegerParameter(
+ 			&quot;proxy.client.rdt.port&quot;, // name
+@@ -137,7 +161,9 @@
+ 			new Integer( 65536 ), // max value
+ 			new Integer( 8022 ), // default value
+ 			true, // mutable
+-			&quot;Port to listen for RDT packets arriving from clients.&quot; );
++			&quot;Port to listen for RDT packets arriving from clients.&quot;,
++			&quot;/rtspproxy/proxy/server/rdtPort&quot; // xpathExpr
++			);
+ 
+ 	// // IP address filter
+ 
+@@ -145,7 +171,9 @@
+ 			&quot;proxy.filter.ipaddress.enable&quot;, // name
+ 			false, // default value
+ 			true, // mutable
+-			&quot;Enable or disable the IP address filtering system.&quot; );
++			&quot;Enable or disable the IP address filtering system.&quot;,
++			null // xpathExpr
++			);
+ 
+ 	public static final StringParameter proxyFilterIpaddressImplementationClass = new StringParameter(
+ 			&quot;proxy.filter.ipaddress.implementationClass&quot;, // name
+@@ -154,13 +182,17 @@
+ 			false, // mutable
+ 			&quot;Use an alternative backend class. This can be any class &quot;
+ 					+ &quot;that implements the rtspproxy.filter.ipaddress.IpAddressProvider &quot;
+-					+ &quot;interface.&quot; );
++					+ &quot;interface.&quot;,
++			null // xpathExpr
++			);
+ 
+ 	public static final StringParameter proxyFilterIpaddressTextFile = new StringParameter(
+ 			&quot;proxy.filter.ipaddress.text.file&quot;, // name
+ 			&quot;conf/ipfilter.txt&quot;, // default value
+ 			false, // mutable
+-			&quot;Plain Text based implementation specific configuration&quot; );
++			&quot;Plain Text based implementation specific configuration&quot;,
++			null // xpathExpr
++			);
+ 
+ 	// // Authentication filter
+ 
+@@ -168,14 +200,18 @@
+ 			&quot;proxy.filter.authentication.enable&quot;, // name
+ 			false, // default value
+ 			true, // mutable
+-			&quot;Enable or disable the authentication system.&quot; );
++			&quot;Enable or disable the authentication system.&quot;,
++			null // xpathExpr
++			 );
+ 
+ 	public static final StringParameter proxyFilterAuthenticationScheme = new StringParameter(
+ 			&quot;proxy.filter.authentication.scheme&quot;, // name
+ 			&quot;Basic&quot;, // default value
+ 			false, // mutable
+ 			&quot;Authentication Scheme. This could be Basic (the default), Digest or any &quot;
+-					+ &quot;other supported scheme.&quot; );
++					+ &quot;other supported scheme.&quot;,
++					null // xpathExpr
++					 );
+ 
+ 	public static final StringParameter proxyFilterAuthenticationImplementationClass = new StringParameter(
+ 			&quot;proxy.filter.authentication.implementationClass&quot;, // name
+@@ -184,13 +220,17 @@
+ 			false, // mutable
+ 			&quot;Use an alternative backend class. This can be any class &quot;
+ 					+ &quot;that implements the rtspproxy.filter.authentication.AuthenticationProvider &quot;
+-					+ &quot;interface.&quot; );
++					+ &quot;interface.&quot;,
++					null // xpathExpr
++					 );
+ 
+ 	public static final StringParameter proxyFilterAuthenticationTextFile = new StringParameter(
+ 			&quot;proxy.filter.authentication.text.file&quot;, // name
+ 			&quot;conf/users.txt&quot;, // default value
+ 			false, // mutable
+-			&quot;Plain Text based implementation specific configuration&quot; );
++			&quot;Plain Text based implementation specific configuration&quot;,
++			null // xpathExpr
++			 );
+ 
+ 	// /////////////////////////////////////////////////////////
+ 
+@@ -200,7 +240,9 @@
+ 			&quot;proxy.filter.accounting.enable&quot;, // name
+ 			true, // default value
+ 			true, // mutable
+-			&quot;Controls the activation of the Accounting subsystem.&quot; );
++			&quot;Controls the activation of the Accounting subsystem.&quot;,
++			null // xpathExpr
++			 );
+ 
+ 	public static final StringParameter proxyFilterAccountingImplementationClass = new StringParameter(
+ 			&quot;proxy.filter.accounting.implementationClass&quot;, // name
+@@ -209,13 +251,17 @@
+ 			false, // mutable
+ 			&quot;Use an alternative backend class. This can be any class &quot;
+ 					+ &quot;that implements the rtspproxy.filter.accounting.AccountingProvider &quot;
+-					+ &quot;interface.&quot; );
++					+ &quot;interface.&quot;,
++					null // xpathExpr
++					 );
+ 
+ 	public static final StringParameter proxyFilterAccountingTextFile = new StringParameter(
+ 			&quot;proxy.filter.accounting.text.file&quot;, // name
+ 			&quot;logs/access.log&quot;, // default value
+ 			false, // mutable
+-			&quot;Plain Text based implementation specific configuration&quot; );
++			&quot;Plain Text based implementation specific configuration&quot;,
++			null // xpathExpr
++			 );
+ 
+ 	// /////////////////////////////////////////////////////////
+ 
+@@ -225,32 +271,42 @@
+ 			&quot;proxy.management.enable&quot;, // name
+ 			false, // default value
+ 			false, // mutable
+-			&quot;Controls the activation of the management subsystem (JMX).&quot; );
++			&quot;Controls the activation of the management subsystem (JMX).&quot;,
++			&quot;/rtspproxy/jmx/manageable&quot; // xpathExpr
++			);
+ 
+ 	public static final StringParameter proxyManagementHost = new StringParameter(
+ 			&quot;proxy.management.host&quot;, // name
+ 			&quot;localhost&quot;, // default value
+ 			false, // mutable
+ 			&quot;Host to bind the management services. Default is localhost, and the services &quot;
+-					+ &quot;will only be reachable from local machine.&quot; );
++					+ &quot;will only be reachable from local machine.&quot;,
++			&quot;/rtspproxy/jmx/interface&quot; // xpathExpr
++			 );
+ 
+ 	public static final StringParameter proxyManagementUser = new StringParameter(
+ 			&quot;proxy.management.user&quot;, // name
+ 			null, // default value
+ 			true, // mutable
+-			&quot;Remote management administrator user name.&quot; );
++			&quot;Remote management administrator user name.&quot;,
++			&quot;/rtspproxy/jmx/user&quot; // xpathExpr
++			 );
+ 	
+ 	public static final StringParameter proxyManagementPassword = new StringParameter(
+ 			&quot;proxy.management.password&quot;, // name
+ 			null, // default value
+ 			true, // mutable
+-			&quot;Remote management administrator password.&quot; );
++			&quot;Remote management administrator password.&quot;,
++			&quot;/rtspproxy/jmx/password&quot; // xpathExpr
++			 );
+ 
+ 	public static final BooleanParameter proxyManagementWebEnable = new BooleanParameter(
+ 			&quot;proxy.management.web.enable&quot;, // name
+ 			false, // default value
+ 			false, // mutable
+-			&quot;Controls the activation of the Web management console.&quot; );
++			&quot;Controls the activation of the Web management console.&quot;,
++			&quot;/rtspproxy/jmx/web/manageable&quot; // xpathExpr
++			 );
+ 
+ 	public static final IntegerParameter proxyManagementWebPort = new IntegerParameter(
+ 			&quot;proxy.management.web.port&quot;, // name
+@@ -258,13 +314,17 @@
+ 			new Integer( 65536 ), // max value
+ 			new Integer( 8000 ), // default value
+ 			false, // mutable
+-			&quot;TCP port to be used for the Web Console.&quot; );
++			&quot;TCP port to be used for the Web Console.&quot;,
++			&quot;/rtspproxy/jmx/web/port&quot; // xpathExpr
++			 );
+ 
+ 	public static final BooleanParameter proxyManagementRemoteEnable = new BooleanParameter(
+ 			&quot;proxy.management.remote.enable&quot;, // name
+ 			false, // default value
+ 			false, // mutable
+-			&quot;Controls the activation of the JMX connector server.&quot; );
++			&quot;Controls the activation of the JMX connector server.&quot;,
++			&quot;/rtspproxy/jmx/connectorService/manageable&quot; // xpathExpr
++			 );
+ 
+ 	// /////////////////////////////////////////////////////////
+ 
+
+Modified: trunk/src/main/java/rtspproxy/config/IntegerListParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/IntegerListParameter.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/IntegerListParameter.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -9,7 +9,7 @@
+ /**
+  * @author Matteo Merli
+  */
+-public class IntegerListParameter extends Parameter
++public class IntegerListParameter extends ListParameter
+ {
+ 	private List&lt;Integer&gt; values = null;
+ 
+@@ -20,9 +20,9 @@
+ 	private Integer defaultValue;
+ 
+ 	public IntegerListParameter( String name, Integer minValue, Integer maxValue,
+-			Integer defaultValue, boolean mutable, String description )
++			Integer defaultValue, boolean mutable, String description, String xpathExpr )
+ 	{
+-		super( name, mutable, description );
++		super( name, mutable, description, xpathExpr );
+ 
+ 		if ( defaultValue == null )
+ 			throw new IllegalArgumentException( &quot;Default value for &quot; + name
+@@ -62,6 +62,20 @@
+ 		setChanged();
+ 	}
+ 
++	@Override	
++	public void addValue(String value) {
++		try {
++			Integer tmpValue = Integer.valueOf(value);
++
++			this.values.add(tmpValue);
++		} catch ( NumberFormatException nfe ) {
++			throw new IllegalArgumentException( &quot;Integer value for &quot; + name
++					+ &quot; not valid: &quot; + value );
++		}
++		
++		setChanged();
++	}
++
+ 	@Override
+ 	public String getStringValue()
+ 	{
+
+Modified: trunk/src/main/java/rtspproxy/config/IntegerParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/IntegerParameter.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/IntegerParameter.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -17,9 +17,9 @@
+ 	private Integer defaultValue;
+ 
+ 	public IntegerParameter( String name, Integer minValue, Integer maxValue,
+-			Integer defaultValue, boolean mutable, String description )
++			Integer defaultValue, boolean mutable, String description, String xpathExpr )
+ 	{
+-		super( name, mutable, description );
++		super( name, mutable, description, xpathExpr );
+ 
+ 		if ( defaultValue == null )
+ 			throw new IllegalArgumentException( &quot;Default value for &quot; + name
+
+Added: trunk/src/main/java/rtspproxy/config/ListParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/ListParameter.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/ListParameter.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -0,0 +1,27 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public abstract class ListParameter extends Parameter {
++
++	/**
++	 * @param name
++	 * @param mutable
++	 * @param description
++	 * @param xpathExpr
++	 */
++	public ListParameter(String name, boolean mutable, String description,
++			String xpathExpr) {
++		super(name, mutable, description, xpathExpr);
++	}
++
++	/**
++	 * add a value to the list
++	 */
++	public abstract void addValue(String value);
++}
+
+Modified: trunk/src/main/java/rtspproxy/config/Parameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/Parameter.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/Parameter.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -16,15 +16,18 @@
+ 	protected final boolean mutable;
+ 
+ 	protected final String description;
++	
++	protected final String xpathExpr;
+ 
+-	protected Parameter( String name, boolean mutable, String description )
++	protected Parameter( String name, boolean mutable, String description, String xpathExpr )
+ 	{
+ 		validateName( name );
+ 
+ 		this.name = name;
+ 		this.mutable = mutable;
+ 		this.description = description;
+-
++		this.xpathExpr = xpathExpr;
++		
+ 		Config.addParameter( this );
+ 	}
+ 
+@@ -88,6 +91,14 @@
+ 	public abstract String getType();
+ 
+ 	/**
++	 * @return the xpath expression used to address this parameter in the xml configuration file.
++	 * If null, this parameter is ignored in the configuration file evaluation.
++	 */
++	public final String getXPathExpr() {
++		return this.xpathExpr;
++	}
++	
++	/**
+ 	 * Marks the parameter as changed and notify all the Observers.
+ 	 * 
+ 	 * @see java.util.Observable#setChanged()
+
+Modified: trunk/src/main/java/rtspproxy/config/StringListParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/StringListParameter.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/StringListParameter.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -9,16 +9,16 @@
+ /**
+  * @author Matteo Merli
+  */
+-public class StringListParameter extends Parameter
++public class StringListParameter extends ListParameter
+ {
+ 	private List&lt;String&gt; values = null;
+ 
+ 	private String defaultValue;
+ 
+ 	public StringListParameter( String name, String defaultValue, boolean mutable,
+-			String description )
++			String description, String xpathExpr )
+ 	{
+-		super( name, mutable, description );
++		super( name, mutable, description, xpathExpr );
+ 
+ 		if ( defaultValue == null )
+ 			throw new IllegalArgumentException( &quot;Default value for &quot; + name
+@@ -37,6 +37,13 @@
+ 		}
+ 		setChanged();
+ 	}
++	
++	@Override	
++	public void addValue(String value) {
++		this.values.add(value);
++		
++		setChanged();
++	}
+ 
+ 	@Override
+ 	public String getStringValue()
+
+Modified: trunk/src/main/java/rtspproxy/config/StringParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/StringParameter.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/StringParameter.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -14,9 +14,9 @@
+ 	private String defaultValue;
+ 
+ 	public StringParameter( String name, String defaultValue, boolean mutable,
+-			String description )
++			String description, String xpathExpr )
+ 	{
+-		super( name, mutable, description );
++		super( name, mutable, description, xpathExpr );
+ 		this.defaultValue = defaultValue;
+ 	}
+ 
+
+Added: trunk/src/main/java/rtspproxy/config/XMLConfigReader.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/XMLConfigReader.java	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/main/java/rtspproxy/config/XMLConfigReader.java	2005-12-27 00:37:27 UTC (rev 369)
+@@ -0,0 +1,98 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++import org.apache.log4j.Logger;
++
++import java.io.FileInputStream;
++import java.io.IOException;
++import java.io.InputStream;
++import java.util.List;
++
++import org.dom4j.Attribute;
++import org.dom4j.Document;
++import org.dom4j.DocumentException;
++import org.dom4j.Element;
++import org.dom4j.Node;
++import org.dom4j.io.SAXReader;
++
++/**
++ * This class implements a parser for XML configuration files.
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ * @todo validate the parsed configuration file by a schema.
++ */
++public class XMLConfigReader {
++
++	// logger
++	private static final Logger logger = Logger
++			.getLogger(XMLConfigReader.class);
++	
++	/**
++	 * create the xml config read object
++	 */
++	public XMLConfigReader() {}
++	
++	/**
++	 * read the configuration file.
++	 * @param fName the pathname of the configuration file
++	 * @exception IOException the file denoted by the file name cannot be read
++	 * @throws DocumentException parsing the config file failed.
++	 */ 
++	public final void readConfig(String fName) throws IOException, DocumentException {
++		this.readConfig(new FileInputStream(fName));
++	}
++	
++	/**
++	 * read the configuration file
++	 * @param is the input stream to read the configuration from.
++	 * @throws DocumentException parsing the input stream failed.
++	 * @throws IllegalArgumentException invalid parameter value given
++	 */
++	public final void readConfig(InputStream is) throws DocumentException, IllegalArgumentException {
++		SAXReader reader = new SAXReader();
++		Document doc = reader.read(is); // TODO validate the document by a schema
++		
++		for(Parameter param : Config.getAllParameters()) {
++			String xpathExpr = param.getXPathExpr();
++			
++			if(xpathExpr != null) {
++				logger.debug(&quot;evaluating parameter &quot; + param.getName() + &quot; with xpath &quot; + xpathExpr);
++				
++				List&lt;Node&gt; nodes = (List&lt;Node&gt;)doc.selectNodes(xpathExpr);
++				
++				if(nodes.size() &gt; 1) {
++					if(param instanceof ListParameter) {
++						for(Node node : nodes) {
++							String value = null;
++							
++							if(node instanceof Attribute)
++								value = ((Attribute)node).getText();
++							else if(node instanceof Element)
++								value = ((Element)node).getTextTrim();
++							
++							if(value == null)
++								throw new IllegalArgumentException(&quot;Invalid value specified for parameter &quot; + param.getName());
++							
++							((ListParameter)param).addValue(value);							
++						}
++					} else
++						throw new IllegalArgumentException(&quot;Parameter &quot; + param.getName() + &quot; is not a list value&quot;);
++				} else if(nodes.size() == 1){
++					String value = null;
++					Node node = nodes.get(0);
++					
++					if(node instanceof Attribute)
++						value = ((Attribute)node).getText();
++					else if(node instanceof Element)
++						value = ((Element)node).getTextTrim();
++					
++					if(value == null)
++						throw new IllegalArgumentException(&quot;Invalid value specified for parameter &quot; + param.getName());
++					
++					param.setValue(value);
++				}
++			}
++		}
++	}
++}
+
+Added: trunk/src/resources/conf/rtspproxy.conf.xml
+===================================================================
+--- trunk/src/resources/conf/rtspproxy.conf.xml	2005-12-26 09:32:19 UTC (rev 368)
++++ trunk/src/resources/conf/rtspproxy.conf.xml	2005-12-27 00:37:27 UTC (rev 369)
+@@ -0,0 +1,51 @@
++&lt;rtspproxy&gt;
++  &lt;log&gt;
++    &lt;debug&gt;false&lt;/debug&gt;
++    &lt;logToFile&gt;true&lt;/logToFile&gt;
++    &lt;file&gt;/tmp/rtspproxy.log&lt;/file&gt;
++  &lt;/log&gt;
++  &lt;threadPoolSize&gt;10&lt;/threadPoolSize&gt;
++  &lt;proxy&gt;
++    &lt;rtspPort&gt;554&lt;/rtspPort&gt;
++    &lt;server&gt;
++      &lt;rtpPort&gt;6970&lt;/rtpPort&gt;
++      &lt;rtcpPort&gt;6971&lt;/rtcpPort&gt;
++      &lt;rdtPort&gt;6972&lt;/rdtPort&gt;
++      &lt;interface&gt;10.0.0.24&lt;/interface&gt;
++    &lt;/server&gt;
++    &lt;client&gt;
++      &lt;rtpPort&gt;6970&lt;/rtpPort&gt;
++      &lt;rtcpPort&gt;6971&lt;/rtcpPort&gt;
++      &lt;rdtPort&gt;6972&lt;/rdtPort&gt;
++      &lt;interface&gt;10.0.0.23&lt;/interface&gt;
++    &lt;/client&gt;
++  &lt;/proxy&gt;
++  &lt;jmx&gt;
++    &lt;manageable&gt;true&lt;/manageable&gt;
++    &lt;interface&gt;10.0.0.22&lt;/interface&gt;
++    &lt;user&gt;admin&lt;/user&gt;
++    &lt;password&gt;admin123&lt;/password&gt;
++    &lt;web&gt;
++      &lt;manageable&gt;true&lt;/manageable&gt;
++      &lt;port&gt;8080&lt;/port&gt;
++    &lt;/web&gt;
++    &lt;connectorService&gt;
++      &lt;manageable&gt;true&lt;/manageable&gt;
++    &lt;/connectorService&gt;
++  &lt;/jmx&gt;
++  &lt;aaa&gt;
++    &lt;authentication implClass=&quot;rtspproxy.filter.authentication.PlainTextAuthenticationProvider&quot;&gt;
++      &lt;scheme&gt;Digest&lt;/scheme&gt;
++      &lt;user&gt;
++	&lt;name&gt;myuser&lt;/name&gt;
++	&lt;password&gt;itspassword&lt;/password&gt;
++      &lt;/user&gt;
++    &lt;/authentication&gt;
++    &lt;authorization implClass=&quot;rtspproxy.filter.ipaddress.PlainTextIpAddressProvider&quot;&gt;
++      &lt;deny&gt;*&lt;/deny&gt;
++      &lt;allow&gt;127.0.0.1&lt;/allow&gt;
++      &lt;allow&gt;10.0.0.*&lt;/allow&gt;
++      &lt;allow&gt;*.some.domain&lt;/allow&gt;
++    &lt;/authorization&gt;
++  &lt;/aaa&gt;
++&lt;/rtspproxy&gt;
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000053.html">[Rtspproxy-devel] r368 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000055.html">[Rtspproxy-devel] r370 - in trunk/src: main/java/rtspproxy/config resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#54">[ date ]</a>
+              <a href="thread.html#54">[ thread ]</a>
+              <a href="subject.html#54">[ subject ]</a>
+              <a href="author.html#54">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

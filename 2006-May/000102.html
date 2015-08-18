@@ -1,0 +1,313 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r418 - in trunk/RTSPProxy-App/src: main/java/rtspproxy main/java/rtspproxy/filter/accounting main/java/rtspproxy/filter/authentication resources/conf
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r418%20-%20in%20trunk/RTSPProxy-App/src%3A%20main/java/rtspproxy%20main/java/rtspproxy/filter/accounting%20main/java/rtspproxy/filter/authentication%20resources/conf&In-Reply-To=%3C200605021433.k42EX2jL021357%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000103.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r418 - in trunk/RTSPProxy-App/src: main/java/rtspproxy main/java/rtspproxy/filter/accounting main/java/rtspproxy/filter/authentication resources/conf</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r418%20-%20in%20trunk/RTSPProxy-App/src%3A%20main/java/rtspproxy%20main/java/rtspproxy/filter/accounting%20main/java/rtspproxy/filter/authentication%20resources/conf&In-Reply-To=%3C200605021433.k42EX2jL021357%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r418 - in trunk/RTSPProxy-App/src: main/java/rtspproxy main/java/rtspproxy/filter/accounting main/java/rtspproxy/filter/authentication resources/conf">merlimat at berlios.de
+       </A><BR>
+    <I>Tue May  2 16:33:02 CEST 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000103.html">[Rtspproxy-devel] r420 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/rtcp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#102">[ date ]</a>
+              <a href="thread.html#102">[ thread ]</a>
+              <a href="subject.html#102">[ subject ]</a>
+              <a href="author.html#102">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-05-02 16:32:49 +0200 (Tue, 02 May 2006)
+New Revision: 418
+
+Added:
+   trunk/RTSPProxy-App/src/resources/conf/users.properties
+Removed:
+   trunk/RTSPProxy-App/src/resources/conf/user.properties
+Modified:
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/Main.java
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/SimpleAccountingProvider.java
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/authentication/SimpleAuthenticationProvider.java
+   trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml
+Log:
+Update filter providers and renamed users password file.
+
+Modified: trunk/RTSPProxy-App/src/main/java/rtspproxy/Main.java
+===================================================================
+--- trunk/RTSPProxy-App/src/main/java/rtspproxy/Main.java	2006-04-25 22:25:50 UTC (rev 417)
++++ trunk/RTSPProxy-App/src/main/java/rtspproxy/Main.java	2006-05-02 14:32:49 UTC (rev 418)
+@@ -116,7 +116,7 @@
+             Reactor.start();
+ 
+         } catch ( Exception e ) {
+-            log.fatal( &quot;Exception in the reactor: &quot;, e );
++            log.fatal( &quot;Exception in the reactor: &quot; + e );
+             Exceptions.logStackTrace( e );
+             System.exit( -1 );
+         }
+
+Modified: trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/SimpleAccountingProvider.java
+===================================================================
+--- trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/SimpleAccountingProvider.java	2006-04-25 22:25:50 UTC (rev 417)
++++ trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/SimpleAccountingProvider.java	2006-05-02 14:32:49 UTC (rev 418)
+@@ -20,14 +20,15 @@
+  * @author Matteo Merli
+  */
+ public class SimpleAccountingProvider extends AccountingProviderAdapter implements
+-        Observer
++        AccountingProvider, Observer
+ {
+ 
+-    private static final SimpleDateFormat format = new SimpleDateFormat(
+-            &quot;yyyy-MM-dd HH:mm:ss Z&quot; );
++    private static final SimpleDateFormat format = new SimpleDateFormat( &quot;yyyy-MM-dd HH:mm:ss Z&quot; );
+ 
+     private static Logger log = LoggerFactory.getLogger( SimpleAccountingProvider.class );
+ 
++    private static final String requestMessageATTR = SimpleAccountingProvider.class.getName() + &quot;requestATTR&quot;;
++
+     // This is not static since it's a separate log
+     private Logger accessLog = null;
+ 
+@@ -36,7 +37,7 @@
+     public SimpleAccountingProvider()
+     {
+         loggerCatergory = new StringParameter( &quot;filters.accounting.category&quot;, // name
+-                &quot;accessLog&quot;, // default value
++                &quot;accounting.rtspproxy&quot;, // default value
+                 true, // mutable
+                 &quot;Log4j category name for the accounting log.&quot; );
+         
+
+Modified: trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/authentication/SimpleAuthenticationProvider.java
+===================================================================
+--- trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/authentication/SimpleAuthenticationProvider.java	2006-04-25 22:25:50 UTC (rev 417)
++++ trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/authentication/SimpleAuthenticationProvider.java	2006-05-02 14:32:49 UTC (rev 418)
+@@ -37,7 +37,7 @@
+ public class SimpleAuthenticationProvider implements AuthenticationProvider, Observer
+ {
+ 
+-    private static Logger log = LoggerFactory
++    private static final Logger log = LoggerFactory
+             .getLogger( SimpleAuthenticationProvider.class );
+ 
+     private final StringParameter usersDbParameter;
+@@ -47,7 +47,7 @@
+     public SimpleAuthenticationProvider()
+     {
+         usersDbParameter = new StringParameter( &quot;filters.authentication.usersFile&quot;, // name
+-                &quot;conf/user.properties&quot;, // default value
++                &quot;conf/users.properties&quot;, // default value
+                 true, // mutable
+                 &quot;&quot; );
+ 
+@@ -63,7 +63,7 @@
+             usersDb.load( is );
+ 
+         } catch ( Exception e ) {
+-            log.error( &quot;Error reading users DB: &quot; + e );
++            log.error( &quot;Error reading users DB: &quot; + e.getMessage() );
+         }
+     }
+ 
+
+Modified: trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml	2006-04-25 22:25:50 UTC (rev 417)
++++ trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml	2006-05-02 14:32:49 UTC (rev 418)
+@@ -1,11 +1,10 @@
+-
+ &lt;!-- $Id$ --&gt;
+ 
+ &lt;rtspproxy&gt;
+ 
+ 	&lt;!-- Enable or disable debug output. 
+-	     A more fine-grained configuration can be done in the log4j 
+-	     properties file. --&gt;
++		A more fine-grained configuration can be done in the log4j 
++		properties file. --&gt;
+ 	&lt;debug&gt;true&lt;/debug&gt;
+ 
+ 	&lt;!-- Thread pool configuration. Number of active threads. --&gt;
+@@ -18,16 +17,16 @@
+ 
+ 		&lt;!-- Server-side configuration --&gt;
+ 		&lt;server&gt;
+-	
++
+ 			&lt;!-- If specified, bound the proxy on a specifed network
+-                             interface. --&gt;
+-                        &lt;!-- &lt;address&gt;127.0.0.1&lt;/address&gt; --&gt;
++				interface. --&gt;
++			&lt;!-- &lt;address&gt;127.0.0.1&lt;/address&gt; --&gt;
+ 
+-                        &lt;!-- Same as for the address, but specifying the
+-                             network interface name. On Linux they are called 'eth0', 'eth1'...
+-                             On  MacOS X they are 'en0', 'en1', .. --&gt;
+-                        &lt;!-- &lt;interface&gt;eth0&lt;/interface&gt; --&gt;
+-		
++			&lt;!-- Same as for the address, but specifying the
++				network interface name. On Linux they are called 'eth0', 'eth1'...
++				On  MacOS X they are 'en0', 'en1', .. --&gt;
++			&lt;!-- &lt;interface&gt;eth0&lt;/interface&gt; --&gt;
++
+ 			&lt;!-- RTP port used with servers --&gt;
+ 			&lt;!-- &lt;rtpPort&gt;6970&lt;/rtpPort&gt; --&gt;
+ 
+@@ -53,13 +52,13 @@
+ 		&lt;!-- Client-side configuration --&gt;
+ 		&lt;client&gt;
+ 			&lt;!-- If specified, bound the proxy on a specifed network 
+-			     interface. --&gt;
++				interface. --&gt;
+ 			&lt;address&gt;127.0.0.1&lt;/address&gt;
+ 
+ 			&lt;!-- Same as for the address, but specifying the 
+-			     network interface name. On Linux they are called 'eth0', 'eth1'...
+-			     On  MacOS X they are 'en0', 'en1', .. --&gt;
+-                        &lt;!-- &lt;interface&gt;eth0&lt;/interface&gt; --&gt;
++				network interface name. On Linux they are called 'eth0', 'eth1'...
++				On  MacOS X they are 'en0', 'en1', .. --&gt;
++			&lt;!-- &lt;interface&gt;eth0&lt;/interface&gt; --&gt;
+ 
+ 			&lt;!-- Rtp port used with clients --&gt;
+ 			&lt;!-- &lt;rtpPort&gt;6970&lt;/rtpPort&gt; --&gt;
+@@ -105,7 +104,7 @@
+ 		&lt;!-- JMX web console --&gt;
+ 		&lt;web&gt;
+ 			&lt;enable&gt;true&lt;/enable&gt;
+-			
++
+ 			&lt;!-- HTTP port --&gt;
+ 			&lt;port&gt;8080&lt;/port&gt;
+ 		&lt;/web&gt;
+@@ -125,7 +124,7 @@
+ 		&lt;!-- Authentication filter --&gt;
+ 		&lt;authentication&gt;
+ 			&lt;!-- Enable or disable the authentication filter --&gt;
+-			&lt;enable&gt;true&lt;/enable&gt;
++			&lt;enable&gt;false&lt;/enable&gt;
+ 
+ 			&lt;implClass&gt;
+ 				rtspproxy.filter.authentication.SimpleAuthenticationProvider
+@@ -134,27 +133,27 @@
+ 			&lt;!-- Authentication Scheme: 
+ 				can be 'Basic' or 'Digest'
+ 			--&gt;
+-			&lt;scheme&gt;Digest&lt;/scheme&gt;
++			&lt;scheme&gt;Basic&lt;/scheme&gt;
+ 
+ 			&lt;!-- The SimpleAuthenticationProvider uses a Property file 
+-			     to keep a user db. In this file, keys are the usernames 
+-			     and values are the passwords. --&gt;
++				to keep a user db. In this file, keys are the usernames 
++				and values are the passwords. --&gt;
+ 			&lt;usersFile&gt;conf/users.properties&lt;/usersFile&gt;
+ 		&lt;/authentication&gt;
+ 
+ 		&lt;!-- Filter clients using theyr IP address --&gt;
+ 		&lt;ipaddress&gt;
+-			
++
+ 			&lt;!-- Enable or disable the ipaddress filter --&gt;
+-                        &lt;enable&gt;true&lt;/enable&gt;
++			&lt;enable&gt;false&lt;/enable&gt;
+ 
+ 			&lt;implClass&gt;
+ 				rtspproxy.filter.ipaddress.SimpleIpAddressProvider
+ 			&lt;/implClass&gt;
+ 
+ 			&lt;!-- Access rules for clients --&gt;
+-			&lt;client-rules&gt;	
+-				&lt;rule type=&quot;deny&quot;  pattern=&quot;*&quot; /&gt;
++			&lt;client-rules&gt;
++				&lt;rule type=&quot;deny&quot; pattern=&quot;*&quot; /&gt;
+ 				&lt;rule type=&quot;allow&quot; pattern=&quot;127.0.0.1&quot; /&gt;
+ 				&lt;rule type=&quot;allow&quot; pattern=&quot;10.0.0.*&quot; /&gt;
+ 				&lt;rule type=&quot;allow&quot; pattern=&quot;*.some.domain&quot; /&gt;
+@@ -192,8 +191,8 @@
+ 			&lt;/implClass&gt;
+ 
+ 			&lt;!-- SimpleUrlRewritingProvider uses the following rules 
+-		 	     to rewrite the URLs.	
+-                          --&gt;
++				to rewrite the URLs.	
++			--&gt;
+ 			&lt;rules&gt;
+ 				&lt;mapping&gt;
+ 					&lt;from&gt;<A HREF="rtsp://10.0.0.1:554/&lt;/from">rtsp://10.0.0.1:554/&lt;/from</A>&gt;
+@@ -208,14 +207,12 @@
+ 
+ 		&lt;control&gt;
+ 			&lt;enable&gt;false&lt;/enable&gt;
+-			
++
+ 			&lt;filters&gt;
+-				&lt;filter side=&quot;Client&quot; 
+-					name=&quot;testFilter&quot; 
++				&lt;filter side=&quot;Client&quot; name=&quot;testFilter&quot;
+ 					implClass=&quot;path.to.Class&quot; /&gt;
+ 
+-				&lt;filter side=&quot;Server&quot; 
+-					name=&quot;testFilterServer&quot;
++				&lt;filter side=&quot;Server&quot; name=&quot;testFilterServer&quot;
+ 					implClass=&quot;other.path.class&quot; /&gt;
+ 			&lt;/filters&gt;
+ 		&lt;/control&gt;
+
+Deleted: trunk/RTSPProxy-App/src/resources/conf/user.properties
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/conf/user.properties	2006-04-25 22:25:50 UTC (rev 417)
++++ trunk/RTSPProxy-App/src/resources/conf/user.properties	2006-05-02 14:32:49 UTC (rev 418)
+@@ -1,7 +0,0 @@
+-
+-## User Databases
+-# 
+-# Insert users in the form: 
+-
+-user: password
+-joe: test
+
+Copied: trunk/RTSPProxy-App/src/resources/conf/users.properties (from rev 416, trunk/RTSPProxy-App/src/resources/conf/user.properties)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000103.html">[Rtspproxy-devel] r420 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/rtcp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#102">[ date ]</a>
+              <a href="thread.html#102">[ thread ]</a>
+              <a href="subject.html#102">[ subject ]</a>
+              <a href="author.html#102">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

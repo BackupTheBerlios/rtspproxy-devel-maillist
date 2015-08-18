@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r352 - in trunk: . src/changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r352%20-%20in%20trunk%3A%20.%20src/changes&In-Reply-To=%3C200512201658.jBKGwla6011957%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000036.html">
+   <LINK REL="Next"  HREF="000038.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r352 - in trunk: . src/changes</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r352%20-%20in%20trunk%3A%20.%20src/changes&In-Reply-To=%3C200512201658.jBKGwla6011957%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r352 - in trunk: . src/changes">rbieniek at berlios.de
+       </A><BR>
+    <I>Tue Dec 20 17:58:47 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000036.html">[Rtspproxy-devel] r351 - trunk/src/main/java/rtspproxy
+</A></li>
+        <LI>Next message: <A HREF="000038.html">[Rtspproxy-devel] r353 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#37">[ date ]</a>
+              <a href="thread.html#37">[ thread ]</a>
+              <a href="subject.html#37">[ subject ]</a>
+              <a href="author.html#37">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2005-12-20 17:58:28 +0100 (Tue, 20 Dec 2005)
+New Revision: 352
+
+Modified:
+   trunk/pom.xml
+   trunk/src/changes/changes.xml
+Log:
+- added assembly descriptor in POM, thus making maven build working again.
+- bumped version number in changes.xml, thus making maven build working again.
+
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2005-12-19 19:32:18 UTC (rev 351)
++++ trunk/pom.xml	2005-12-20 16:58:28 UTC (rev 352)
+@@ -131,7 +131,6 @@
+ 					&lt;showWarnings&gt;true&lt;/showWarnings&gt;
+ 				&lt;/configuration&gt;
+ 			&lt;/plugin&gt;
+-&lt;!-- 
+ 			&lt;plugin&gt;
+ 				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+ 				&lt;artifactId&gt;maven-assembly-plugin&lt;/artifactId&gt;
+@@ -140,7 +139,7 @@
+ 						src/resources/release/default.xml
+ 					&lt;/descriptor&gt;
+ 				&lt;/configuration&gt;
+-			&lt;/plugin&gt; --&gt;
++			&lt;/plugin&gt;
+ 			&lt;plugin&gt;
+ 				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+ 				&lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
+
+Modified: trunk/src/changes/changes.xml
+===================================================================
+--- trunk/src/changes/changes.xml	2005-12-19 19:32:18 UTC (rev 351)
++++ trunk/src/changes/changes.xml	2005-12-20 16:58:28 UTC (rev 352)
+@@ -6,6 +6,9 @@
+ 	&lt;/properties&gt;
+ 	&lt;body&gt;
+ 
++		&lt;release version=&quot;3.0-ALPHA3-SNAPSHOT&quot; date=&quot;2005-12-20&quot;&gt;
++		&lt;/release&gt;
++
+ 		&lt;release version=&quot;3.0-ALPHA2&quot; date=&quot;2005-12-08&quot;&gt;
+ 			&lt;action dev=&quot;merlimat&quot; type=&quot;add&quot;&gt;
+ 				Added preliminary implementation of the IP address and
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000036.html">[Rtspproxy-devel] r351 - trunk/src/main/java/rtspproxy
+</A></li>
+	<LI>Next message: <A HREF="000038.html">[Rtspproxy-devel] r353 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#37">[ date ]</a>
+              <a href="thread.html#37">[ thread ]</a>
+              <a href="subject.html#37">[ subject ]</a>
+              <a href="author.html#37">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

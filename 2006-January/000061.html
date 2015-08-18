@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r376 - in trunk: RTSPProxy-App RTSPProxy-App/src/main/java/rtspproxy/filter/accounting RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress RTSPProxy-App/src/resources/release RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/filter RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r376%20-%20in%20trunk%3A%20RTSPProxy-App%20RTSPProxy-App/src/main/java/rtspproxy/filter/accounting%20RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress%20RTSPProxy-App/src/resources/release%20RTSPProxy-Core%20RTSPProxy-Core/src/main/java/rtspproxy/config%20RTSPProxy-Core/src/main/java/rtspproxy/filter%20RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting%20RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress&In-Reply-To=%3C200601051942.k05Jgwwe000437%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000059.html">
+   <LINK REL="Next"  HREF="000062.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r376 - in trunk: RTSPProxy-App RTSPProxy-App/src/main/java/rtspproxy/filter/accounting RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress RTSPProxy-App/src/resources/release RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/filter RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r376%20-%20in%20trunk%3A%20RTSPProxy-App%20RTSPProxy-App/src/main/java/rtspproxy/filter/accounting%20RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress%20RTSPProxy-App/src/resources/release%20RTSPProxy-Core%20RTSPProxy-Core/src/main/java/rtspproxy/config%20RTSPProxy-Core/src/main/java/rtspproxy/filter%20RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting%20RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress&In-Reply-To=%3C200601051942.k05Jgwwe000437%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r376 - in trunk: RTSPProxy-App RTSPProxy-App/src/main/java/rtspproxy/filter/accounting RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress RTSPProxy-App/src/resources/release RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/filter RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress">rbieniek at berlios.de
+       </A><BR>
+    <I>Thu Jan  5 20:42:58 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000059.html">[Rtspproxy-devel] r375 - in trunk: . RTSPProxy-App RTSPProxy-App/src RTSPProxy-App/src/changes RTSPProxy-App/src/main RTSPProxy-App/src/main/java RTSPProxy-App/src/main/java/rtspproxy RTSPProxy-App/src/main/java/rtspproxy/filter RTSPProxy-App/src/main/java/rtspproxy/filter/accounting RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/accounting RTSPProxy-App/src/main/java/rtspproxy/filter/authentication RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress/ipaddress RTSPProxy-App/src/resources RTSPProxy-App/src/resources/conf RTSPProxy-App/src/test RTSPProxy-App/src/test/java RTSPProxy-App/src/test/java/rtspproxy RTSPProxy-App/src/test/java/rtspproxy/filter RTSPProxy-App/src/test/java/rtspproxy/filter/ipaddress RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy RTSPProxy-Core/src/main/java/rtspproxy/filter RTSPProxy-Core/src/main/java/rtspproxy/filter/authentication RTSPProxy-Core/src/resources RTSPProxy-Core/src/resourc! es/conf RTSPProxy-Core/src/test/java/rtspproxy/filter
+</A></li>
+        <LI>Next message: <A HREF="000062.html">[Rtspproxy-devel] r377 - trunk/RTSPProxy-App/src/test/java/rtspproxy/filter/ipaddress
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#61">[ date ]</a>
+              <a href="thread.html#61">[ thread ]</a>
+              <a href="subject.html#61">[ subject ]</a>
+              <a href="author.html#61">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-05 20:42:18 +0100 (Thu, 05 Jan 2006)
+New Revision: 376
+
+Added:
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/PlainTextAccountingProvider.java
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting/AccountingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting/AccountingProvider.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/IpAddressProvider.java
+Removed:
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/accounting/
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress/ipaddress/
+Modified:
+   trunk/RTSPProxy-App/pom.xml
+   trunk/RTSPProxy-App/src/resources/release/bin.xml
+   trunk/RTSPProxy-App/src/resources/release/default.xml
+   trunk/RTSPProxy-Core/pom.xml
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+Log:
+- Fixed source moving problems that were created while refactoring the 
+  application
+
+
+Modified: trunk/RTSPProxy-App/pom.xml
+===================================================================
+--- trunk/RTSPProxy-App/pom.xml	2006-01-05 19:14:44 UTC (rev 375)
++++ trunk/RTSPProxy-App/pom.xml	2006-01-05 19:42:18 UTC (rev 376)
+@@ -10,6 +10,7 @@
+                 &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+                 &lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
+                 &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++		&lt;relativePath&gt;../pom.xml&lt;/relativePath&gt;
+         &lt;/parent&gt;
+ 
+ 	&lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+Copied: trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/PlainTextAccountingProvider.java (from rev 375, trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/accounting/PlainTextAccountingProvider.java)
+
+Copied: trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java (from rev 375, trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress/ipaddress/PlainTextIpAddressProvider.java)
+
+Modified: trunk/RTSPProxy-App/src/resources/release/bin.xml
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/release/bin.xml	2006-01-05 19:14:44 UTC (rev 375)
++++ trunk/RTSPProxy-App/src/resources/release/bin.xml	2006-01-05 19:42:18 UTC (rev 376)
+@@ -8,7 +8,7 @@
+ 		&lt;fileSet&gt;
+ 			&lt;directory&gt;target&lt;/directory&gt;
+ 			&lt;includes&gt;
+-				&lt;include&gt;rtspproxy*.jar&lt;/include&gt;
++				&lt;include&gt;RTSPProxy*.jar&lt;/include&gt;
+ 			&lt;/includes&gt;
+ 			&lt;outputDirectory&gt;/lib&lt;/outputDirectory&gt;
+ 		&lt;/fileSet&gt;
+
+Modified: trunk/RTSPProxy-App/src/resources/release/default.xml
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/release/default.xml	2006-01-05 19:14:44 UTC (rev 375)
++++ trunk/RTSPProxy-App/src/resources/release/default.xml	2006-01-05 19:42:18 UTC (rev 376)
+@@ -8,7 +8,7 @@
+ 		&lt;fileSet&gt;
+ 			&lt;directory&gt;target&lt;/directory&gt;
+ 			&lt;includes&gt;
+-				&lt;include&gt;rtspproxy*.jar&lt;/include&gt;
++				&lt;include&gt;RTSPProxy*.jar&lt;/include&gt;
+ 			&lt;/includes&gt;
+ 			&lt;outputDirectory&gt;/lib&lt;/outputDirectory&gt;
+ 		&lt;/fileSet&gt;
+
+Modified: trunk/RTSPProxy-Core/pom.xml
+===================================================================
+--- trunk/RTSPProxy-Core/pom.xml	2006-01-05 19:14:44 UTC (rev 375)
++++ trunk/RTSPProxy-Core/pom.xml	2006-01-05 19:42:18 UTC (rev 376)
+@@ -95,11 +95,6 @@
+ 	&lt;/distributionManagement&gt;
+ 
+ 	&lt;dependencies&gt;
+-		&lt;dependency&gt;
+-			&lt;groupId&gt;log4j&lt;/groupId&gt;
+-			&lt;artifactId&gt;log4j&lt;/artifactId&gt;
+-			&lt;version&gt;1.2.9&lt;/version&gt;
+-		&lt;/dependency&gt;
+ 
+ 		&lt;dependency&gt;
+ 			&lt;groupId&gt;directory-network&lt;/groupId&gt;
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-01-05 19:14:44 UTC (rev 375)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-01-05 19:42:18 UTC (rev 376)
+@@ -14,8 +14,6 @@
+ import java.util.concurrent.ConcurrentHashMap;
+ import java.util.concurrent.ConcurrentMap;
+ 
+-import org.apache.log4j.PropertyConfigurator;
+-
+ import rtspproxy.lib.Singleton;
+ import rtspproxy.rtsp.Handler;
+ 
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting/AccountingFilter.java (from rev 375, trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/accounting/AccountingFilter.java)
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/accounting/AccountingProvider.java (from rev 375, trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/accounting/AccountingProvider.java)
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java (from rev 375, trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress/ipaddress/IpAddressFilter.java)
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/IpAddressProvider.java (from rev 375, trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress/ipaddress/IpAddressProvider.java)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000059.html">[Rtspproxy-devel] r375 - in trunk: . RTSPProxy-App RTSPProxy-App/src RTSPProxy-App/src/changes RTSPProxy-App/src/main RTSPProxy-App/src/main/java RTSPProxy-App/src/main/java/rtspproxy RTSPProxy-App/src/main/java/rtspproxy/filter RTSPProxy-App/src/main/java/rtspproxy/filter/accounting RTSPProxy-App/src/main/java/rtspproxy/filter/accounting/accounting RTSPProxy-App/src/main/java/rtspproxy/filter/authentication RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress RTSPProxy-App/src/main/java/rtspproxy/filter/ipaddress/ipaddress RTSPProxy-App/src/resources RTSPProxy-App/src/resources/conf RTSPProxy-App/src/test RTSPProxy-App/src/test/java RTSPProxy-App/src/test/java/rtspproxy RTSPProxy-App/src/test/java/rtspproxy/filter RTSPProxy-App/src/test/java/rtspproxy/filter/ipaddress RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy RTSPProxy-Core/src/main/java/rtspproxy/filter RTSPProxy-Core/src/main/java/rtspproxy/filter/authentication RTSPProxy-Core/src/resources RTSPProxy-Core/src/resourc! es/conf RTSPProxy-Core/src/test/java/rtspproxy/filter
+</A></li>
+	<LI>Next message: <A HREF="000062.html">[Rtspproxy-devel] r377 - trunk/RTSPProxy-App/src/test/java/rtspproxy/filter/ipaddress
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#61">[ date ]</a>
+              <a href="thread.html#61">[ thread ]</a>
+              <a href="subject.html#61">[ subject ]</a>
+              <a href="author.html#61">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

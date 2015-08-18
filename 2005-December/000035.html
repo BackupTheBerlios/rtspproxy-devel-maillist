@@ -1,0 +1,2432 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r350 - in trunk/src/main/java/rtspproxy: . lib proxy proxy/track
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r350%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20lib%20proxy%20proxy/track&In-Reply-To=%3C200512191927.jBJJRWXW009912%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000033.html">
+   <LINK REL="Next"  HREF="000036.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r350 - in trunk/src/main/java/rtspproxy: . lib proxy proxy/track</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r350%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20lib%20proxy%20proxy/track&In-Reply-To=%3C200512191927.jBJJRWXW009912%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r350 - in trunk/src/main/java/rtspproxy: . lib proxy proxy/track">merlimat at berlios.de
+       </A><BR>
+    <I>Mon Dec 19 20:27:32 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000033.html">[Rtspproxy-devel] r349 - trunk/src/main/java/rtspproxy/lib
+</A></li>
+        <LI>Next message: <A HREF="000036.html">[Rtspproxy-devel] r351 - trunk/src/main/java/rtspproxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#35">[ date ]</a>
+              <a href="thread.html#35">[ thread ]</a>
+              <a href="subject.html#35">[ subject ]</a>
+              <a href="author.html#35">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-19 20:27:06 +0100 (Mon, 19 Dec 2005)
+New Revision: 350
+
+Added:
+   trunk/src/main/java/rtspproxy/RtcpClientService.java
+   trunk/src/main/java/rtspproxy/RtcpServerService.java
+   trunk/src/main/java/rtspproxy/lib/NetworkInterface.java
+Modified:
+   trunk/src/main/java/rtspproxy/ProxyService.java
+   trunk/src/main/java/rtspproxy/ProxyServiceRegistry.java
+   trunk/src/main/java/rtspproxy/RdtClientService.java
+   trunk/src/main/java/rtspproxy/RdtServerService.java
+   trunk/src/main/java/rtspproxy/RtpClientService.java
+   trunk/src/main/java/rtspproxy/RtpServerService.java
+   trunk/src/main/java/rtspproxy/RtspService.java
+   trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/src/main/java/rtspproxy/proxy/track/RdtTrack.java
+   trunk/src/main/java/rtspproxy/proxy/track/RtpTrack.java
+   trunk/src/main/java/rtspproxy/proxy/track/Track.java
+Log:
+* Totally refactored the Service code.
+* Explicetely bind on all network interface when a default one is not specified
+
+Modified: trunk/src/main/java/rtspproxy/ProxyService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/ProxyService.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/ProxyService.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -18,30 +18,185 @@
+ 
+ package rtspproxy;
+ 
++import java.io.IOException;
++import java.net.InetAddress;
++import java.net.InetSocketAddress;
++import java.net.SocketAddress;
++import java.util.Observable;
++import java.util.Observer;
++import java.util.Set;
++
++import org.apache.log4j.Logger;
++import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.TransportType;
++
++import rtspproxy.lib.NetworkInterface;
++import rtspproxy.lib.Singleton;
++
+ /**
+  * @author Matteo Merli
+  */
+-public interface ProxyService
++public abstract class ProxyService extends Singleton implements Observer
+ {
+ 
++	private static Logger log = Logger.getLogger( ProxyService.class );
++
++	private InetSocketAddress socketAddress = null;
++
++	private volatile boolean isRunning = false;
++
++	public static final String SERVICE = ProxyService.class.getName();
++
+ 	/**
+ 	 * Starts the service.
+ 	 * 
+ 	 * @throws Exception
+ 	 */
+-	public void start() throws Exception;
++	public void start() throws Exception
++	{
++		if ( isRunning ) {
++			log.warn( getName() + &quot; is already running.&quot; );
++			return;
++		}
+ 
++		String netInterface = getNetworkInterface();
++		int[] ports = getBindPorts();
++
++		try {
++
++			Set&lt;InetAddress&gt; addressSet = NetworkInterface.getAddresses( netInterface );
++
++			for ( InetAddress inetAddress : addressSet ) {
++				// Bind to all addresses
++
++				for ( int port : ports ) {
++					// Bind to all the specified ports
++					socketAddress = new InetSocketAddress( inetAddress, port );
++
++					Reactor.getRegistry().bind( this, getIoHandler(), socketAddress,
++							getFilterChainBuilder() );
++				}
++			}
++
++			// Choose a bind address
++			InetAddress inetAddress = NetworkInterface.getBindAddress( addressSet );
++			socketAddress = new InetSocketAddress( inetAddress, ports[0] );
++
++			log.info( getName() + &quot; Started - Listening on: &quot; + socketAddress );
++
++		} catch ( IOException e ) {
++			log.fatal( &quot;Can't start &quot; + getName() + &quot; &quot; + e );
++			throw e;
++		}
++
++		isRunning = true;
++	}
++
+ 	/**
+ 	 * Stops the service
+ 	 * 
+ 	 * @throws Exception
+ 	 */
+-	public void stop() throws Exception;
++	protected void stop() throws Exception
++	{
++		if ( !isRunning ) {
++			log.warn( getName() + &quot; is not running.&quot; );
++			return;
++		}
+ 
++		log.info( getName() + &quot; Stopped&quot; );
++		isRunning = false;
++	}
++
++	protected void restart() throws Exception
++	{
++		if ( !isRunning ) {
++			log.warn( getName() + &quot; is not running.&quot; );
++			return;
++		}
++
++		log.info( &quot;Restarting &quot; + getName() );
++		stop();
++		start();
++	}
++
++	public boolean isRunning()
++	{
++		return isRunning;
++	}
++
+ 	/**
+-	 * @return true if the service is started, false otherwise.
++	 * @return the transport type used by this service
+ 	 */
+-	// TODO: Not really sure if it's needed
+-	// public boolean isRunning();
++	public abstract TransportType getTransportType();
+ 
++	/**
++	 * @return an instance to the IoHandler object that will receive all the
++	 *         messages.
++	 */
++	public abstract IoHandler getIoHandler();
++
++	public IoFilterChainBuilder getFilterChainBuilder()
++	{
++		// By default there's no filter chain
++		return null;
++	}
++
++	/**
++	 * Return the name of the service.
++	 * 
++	 * @return the human readable name
++	 */
++	public abstract String getName();
++
++	public abstract String getNetworkInterface();
++
++	public abstract int[] getBindPorts();
++
++	public InetAddress getAddress()
++	{
++		return socketAddress.getAddress();
++	}
++
++	public int getPort()
++	{
++		return socketAddress.getPort();
++	}
++
++	public SocketAddress getSocketAddress()
++	{
++		return socketAddress;
++	}
++
++	public IoSession newSession( SocketAddress remoteAddress )
++	{
++		return Reactor.getRegistry().getAcceptor( this ).newSession( remoteAddress,
++				socketAddress );
++	}
++
++	/**
++	 * Update the ProxyService state. A proxy service will likely subscribe to
++	 * some parameter changes notifications. When a change is notified the
++	 * service will be restarted.
++	 * &lt;p&gt;
++	 * &lt;i&gt;NOTE:&lt;/i&gt;
++	 * &lt;ul&gt;
++	 * &lt;li&gt;if the service is TCP based, all connected clients will be
++	 * disconnected! &lt;/li&gt;
++	 * &lt;li&gt;If the service is UDP based some packets may be missed when the
++	 * service is down. &lt;/li&gt;
++	 * &lt;/ul&gt;
++	 * 
++	 * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
++	 */
++	public void update( Observable o, Object arg )
++	{
++		try {
++			restart();
++		} catch ( Exception e ) {
++			log.error( &quot;Error restarting &quot; + getName(), e );
++		}
++	}
+ }
+
+Modified: trunk/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/ProxyServiceRegistry.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/ProxyServiceRegistry.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -19,7 +19,8 @@
+ package rtspproxy;
+ 
+ import java.io.IOException;
+-import java.util.Collection;
++import java.net.InetSocketAddress;
++import java.net.SocketAddress;
+ import java.util.HashSet;
+ import java.util.Set;
+ import java.util.concurrent.ConcurrentHashMap;
+@@ -31,8 +32,6 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ import org.apache.mina.filter.ThreadPoolFilter;
+-import org.apache.mina.registry.Service;
+-import org.apache.mina.registry.ServiceRegistry;
+ import org.apache.mina.transport.socket.nio.DatagramAcceptor;
+ import org.apache.mina.transport.socket.nio.SocketAcceptor;
+ import org.apache.mina.transport.vmpipe.VmPipeAcceptor;
+@@ -43,127 +42,129 @@
+  * 
+  * @author Matteo Merli
+  */
+-public class ProxyServiceRegistry implements ServiceRegistry
++public class ProxyServiceRegistry
+ {
+ 
++	/**
++	 * Thread pool instance that will be added to all acceptors.
++	 */
+ 	protected final ThreadPoolFilter threadPoolFilter = new ThreadPoolFilter();
+ 
+-	private final ConcurrentMap&lt;String, IoAcceptor&gt; acceptors = new ConcurrentHashMap&lt;String, IoAcceptor&gt;();
+-	private final ConcurrentMap&lt;String, Service&gt; services = new ConcurrentHashMap&lt;String, Service&gt;();
++	/** All the services, mapped by name. */
++	private final ConcurrentMap&lt;String, ProxyService&gt; services = new ConcurrentHashMap&lt;String, ProxyService&gt;();
+ 
+-	public void bind( Service service, IoHandler ioHandler ) throws IOException
++	/** Map a ProxyService to all its bound addresses. */
++	private final ConcurrentMap&lt;ProxyService, Set&lt;SocketAddress&gt;&gt; addresses = new ConcurrentHashMap&lt;ProxyService, Set&lt;SocketAddress&gt;&gt;();
++
++	private final ConcurrentMap&lt;ProxyService, IoAcceptor&gt; acceptors = new ConcurrentHashMap&lt;ProxyService, IoAcceptor&gt;();
++
++	public void bind( ProxyService service, IoHandler ioHandler, InetSocketAddress address )
++			throws IOException
+ 	{
+-		bind( service, ioHandler, null );
++		bind( service, ioHandler, address, null );
+ 	}
+ 
+-	public void bind( Service service, IoHandler ioHandler,
+-			IoFilterChainBuilder filterChainBuilder ) throws IOException
++	public void bind( ProxyService service, IoHandler ioHandler,
++			InetSocketAddress address, IoFilterChainBuilder filterChainBuilder )
++			throws IOException
+ 	{
+ 		IoAcceptor acceptor = newAcceptor( service );
+ 		if ( filterChainBuilder == null ) {
+ 			filterChainBuilder = IoFilterChainBuilder.NOOP;
+ 		}
+-		acceptor.bind( service.getAddress(), ioHandler, new IoFilterChainBuilderWrapper(
+-				service, filterChainBuilder ) );
++		acceptor.bind( address, ioHandler, new IoFilterChainBuilderWrapper( service,
++				filterChainBuilder ) );
+ 
+ 		services.put( service.getName(), service );
+-		acceptors.put( service.getName(), acceptor );
++
++		if ( addresses.get( service ) == null )
++			addresses.put( service, new HashSet&lt;SocketAddress&gt;() );
++		addresses.get( service ).add( address );
+ 	}
+ 
+-	public synchronized void unbind( Service service )
++	public synchronized void unbind( ProxyService service ) throws Exception
+ 	{
+-		IoAcceptor acceptor = acceptors.get( service.getName() );
+-		try {
+-			acceptor.unbind( service.getAddress() );
+-		} catch ( Exception e ) {
+-			// ignore
++		IoAcceptor acceptor = acceptors.get( service );
++		for ( SocketAddress address : addresses.get( service ) ) {
++			try {
++				acceptor.unbind( address );
++			} catch ( Exception e ) {
++				// ignore
++			}
+ 		}
+ 
++		if ( service.isRunning() ) {
++			service.stop();
++		}
++
+ 		services.remove( service.getName() );
+-		acceptors.remove( service.getName() );
++		acceptors.remove( service );
++		addresses.remove( service );
+ 	}
+ 
+-	public void unbind( String serviceName )
++	public synchronized void unbindAll() throws Exception
+ 	{
+-		Service service = services.get( serviceName );
+-		if ( service == null )
+-			return;
+-		else
++		Set&lt;ProxyService&gt; serviceList = new HashSet&lt;ProxyService&gt;( services.values() );
++		for ( ProxyService service : serviceList ) {
+ 			unbind( service );
+-	}
+-
+-	public synchronized void unbindAll()
+-	{
+-		Collection&lt;Service&gt; serviceList = services.values();
+-		for ( Service service : serviceList ) {
+-			unbind( service );
+ 		}
+ 	}
+ 
+ 	public synchronized Set getAllServices()
+ 	{
+-		return new HashSet&lt;Service&gt;( services.values() );
++		return new HashSet&lt;ProxyService&gt;( services.values() );
+ 	}
+ 
+-	public Service getService( String name )
++	public ProxyService getService( String name )
+ 	{
+ 		return services.get( name );
+ 	}
+ 
+-	public Set getServices( String name )
++	public IoAcceptor getAcceptor( String serviceName )
+ 	{
+-		Set&lt;Service&gt; oneService = new HashSet&lt;Service&gt;();
+-		Service service = services.get( name );
+-		if ( service != null )
+-			oneService.add( service );
+-		return oneService;
++		ProxyService service = services.get( serviceName );
++		if ( service == null )
++			return null;
++		else
++			return acceptors.get( service );
+ 	}
+ 
+-	public Set getServices( TransportType transportType )
++	public IoAcceptor getAcceptor( ProxyService service )
+ 	{
+-		// Not implemented
+-		return null;
++		return acceptors.get( service );
+ 	}
+ 
+-	public Set getServices( int port )
++	private IoAcceptor newAcceptor( ProxyService service )
+ 	{
+-		// Not implemented
+-		return null;
+-	}
++		// First check if there's already an acceptor
++		IoAcceptor acceptor = acceptors.get( service );
++		if ( acceptor != null )
++			return acceptor;
+ 
+-	public IoAcceptor getAcceptor( TransportType transportType )
+-	{
+-		// Not implemented
+-		return null;
+-	}
+-
+-	public IoAcceptor getAcceptor( String serviceName )
+-	{
+-		return acceptors.get( serviceName );
+-	}
+-
+-	private static IoAcceptor newAcceptor( Service service )
+-	{
++		// Create a new one
+ 		TransportType transportType = service.getTransportType();
+ 		if ( transportType == TransportType.SOCKET )
+-			return new SocketAcceptor();
++			acceptor = new SocketAcceptor();
++		else if ( transportType == TransportType.DATAGRAM )
++			acceptor = new DatagramAcceptor();
++		else if ( transportType == TransportType.VM_PIPE )
++			acceptor = new VmPipeAcceptor();
+ 		else
+-			if ( transportType == TransportType.DATAGRAM )
+-				return new DatagramAcceptor();
+-			else
+-				if ( transportType == TransportType.VM_PIPE )
+-					return new VmPipeAcceptor();
+-				else
+-					return null;
++			acceptor = null;
++
++		// Save the acceptor
++		acceptors.put( service, acceptor );
++		return acceptor;
+ 	}
+ 
+ 	private class IoFilterChainBuilderWrapper implements IoFilterChainBuilder
+ 	{
+ 
+-		private final Service service;
++		private final ProxyService service;
++
+ 		private final IoFilterChainBuilder originalBuilder;
+ 
+-		private IoFilterChainBuilderWrapper( Service service,
++		private IoFilterChainBuilderWrapper( ProxyService service,
+ 				IoFilterChainBuilder originalBuilder )
+ 		{
+ 			this.service = service;
+@@ -172,7 +173,7 @@
+ 
+ 		public void buildFilterChain( IoFilterChain chain ) throws Exception
+ 		{
+-			chain.getSession().setAttribute( SERVICE, service );
++			chain.getSession().setAttribute( ProxyService.SERVICE, service );
+ 
+ 			try {
+ 				originalBuilder.buildFilterChain( chain );
+
+Modified: trunk/src/main/java/rtspproxy/RdtClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RdtClientService.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/RdtClientService.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -18,92 +18,63 @@
+ 
+ package rtspproxy;
+ 
+-import java.io.IOException;
+-import java.net.InetAddress;
+-import java.net.InetSocketAddress;
+-import java.net.SocketAddress;
+-
+-import org.apache.log4j.Logger;
+-import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.registry.Service;
+ 
+-import rtspproxy.lib.NoPortAvailableException;
+-import rtspproxy.lib.PortManager;
+ import rtspproxy.proxy.ClientRdtPacketHandler;
+ 
+ /**
+- * This service is responsible of receiving and sending RTP and RTCP packets to
+- * clients.
+- * 
+  * @author Matteo Merli
+  */
+-public class RdtClientService implements ProxyService
++public class RdtClientService extends ProxyService
+ {
+ 
+-	private static Logger log = Logger.getLogger( RtpClientService.class );
++	private IoHandler clientRdtPacketHandler = new ClientRdtPacketHandler();
+ 
+-	private static InetSocketAddress rdtAddress = null;
+-	
+-	private static final String NAME = &quot;RdtClientService&quot;;
++	public static final String NAME = &quot;RdtClientService&quot;;
+ 
+-	public void start() throws IOException, NoPortAvailableException
++	private static RdtClientService instance;
++
++	public RdtClientService()
+ 	{
+-		int rdtPort = Config.getInt( &quot;proxy.client.rdt.port&quot;, 8018 );
+-		String netInterface = Config.get( &quot;proxy.client.interface&quot;, null );
+-		boolean dinPorts = Config.getBoolean( &quot;proxy.client.dynamicPorts&quot;, false );
++		super();
++		instance = this;
++	}
+ 
+-		// If dinPorts is true, we have to first check the availability
+-		// of the ports and choose 2 valid ports.
+-		if ( dinPorts ) {
+-			int[] ports = PortManager.findAvailablePorts( 1, rdtPort );
+-			rdtPort = ports[0];
+-		}
+-
+-		rdtAddress = new InetSocketAddress( InetAddress.getByName( netInterface ),
+-				rdtPort );
+-
+-		try {
+-			Service rdtService;
+-
+-			rdtService = new Service( NAME, TransportType.DATAGRAM,
+-					rdtAddress );
+-			
+-			Reactor.getRegistry().bind( rdtService, new ClientRdtPacketHandler() );
+-			log.info( &quot;RdtClientService Started - Listening on: &quot;
+-					+ InetAddress.getByName( netInterface ) + &quot; &quot; + rdtPort  );
+-
+-		} catch ( IOException e ) {
+-			log.fatal( &quot;Can't start RdtClientService. &quot; + e );
+-			throw e;
+-		}
++	@Override
++	public TransportType getTransportType()
++	{
++		return TransportType.DATAGRAM;
+ 	}
+ 
+-	public void stop()
++	@Override
++	public String getName()
+ 	{
+-		Reactor.getRegistry().unbind( NAME );
+-		log.info( &quot;RdtClientService Stopped&quot; );
++		return NAME;
+ 	}
+ 
+-	public static IoSession newRdtSession( SocketAddress remoteAddress )
++	@Override
++	public IoHandler getIoHandler()
+ 	{
+-		return Reactor.getRegistry().getAcceptor( NAME ).newSession(
+-				remoteAddress, rdtAddress );
++		return clientRdtPacketHandler;
+ 	}
+ 
+-	public static InetSocketAddress getRdtAddress()
++	@Override
++	public String getNetworkInterface()
+ 	{
+-		return rdtAddress;
++		return Config.get( &quot;proxy.client.interface&quot;, null );
+ 	}
+ 
+-	public static InetAddress getHostAddress()
++	@Override
++	public int[] getBindPorts()
+ 	{
+-		return rdtAddress.getAddress();
++		int port = Config.getInt( &quot;proxy.client.rdt.port&quot;, 8018 );
++		return new int[] { port };
+ 	}
+ 
+-	public static int getPort()
++	public static RdtClientService getInstance()
+ 	{
+-		return rdtAddress.getPort();
++		return instance;
+ 	}
+ 
+ }
+
+Modified: trunk/src/main/java/rtspproxy/RdtServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RdtServerService.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/RdtServerService.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -18,91 +18,62 @@
+ 
+ package rtspproxy;
+ 
+-import java.io.IOException;
+-import java.net.InetAddress;
+-import java.net.InetSocketAddress;
+-import java.net.SocketAddress;
+-
+-import org.apache.log4j.Logger;
+-import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.registry.Service;
+ 
+-import rtspproxy.lib.NoPortAvailableException;
+-import rtspproxy.lib.PortManager;
+ import rtspproxy.proxy.ServerRdtPacketHandler;
+ 
+ /**
+- * This service is responsible of receiving and sending RTP and RTCP packets to
+- * clients.
+- * 
+  * @author Matteo Merli
+  */
+-public class RdtServerService implements ProxyService
++public class RdtServerService extends ProxyService
+ {
++	private IoHandler serverRdtPacketHandler = new ServerRdtPacketHandler();
+ 
+-	private static Logger log = Logger.getLogger( RtpClientService.class );
++	public static final String NAME = &quot;RdtServerService&quot;;
+ 
+-	private static InetSocketAddress rdtAddress = null;
++	private static RdtServerService instance;
+ 
+-	private static final String NAME = &quot;RdtServerService&quot;;
+-
+-	public void start() throws IOException, NoPortAvailableException
++	public RdtServerService()
+ 	{
+-		int rdtPort = Config.getInt( &quot;proxy.server.rdt.port&quot;, 8020 );
+-		String netInterface = Config.get( &quot;proxy.server.interface&quot;, null );
+-		boolean dinPorts = Config.getBoolean( &quot;proxy.server.dynamicPorts&quot;, false );
++		super();
++		instance = this;
++	}
+ 
+-		// If dinPorts is true, we have to first check the availability
+-		// of the ports and choose 2 valid ports.
+-		if ( dinPorts ) {
+-			int[] ports = PortManager.findAvailablePorts( 1, rdtPort );
+-			rdtPort = ports[0];
+-		}
+-
+-		rdtAddress = new InetSocketAddress( InetAddress.getByName( netInterface ),
+-				rdtPort );
+-
+-		try {
+-			Service rdtService;
+-
+-			rdtService = new Service( NAME, TransportType.DATAGRAM, rdtAddress );
+-
+-			Reactor.getRegistry().bind( rdtService, new ServerRdtPacketHandler() );
+-			log.info( &quot;RdtServerService Started - Listening on: &quot;
+-					+ InetAddress.getByName( netInterface ) + &quot; &quot; + rdtPort );
+-
+-		} catch ( IOException e ) {
+-			log.fatal( &quot;Can't start RdtServerService. &quot; + e );
+-			throw e;
+-		}
++	@Override
++	public TransportType getTransportType()
++	{
++		return TransportType.DATAGRAM;
+ 	}
+ 
+-	public void stop()
++	@Override
++	public String getName()
+ 	{
+-		Reactor.getRegistry().unbind( NAME );
+-		log.info( &quot;RdtServerService Stopped&quot; );
++		return NAME;
+ 	}
+ 
+-	public static IoSession newRdtSession( SocketAddress remoteAddress )
++	@Override
++	public IoHandler getIoHandler()
+ 	{
+-		return Reactor.getRegistry().getAcceptor( NAME ).newSession(
+-				remoteAddress, rdtAddress );
++		return serverRdtPacketHandler;
+ 	}
+ 
+-	public static InetSocketAddress getRdtAddress()
++	@Override
++	public String getNetworkInterface()
+ 	{
+-		return rdtAddress;
++		return Config.get( &quot;proxy.server.interface&quot;, null );
+ 	}
+ 
+-	public static InetAddress getHostAddress()
++	@Override
++	public int[] getBindPorts()
+ 	{
+-		return rdtAddress.getAddress();
++		int port = Config.getInt( &quot;proxy.server.rdt.port&quot;, 8020 );
++		return new int[] { port };
+ 	}
+ 
+-	public static int getPort()
++	public static RdtServerService getInstance()
+ 	{
+-		return rdtAddress.getPort();
++		return instance;
+ 	}
+ 
+ }
+
+Added: trunk/src/main/java/rtspproxy/RtcpClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtcpClientService.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/RtcpClientService.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -0,0 +1,79 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy;
++
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.TransportType;
++
++import rtspproxy.proxy.ClientRtcpPacketHandler;
++
++/**
++ * @author Matteo Merli
++ */
++public class RtcpClientService extends ProxyService
++{
++	private IoHandler clientRtcpPacketHandler = new ClientRtcpPacketHandler();
++
++	public static final String NAME = &quot;RtcpClientService&quot;;
++	
++	private static RtcpClientService instance;
++
++	public RtcpClientService()
++	{
++		super();
++		instance = this;
++	}
++
++	@Override
++	public TransportType getTransportType()
++	{
++		return TransportType.DATAGRAM;
++	}
++
++	@Override
++	public String getName()
++	{
++		return NAME;
++	}
++
++	@Override
++	public IoHandler getIoHandler()
++	{
++		return clientRtcpPacketHandler;
++	}
++
++	@Override
++	public String getNetworkInterface()
++	{
++		return Config.get( &quot;proxy.client.interface&quot;, null );
++	}
++
++	@Override
++	public int[] getBindPorts()
++	{
++		int port = Config.getInt( &quot;proxy.client.rtcp.port&quot;, 8003 );
++		return new int[] { port };
++	}
++	
++	public static RtcpClientService getInstance()
++	{
++		return instance;
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/RtcpClientService.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/RtcpServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtcpServerService.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/RtcpServerService.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -0,0 +1,79 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy;
++
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.TransportType;
++
++import rtspproxy.proxy.ServerRtcpPacketHandler;
++
++/**
++ * @author Matteo Merli
++ */
++public class RtcpServerService extends ProxyService
++{
++	private IoHandler serverRtcpPacketHandler = new ServerRtcpPacketHandler();
++
++	public static final String NAME = &quot;RtcpServerService&quot;;
++	
++	private static RtcpServerService instance;
++
++	public RtcpServerService()
++	{
++		super();
++		instance = this;
++	}
++
++	@Override
++	public TransportType getTransportType()
++	{
++		return TransportType.DATAGRAM;
++	}
++
++	@Override
++	public String getName()
++	{
++		return NAME;
++	}
++
++	@Override
++	public IoHandler getIoHandler()
++	{
++		return serverRtcpPacketHandler;
++	}
++
++	@Override
++	public String getNetworkInterface()
++	{
++		return Config.get( &quot;proxy.server.interface&quot;, null );
++	}
++
++	@Override
++	public int[] getBindPorts()
++	{
++		int port = Config.getInt( &quot;proxy.server.rtcp.port&quot;, 8001 );
++		return new int[] { port };
++	}
++	
++	public static RtcpServerService getInstance()
++	{
++		return instance;
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/RtcpServerService.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/src/main/java/rtspproxy/RtpClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtpClientService.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/RtpClientService.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -18,124 +18,62 @@
+ 
+ package rtspproxy;
+ 
+-import java.io.IOException;
+-import java.net.InetAddress;
+-import java.net.InetSocketAddress;
+-import java.net.SocketAddress;
+-
+-import org.apache.log4j.Logger;
+-import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.registry.Service;
+ 
+-import rtspproxy.lib.NoPortAvailableException;
+-import rtspproxy.lib.PortManager;
+-import rtspproxy.proxy.ClientRtcpPacketHandler;
+ import rtspproxy.proxy.ClientRtpPacketHandler;
+ 
+ /**
+- * This service is responsible of receiving and sending RTP and RTCP packets to
+- * clients.
+- * 
+  * @author Matteo Merli
+  */
+-public class RtpClientService implements ProxyService
++public class RtpClientService extends ProxyService
+ {
++	private IoHandler clientRtpPacketHandler = new ClientRtpPacketHandler();
+ 
+-	private static Logger log = Logger.getLogger( RtpClientService.class );
++	public static final String NAME = &quot;RtpClientService&quot;;
++	
++	private static RtpClientService instance;
+ 
+-	private static InetSocketAddress rtpAddress = null;
+-	private static InetSocketAddress rtcpAddress = null;
+-
+-	private static final String rtpNAME = &quot;RtpClientService&quot;;
+-	private static final String rtcpNAME = &quot;RtcpClientService&quot;;
+-
+-	public void start() throws IOException, NoPortAvailableException
++	public RtpClientService()
+ 	{
+-		int rtpPort = Config.getInt( &quot;proxy.client.rtp.port&quot;, 8002 );
+-		int rtcpPort = Config.getInt( &quot;proxy.client.rtcp.port&quot;, 8003 );
+-		String netInterface = Config.get( &quot;proxy.client.interface&quot;, null );
+-		boolean dinPorts = Config.getBoolean( &quot;proxy.client.dynamicPorts&quot;, false );
+-
+-		// If dinPorts is true, we have to first check the availability
+-		// of the ports and choose 2 valid ports.
+-		if ( dinPorts ) {
+-			int[] ports = PortManager.findAvailablePorts( 2, rtpPort );
+-			rtpPort = ports[0];
+-			rtcpPort = ports[1];
+-		}
+-
+-		// Update properties with effective ports
+-		Config.setInt( &quot;proxy.client.rtp.port&quot;, rtpPort );
+-		Config.setInt( &quot;proxy.client.rtcp.port&quot;, rtcpPort );
+-
+-		rtpAddress = new InetSocketAddress( InetAddress.getByName( netInterface ),
+-				rtpPort );
+-		rtcpAddress = new InetSocketAddress( InetAddress.getByName( netInterface ),
+-				rtcpPort );
+-
+-		try {
+-			Service rtpService, rtcpService;
+-
+-			rtpService = new Service( rtpNAME, TransportType.DATAGRAM, rtpAddress );
+-			rtcpService = new Service( rtcpNAME, TransportType.DATAGRAM, rtcpAddress );
+-
+-			Reactor.getRegistry().bind( rtpService, new ClientRtpPacketHandler() );
+-			Reactor.getRegistry().bind( rtcpService, new ClientRtcpPacketHandler() );
+-			log.info( &quot;RtpClientService Started - Listening on: &quot;
+-					+ InetAddress.getByName( netInterface ) + &quot; &quot; + rtpPort + &quot;-&quot;
+-					+ rtcpPort );
+-
+-		} catch ( IOException e ) {
+-			log.fatal( &quot;Can't start RtpClientService. &quot; + e );
+-			throw e;
+-		}
++		super();
++		instance = this;
+ 	}
+ 
+-	public void stop()
++	@Override
++	public TransportType getTransportType()
+ 	{
+-		Reactor.getRegistry().unbind( rtpNAME );
+-		Reactor.getRegistry().unbind( rtcpNAME );
+-		log.info( &quot;RtpClientService Stopped&quot; );
++		return TransportType.DATAGRAM;
+ 	}
+ 
+-	public static IoSession newRtpSession( SocketAddress remoteAddress )
++	@Override
++	public String getName()
+ 	{
+-		return Reactor.getRegistry().getAcceptor( rtpNAME ).newSession( remoteAddress,
+-				rtpAddress );
++		return NAME;
+ 	}
+ 
+-	public static IoSession newRtcpSession( SocketAddress remoteAddress )
++	@Override
++	public IoHandler getIoHandler()
+ 	{
+-		return Reactor.getRegistry().getAcceptor( rtcpNAME ).newSession( remoteAddress,
+-				rtcpAddress );
++		return clientRtpPacketHandler;
+ 	}
+ 
+-	public static InetSocketAddress getRtpAddress()
++	@Override
++	public String getNetworkInterface()
+ 	{
+-		return rtpAddress;
++		return Config.get( &quot;proxy.client.interface&quot;, null );
+ 	}
+ 
+-	public static InetSocketAddress getRtcpAddress()
++	@Override
++	public int[] getBindPorts()
+ 	{
+-		return rtcpAddress;
++		int port = Config.getInt( &quot;proxy.client.rtp.port&quot;, 8002 );
++		return new int[] { port };
+ 	}
+-
+-	public static InetAddress getHostAddress()
++	
++	public static RtpClientService getInstance()
+ 	{
+-		/*
+-		 * The InetAddress (IP) is the same for both RTP and RTCP.
+-		 */
+-		return rtpAddress.getAddress();
++		return instance;
+ 	}
+ 
+-	public static int getRtpPort()
+-	{
+-		return rtpAddress.getPort();
+-	}
+-
+-	public static int getRtcpPort()
+-	{
+-		return rtcpAddress.getPort();
+-	}
+ }
+
+Modified: trunk/src/main/java/rtspproxy/RtpServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtpServerService.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/RtpServerService.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -18,126 +18,62 @@
+ 
+ package rtspproxy;
+ 
+-import java.io.IOException;
+-import java.net.InetAddress;
+-import java.net.InetSocketAddress;
+-import java.net.SocketAddress;
+-
+-import org.apache.log4j.Logger;
+-import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.registry.Service;
+ 
+-import rtspproxy.lib.PortManager;
+-import rtspproxy.proxy.ServerRtcpPacketHandler;
+ import rtspproxy.proxy.ServerRtpPacketHandler;
+ 
+ /**
+  * @author Matteo Merli
+  */
+-public class RtpServerService implements ProxyService
++public class RtpServerService extends ProxyService
+ {
++	private IoHandler serverRtpPacketHandler = new ServerRtpPacketHandler();
+ 
+-	private static Logger log = Logger.getLogger( RtpServerService.class );
++	public static final String NAME = &quot;RtpServerService&quot;;
++	
++	private static RtpServerService instance;
+ 
+-	private static InetSocketAddress rtpAddress = null;
+-	private static InetSocketAddress rtcpAddress = null;
+-
+-	private static final String rtpNAME = &quot;RtpServerService&quot;;
+-	private static final String rtcpNAME = &quot;RtcpServerService&quot;;
+-
+-	public void start() throws Exception
++	public RtpServerService()
+ 	{
+-		int rtpPort = Config.getInt( &quot;proxy.server.rtp.port&quot;, 8000 );
+-		int rtcpPort = Config.getInt( &quot;proxy.server.rtcp.port&quot;, 8001 );
+-		String netInterface = Config.get( &quot;proxy.server.interface&quot;, null );
+-		boolean dinPorts = Config.getBoolean( &quot;proxy.server.dynamicPorts&quot;, false );
+-
+-		// If dinPorts is true, we have to first check the availability
+-		// of the ports and choose 2 valid ports.
+-		if ( dinPorts ) {
+-			int[] ports = PortManager.findAvailablePorts( 2, rtpPort );
+-			rtpPort = ports[0];
+-			rtcpPort = ports[1];
+-		}
+-
+-		// Update properties with effective ports
+-		Config.setInt( &quot;proxy.server.rtp.port&quot;, rtpPort );
+-		Config.setInt( &quot;proxy.server.rtcp.port&quot;, rtcpPort );
+-
+-		rtpAddress = new InetSocketAddress( InetAddress.getByName( netInterface ),
+-				rtpPort );
+-		rtcpAddress = new InetSocketAddress( InetAddress.getByName( netInterface ),
+-				rtcpPort );
+-
+-		try {
+-			Service rtpService, rtcpService;
+-
+-			rtpService = new Service( rtpNAME, TransportType.DATAGRAM, rtpAddress );
+-			rtcpService = new Service( rtcpNAME, TransportType.DATAGRAM, rtcpAddress );
+-
+-			Reactor.getRegistry().bind( rtpService, new ServerRtpPacketHandler() );
+-			Reactor.getRegistry().bind( rtcpService, new ServerRtcpPacketHandler() );
+-			log.info( &quot;RtpServerService Started - Listening on: &quot;
+-					+ InetAddress.getByName( netInterface ) + &quot; &quot; + rtpPort + &quot;-&quot;
+-					+ rtcpPort );
+-
+-		} catch ( IOException e ) {
+-			log.fatal( &quot;Can't start the service. &quot; + e );
+-			throw e;
+-		}
+-
++		super();
++		instance = this;
+ 	}
+ 
+-	/*
+-	 * (non-Javadoc)
+-	 * 
+-	 * @see rtspproxy.ProxyService#stop()
+-	 */
+-	public void stop() throws Exception
++	@Override
++	public TransportType getTransportType()
+ 	{
+-		Reactor.getRegistry().unbind( rtpNAME );
+-		Reactor.getRegistry().unbind( rtcpNAME );
+-		log.info( &quot;RtpServerService Stopped&quot; );
++		return TransportType.DATAGRAM;
+ 	}
+ 
+-	public static IoSession newRtpSession( SocketAddress remoteAddress )
++	@Override
++	public String getName()
+ 	{
+-		return Reactor.getRegistry().getAcceptor( rtpNAME ).newSession( remoteAddress,
+-				rtpAddress );
++		return NAME;
+ 	}
+ 
+-	public static IoSession newRtcpSession( SocketAddress remoteAddress )
++	@Override
++	public IoHandler getIoHandler()
+ 	{
+-		return Reactor.getRegistry().getAcceptor( rtcpNAME ).newSession( remoteAddress,
+-				rtcpAddress );
++		return serverRtpPacketHandler;
+ 	}
+ 
+-	public static InetSocketAddress getRtpAddress()
++	@Override
++	public String getNetworkInterface()
+ 	{
+-		return rtpAddress;
++		return Config.get( &quot;proxy.server.interface&quot;, null );
+ 	}
+ 
+-	public static InetSocketAddress getRtcpAddress()
++	@Override
++	public int[] getBindPorts()
+ 	{
+-		return rtcpAddress;
++		int port = Config.getInt( &quot;proxy.server.rtp.port&quot;, 8000 );
++		return new int[] { port };
+ 	}
+-
+-	public static InetAddress getHostAddress()
++	
++	public static RtpServerService getInstance()
+ 	{
+-		/*
+-		 * The InetAddress (IP) is the same for both RTP and RTCP.
+-		 */
+-		return rtpAddress.getAddress();
++		return instance;
+ 	}
+ 
+-	public static int getRtpPort()
+-	{
+-		return rtpAddress.getPort();
+-	}
+-
+-	public static int getRtcpPort()
+-	{
+-		return rtcpAddress.getPort();
+-	}
+ }
+
+Modified: trunk/src/main/java/rtspproxy/RtspService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtspService.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/RtspService.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -18,13 +18,9 @@
+ 
+ package rtspproxy;
+ 
+-import java.io.IOException;
+-import java.net.InetAddress;
+-import java.net.InetSocketAddress;
+-
+-import org.apache.log4j.Logger;
++import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.registry.Service;
+ 
+ import rtspproxy.filter.RtspClientFilters;
+ import rtspproxy.proxy.ClientSide;
+@@ -33,45 +29,62 @@
+ /**
+  * @author Matteo Merli
+  */
+-public class RtspService implements ProxyService
++public class RtspService extends ProxyService
+ {
++	private IoHandler rtspHandler = new ClientSide();
+ 
+-	private static Logger log = Logger.getLogger( RtspService.class );
++	private IoFilterChainBuilder filterChainBuilder = new RtspClientFilters();
+ 
+-	private static final String NAME = &quot;RtspService&quot;;
++	public static final String NAME = &quot;RtspService&quot;;
++	
++	private static RtspService instance;
+ 
+-	public void start() throws IOException
++	public RtspService()
+ 	{
+-		// get port and network interface from config file
+-		int[] ports = Config.getIntArray( &quot;proxy.rtsp.port&quot;, Handler.DEFAULT_RTSP_PORT );
+-		String netInterface = Config.get( &quot;proxy.rtsp.interface&quot;, null );
++		super();
++		instance = this;
++	}
+ 
+-		for ( int port : ports ) {
+-			try {
++	@Override
++	public TransportType getTransportType()
++	{
++		return TransportType.SOCKET;
++	}
+ 
+-				Service service;
+-				if ( netInterface == null )
+-					service = new Service( NAME, TransportType.SOCKET, port );
+-				else
+-					service = new Service( NAME, TransportType.SOCKET,
+-							new InetSocketAddress( netInterface, port ) );
++	@Override
++	public String getName()
++	{
++		return NAME;
++	}
+ 
+-				Reactor.getRegistry().bind( service, new ClientSide(),
+-						new RtspClientFilters() );
++	@Override
++	public IoHandler getIoHandler()
++	{
++		return rtspHandler;
++	}
+ 
+-				log.info( &quot;RtspService Started - Listening on: &quot;
+-						+ InetAddress.getByName( netInterface ) + &quot;:&quot; + port );
++	@Override
++	public IoFilterChainBuilder getFilterChainBuilder()
++	{
++		return filterChainBuilder;
++	}
+ 
+-			} catch ( IOException e ) {
+-				log.fatal( e.getMessage() + &quot; (port = &quot; + port + &quot;)&quot; );
+-				throw e;
+-			}
+-		}
++	@Override
++	public String getNetworkInterface()
++	{
++		return Config.get( &quot;proxy.rtsp.interface&quot;, null );
+ 	}
+ 
+-	public void stop() throws Exception
++	@Override
++	public int[] getBindPorts()
+ 	{
+-		Reactor.getRegistry().unbind(NAME);
+-		log.info( &quot;RtspService Stopped&quot; );
++		return Config
++				.getIntArray( &quot;proxy.rtsp.port&quot;, Handler.DEFAULT_RTSP_PORT );
+ 	}
++	
++	public static RtspService getInstance()
++	{
++		return instance;
++	}
++
+ }
+
+Added: trunk/src/main/java/rtspproxy/lib/NetworkInterface.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/lib/NetworkInterface.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/lib/NetworkInterface.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -0,0 +1,176 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.lib;
++
++import java.net.Inet4Address;
++import java.net.Inet6Address;
++import java.net.InetAddress;
++import java.net.SocketException;
++import java.util.Enumeration;
++import java.util.HashSet;
++import java.util.Set;
++
++import org.apache.log4j.Logger;
++
++/**
++ * Utility used to get all the addresses of the network interfaces found on the
++ * system.
++ * 
++ * @author Matteo Merli
++ */
++public class NetworkInterface
++{
++
++	private static Logger log = Logger.getLogger( NetworkInterface.class );
++
++	/**
++	 * Return all the addresses associated with the given interface. If the
++	 * supplied interface name is null, all the addresses from all interfaces
++	 * will be returned.
++	 * 
++	 * @param interfaceName
++	 * @return a set of InetAddress
++	 */
++	public static Set&lt;InetAddress&gt; getAddresses( String interfaceAddress )
++	{
++		Set&lt;InetAddress&gt; addresses = new HashSet&lt;InetAddress&gt;();
++
++		if ( interfaceAddress != null ) {
++			try {
++				InetAddress address = InetAddress.getByName( interfaceAddress );
++				java.net.NetworkInterface networkInterface = java.net.NetworkInterface.getByInetAddress( address);
++				addresses.addAll( getAddresses( networkInterface ) );
++
++			} catch ( Exception e ) {
++				log.fatal( &quot;Cannot register network interface: &quot; + interfaceAddress, e );
++				return null;
++			}
++		} else {
++			// Add all addresses from all interfaces
++
++			Enumeration&lt;java.net.NetworkInterface&gt; interfaces;
++			try {
++				interfaces = java.net.NetworkInterface.getNetworkInterfaces();
++			} catch ( SocketException se ) {
++				log.fatal( &quot;Cannot get the interfaces list.&quot; );
++				return null;
++			}
++
++			while ( interfaces.hasMoreElements() ) {
++				addresses.addAll( getAddresses( interfaces.nextElement() ) );
++			}
++		}
++
++		return addresses;
++	}
++
++	private static Set&lt;InetAddress&gt; getAddresses(
++			java.net.NetworkInterface networkInterface )
++	{
++		Set&lt;InetAddress&gt; addresses = new HashSet&lt;InetAddress&gt;();
++		Enumeration&lt;InetAddress&gt; enumeration = networkInterface.getInetAddresses();
++		while ( enumeration.hasMoreElements() ) {
++			addresses.add( enumeration.nextElement() );
++		}
++		return addresses;
++	}
++
++	/**
++	 * Returns an address between a set of addresses. This is used to select an
++	 * address when binding is done on multiple network interface and we need a
++	 * network address as a reference.
++	 * &lt;p&gt;
++	 * For example if we don't specify a particular network interface, the proxy
++	 * will bind on both 127.0.0.1 ::1 and 10.0.0.4 addresses.
++	 * &lt;p&gt;
++	 * The scope of this method is to select the &quot;better&quot; address to be notified
++	 * to clients or servers. This is a guess, for a better solution, just
++	 * provide the interface to bind in the configuration file.
++	 * 
++	 * @param addresses
++	 * @return
++	 */
++	public static InetAddress getBindAddress( Set&lt;InetAddress&gt; addresses )
++	{
++		if ( addresses.size() == 1 )
++			return (InetAddress) addresses.toArray()[0];
++
++		/*
++		 * The rules are: - Ip4 addresses are preferred over Ip6 - Non-loopback
++		 * are preferred over loopback ones
++		 */
++
++		for ( InetAddress address : addresses ) {
++			if ( isIp6Address( address ) &amp;&amp; hasIp4Addresses( addresses ) )
++				continue;
++
++			if ( isLoopbackAddress( address ) &amp;&amp; hasNonLoopbackAddresses( addresses ) )
++				continue;
++
++			// this is the best guess
++			return address;
++		}
++
++		return null;
++	}
++
++	private static boolean isIp4Address( InetAddress address )
++	{
++		return ( address instanceof Inet4Address );
++	}
++
++	private static boolean isIp6Address( InetAddress address )
++	{
++		return ( address instanceof Inet6Address );
++	}
++
++	private static boolean isLoopbackAddress( InetAddress address )
++	{
++		return ( address.isLoopbackAddress() || address.isLinkLocalAddress() );
++	}
++
++	/**
++	 * @param addresses
++	 *        the address set to test
++	 * @return true if there is at least one IPv4 address
++	 */
++	private static boolean hasIp4Addresses( Set&lt;InetAddress&gt; addresses )
++	{
++		for ( InetAddress address : addresses ) {
++			if ( isIp4Address( address ) )
++				return true;
++		}
++		return false;
++	}
++
++	/**
++	 * @param addresses
++	 *        the address set to test
++	 * @return true if there is at least one address which is not on the
++	 *         loopback interface
++	 */
++	private static boolean hasNonLoopbackAddresses( Set&lt;InetAddress&gt; addresses )
++	{
++		for ( InetAddress address : addresses ) {
++			if ( !isLoopbackAddress( address ) )
++				return true;
++		}
++		return false;
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/lib/NetworkInterface.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -34,6 +34,8 @@
+ import rtspproxy.Config;
+ import rtspproxy.RdtClientService;
+ import rtspproxy.RdtServerService;
++import rtspproxy.RtcpClientService;
++import rtspproxy.RtcpServerService;
+ import rtspproxy.RtpClientService;
+ import rtspproxy.RtpServerService;
+ import rtspproxy.filter.RtspServerFilters;
+@@ -58,11 +60,18 @@
+ 
+ 	/** Used to save a reference to this handler in the IoSession */
+ 	protected static final String ATTR = ProxyHandler.class.toString() + &quot;Attr&quot;;
+-	protected static final String setupUrlATTR = ProxyHandler.class.toString() + &quot;setupUrlATTR&quot;;
+-	protected static final String clientPortsATTR = ProxyHandler.class.toString() + &quot;clientPortsATTR&quot;;
+-	protected static final String clientRdtPortATTR = ProxyHandler.class.toString() + &quot;clientRdtPortATTR&quot;;
+ 
++	protected static final String setupUrlATTR = ProxyHandler.class.toString()
++			+ &quot;setupUrlATTR&quot;;
++
++	protected static final String clientPortsATTR = ProxyHandler.class.toString()
++			+ &quot;clientPortsATTR&quot;;
++
++	protected static final String clientRdtPortATTR = ProxyHandler.class.toString()
++			+ &quot;clientRdtPortATTR&quot;;
++
+ 	private IoSession clientSession = null;
++
+ 	private IoSession serverSession = null;
+ 
+ 	/**
+@@ -79,49 +88,49 @@
+ 	{
+ 		log.debug( &quot;Pass to server&quot; );
+ 		if ( message.getHeader( &quot;Session&quot; ) != null ) {
+-			ProxySession proxySession = ProxySession.getByClientSessionID( message.getHeader( &quot;Session&quot; ) );
++			ProxySession proxySession = ProxySession.getByClientSessionID( message
++					.getHeader( &quot;Session&quot; ) );
+ 			if ( proxySession != null ) {
+ 				// Session is Ok
+ 				message.setHeader( &quot;Session&quot;, proxySession.getServerSessionId() );
+ 			} else {
+ 				// Error. The client specified a session ID but it's
+ 				// not valid
+-				sendResponse( clientSession,
+-						RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++				sendResponse( clientSession, RtspResponse
++						.errorResponse( RtspCode.SessionNotFound ) );
+ 				return;
+ 			}
+ 		}
+ 		if ( serverSession == null &amp;&amp; message.getType() == RtspMessage.Type.TypeResponse ) {
+ 			log.error( &quot;We can't send a response message to an uninitialized serverSide&quot; );
+ 			return;
+-		} else
+-			if ( serverSession == null ) {
+-				RtspRequest request = (RtspRequest) message;
+-				try {
+-					connectServerSide( request.getUrl() );
++		} else if ( serverSession == null ) {
++			RtspRequest request = (RtspRequest) message;
++			try {
++				connectServerSide( request.getUrl() );
+ 
+-				} catch ( IOException e ) {
+-					log.error( e );
+-					// closeAll();
+-				} finally {
+-					if ( serverSession == null )
+-						return;
+-				}
++			} catch ( IOException e ) {
++				log.error( e );
++				// closeAll();
++			} finally {
++				if ( serverSession == null )
++					return;
+ 			}
++		}
+ 
+ 		switch ( message.getType() ) {
+-			case TypeRequest:
+-				serverSession.setAttribute( RtspMessage.lastRequestVerbATTR,
+-						( (RtspRequest) message ).getVerb() );
+-				sendRequest( serverSession, (RtspRequest) message );
+-				break;
++		case TypeRequest:
++			serverSession.setAttribute( RtspMessage.lastRequestVerbATTR,
++					((RtspRequest) message).getVerb() );
++			sendRequest( serverSession, (RtspRequest) message );
++			break;
+ 
+-			case TypeResponse:
+-				sendResponse( serverSession, (RtspResponse) message );
+-				break;
++		case TypeResponse:
++			sendResponse( serverSession, (RtspResponse) message );
++			break;
+ 
+-			default:
+-				log.error( &quot;Message type not valid: &quot; + message.getType() );
++		default:
++			log.error( &quot;Message type not valid: &quot; + message.getType() );
+ 		}
+ 	}
+ 
+@@ -129,7 +138,8 @@
+ 	{
+ 		log.debug( &quot;Pass to client&quot; );
+ 		if ( message.getHeader( &quot;Session&quot; ) != null ) {
+-			ProxySession proxySession = ProxySession.getByServerSessionID( message.getHeader( &quot;Session&quot; ) );
++			ProxySession proxySession = ProxySession.getByServerSessionID( message
++					.getHeader( &quot;Session&quot; ) );
+ 			if ( proxySession != null ) {
+ 				// Session is Ok
+ 				message.setHeader( &quot;Session&quot;, proxySession.getClientSessionId() );
+@@ -148,26 +158,26 @@
+ 				} else {
+ 					// Error. The client specified a session ID but it's
+ 					// not valid
+-					sendResponse( clientSession,
+-							RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++					sendResponse( clientSession, RtspResponse
++							.errorResponse( RtspCode.SessionNotFound ) );
+ 					return;
+ 				}
+ 			}
+ 		}
+-		
++
+ 		switch ( message.getType() ) {
+-			case TypeRequest:
+-				clientSession.setAttribute( RtspMessage.lastRequestVerbATTR,
+-						( (RtspRequest) message ).getVerb() );
+-				sendRequest( clientSession, (RtspRequest) message );
+-				break;
++		case TypeRequest:
++			clientSession.setAttribute( RtspMessage.lastRequestVerbATTR,
++					((RtspRequest) message).getVerb() );
++			sendRequest( clientSession, (RtspRequest) message );
++			break;
+ 
+-			case TypeResponse:
+-				sendResponse( clientSession, (RtspResponse) message );
+-				break;
++		case TypeResponse:
++			sendResponse( clientSession, (RtspResponse) message );
++			break;
+ 
+-			default:
+-				log.error( &quot;Message type not valid: &quot; + message.getType() );
++		default:
++			log.error( &quot;Message type not valid: &quot; + message.getType() );
+ 		}
+ 	}
+ 
+@@ -177,7 +187,7 @@
+ 	 * and server, such as modifying RTP/RTCP port.
+ 	 * 
+ 	 * @param request
+-	 *        SETUP request message
++	 *            SETUP request message
+ 	 */
+ 	public void passSetupRequestToServer( RtspRequest request )
+ 	{
+@@ -186,7 +196,8 @@
+ 		if ( request.getHeader( &quot;Session&quot; ) != null ) {
+ 			// The client already specified a session ID.
+ 			// Let's validate it
+-			proxySession = ProxySession.getByClientSessionID( request.getHeader( &quot;Session&quot; ) );
++			proxySession = ProxySession.getByClientSessionID( request
++					.getHeader( &quot;Session&quot; ) );
+ 			if ( proxySession != null ) {
+ 				// Session ID is ok
+ 				request.setHeader( &quot;Session&quot;, proxySession.getServerSessionId() );
+@@ -194,8 +205,8 @@
+ 				// Error. The client specified a session ID but it's
+ 				// not valid
+ 				log.debug( &quot;Invalid sessionId: &quot; + request.getHeader( &quot;Session&quot; ) );
+-				sendResponse( clientSession,
+-						RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++				sendResponse( clientSession, RtspResponse
++						.errorResponse( RtspCode.SessionNotFound ) );
+ 				return;
+ 			}
+ 		}
+@@ -203,8 +214,8 @@
+ 
+ 		log.debug( &quot;Client Transport:&quot; + request.getHeader( &quot;Transport&quot; ) );
+ 
+-		RtspTransportList rtspTransportList = new RtspTransportList(
+-				request.getHeader( &quot;Transport&quot; ) );
++		RtspTransportList rtspTransportList = new RtspTransportList( request
++				.getHeader( &quot;Transport&quot; ) );
+ 		log.debug( &quot;Parsed:&quot; + rtspTransportList.toString() );
+ 
+ 		if ( rtspTransportList.count() == 0 ) {
+@@ -214,14 +225,14 @@
+ 			 * client will have the chance to reformule the request with another
+ 			 * transports set.
+ 			 */
+-			sendResponse( clientSession,
+-					RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
++			sendResponse( clientSession, RtspResponse
++					.errorResponse( RtspCode.UnsupportedTransport ) );
+ 			return;
+ 		}
+ 
+-		int proxyRtpPort = RtpServerService.getRtpPort();
+-		int proxyRtcpPort = RtpServerService.getRtcpPort();
+-		int proxyRdtPort = RdtServerService.getPort();
++		int proxyRtpPort = RtpServerService.getInstance().getPort();
++		int proxyRtcpPort = RtcpServerService.getInstance().getPort();
++		int proxyRdtPort = RdtServerService.getInstance().getPort();
+ 
+ 		// I'm saving the client Transport header before modifying it,
+ 		// because I will need to know which port the client will
+@@ -236,14 +247,15 @@
+ 			} else {
+ 				if ( transport.getTransportProtocol() == TransportProtocol.RTP ) {
+ 
+-					clientSession.setAttribute( clientPortsATTR, transport.getClientPort() );
++					clientSession.setAttribute( clientPortsATTR, transport
++							.getClientPort() );
+ 					transport.setClientPort( new int[] { proxyRtpPort, proxyRtcpPort } );
+ 
+-				} else
+-					if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
+-						clientSession.setAttribute( clientRdtPortATTR, new Integer(transport.getClientPort()[0]) );
+-						transport.setClientPort( proxyRdtPort );
+-					}
++				} else if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
++					clientSession.setAttribute( clientRdtPortATTR, new Integer( transport
++							.getClientPort()[0] ) );
++					transport.setClientPort( proxyRdtPort );
++				}
+ 				log.debug( &quot;Transport Rewritten: &quot; + transport );
+ 			}
+ 		}
+@@ -264,12 +276,13 @@
+ 	 * Forward a RTSP SETUP response message to client.
+ 	 * 
+ 	 * @param response
+-	 *        Setup response message
++	 *            Setup response message
+ 	 */
+ 	public void passSetupResponseToClient( RtspResponse response )
+ 	{
+ 		// If there isn't yet a proxySession, create a new one
+-		ProxySession proxySession = ProxySession.getByServerSessionID( response.getHeader( &quot;Session&quot; ) );
++		ProxySession proxySession = ProxySession.getByServerSessionID( response
++				.getHeader( &quot;Session&quot; ) );
+ 		if ( proxySession == null ) {
+ 			proxySession = (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
+ 			if ( proxySession == null ) {
+@@ -283,8 +296,8 @@
+ 		}
+ 
+ 		// Modify transport parameters for the client.
+-		RtspTransportList rtspTransportList = new RtspTransportList(
+-				response.getHeader( &quot;Transport&quot; ) );
++		RtspTransportList rtspTransportList = new RtspTransportList( response
++				.getHeader( &quot;Transport&quot; ) );
+ 
+ 		String netInterface = Config.get( &quot;proxy.client.interface&quot;, null );
+ 
+@@ -294,9 +307,8 @@
+ 		if ( transport.getTransportProtocol() == TransportProtocol.RTP ) {
+ 
+ 			// Create a new Track object
+-			RtpTrack track = proxySession.addRtpTrack(
+-					(String) clientSession.getAttribute( setupUrlATTR ),
+-					transport.getSSRC() );
++			RtpTrack track = proxySession.addRtpTrack( (String) clientSession
++					.getAttribute( setupUrlATTR ), transport.getSSRC() );
+ 
+ 			// Setting client and server info on the track
+ 			InetAddress serverAddress = null;
+@@ -307,14 +319,17 @@
+ 					log.warn( &quot;Unknown host: &quot; + transport.getSource() );
+ 				}
+ 			} else {
+-				serverAddress = ( (InetSocketAddress) serverSession.getRemoteAddress() ).getAddress();
++				serverAddress = ((InetSocketAddress) serverSession.getRemoteAddress())
++						.getAddress();
+ 			}
+ 			int[] serverPorts = transport.getServerPort();
+ 			track.setServerAddress( serverAddress, serverPorts[0], serverPorts[1] );
+ 
+ 			InetAddress clientAddress = null;
+ 			try {
+-				clientAddress = Inet4Address.getByName( ( (InetSocketAddress) clientSession.getRemoteAddress() ).getHostName() );
++				clientAddress = Inet4Address
++						.getByName( ((InetSocketAddress) clientSession.getRemoteAddress())
++								.getHostName() );
+ 			} catch ( UnknownHostException e ) {
+ 				log.warn( &quot;Unknown host: &quot; + clientSession.getRemoteAddress() );
+ 			}
+@@ -325,11 +340,13 @@
+ 				log.debug( &quot;Transport is TCP based.&quot; );
+ 			} else {
+ 				transport.setSSRC( track.getProxySSRC().toHexString() );
+-				transport.setServerPort( new int[] { RtpClientService.getRtpPort(),
+-						RtpClientService.getRtcpPort() } );
++				int rtpPort = RtpClientService.getInstance().getPort();
++				int rtcpPort = RtcpClientService.getInstance().getPort();
++				transport.setServerPort( new int[] { rtpPort, rtcpPort } );
+ 				// transport.setClientPort( );
+ 				try {
+-					transport.setSource( InetAddress.getByName( netInterface ).getHostAddress() );
++					transport.setSource( InetAddress.getByName( netInterface )
++							.getHostAddress() );
+ 				} catch ( UnknownHostException e ) {
+ 					transport.setSource( netInterface );
+ 				}
+@@ -341,58 +358,65 @@
+ 				log.debug( &quot;Transport Rewritten: &quot; + transport );
+ 			}
+ 
+-		} else
+-			if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
++		} else if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
+ 
+-				// Create a new Track object
+-				RdtTrack track = proxySession.addRdtTrack( (String) clientSession.getAttribute( setupUrlATTR ) );
++			// Create a new Track object
++			RdtTrack track = proxySession.addRdtTrack( (String) clientSession
++					.getAttribute( setupUrlATTR ) );
+ 
+-				// Setting client and server info on the track
+-				InetAddress serverAddress = null;
+-				if ( transport.getSource() != null ) {
+-					try {
+-						serverAddress = InetAddress.getByName( transport.getSource() );
+-					} catch ( UnknownHostException e ) {
+-						log.warn( &quot;Unknown host: &quot; + transport.getSource() );
+-					}
+-				} else {
+-					serverAddress = ( (InetSocketAddress) serverSession.getRemoteAddress() ).getAddress();
++			// Setting client and server info on the track
++			InetAddress serverAddress = null;
++			if ( transport.getSource() != null ) {
++				try {
++					serverAddress = InetAddress.getByName( transport.getSource() );
++				} catch ( UnknownHostException e ) {
++					log.warn( &quot;Unknown host: &quot; + transport.getSource() );
+ 				}
+-				int[] serverPorts = transport.getServerPort();
+-				track.setServerAddress( serverAddress, serverPorts[0] );
++			} else {
++				serverAddress = ((InetSocketAddress) serverSession.getRemoteAddress())
++						.getAddress();
++			}
++			int[] serverPorts = transport.getServerPort();
++			track.setServerAddress( serverAddress, serverPorts[0] );
+ 
+-				InetAddress clientAddress = null;
++			InetAddress clientAddress = null;
++			try {
++				clientAddress = Inet4Address
++						.getByName( ((InetSocketAddress) clientSession.getRemoteAddress())
++								.getHostName() );
++			} catch ( UnknownHostException e ) {
++				log.warn( &quot;Unknown host: &quot; + clientSession.getRemoteAddress() );
++			}
++			int clientRdtPort = ((Integer) clientSession.getAttribute( clientRdtPortATTR ))
++					.intValue();
++			track.setClientAddress( clientAddress, clientRdtPort );
++
++			if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP ) {
++				log.debug( &quot;Transport is TCP based.&quot; );
++			} else {
++				int rdtPort = RdtClientService.getInstance().getPort();
++				transport.setServerPort( rdtPort );
+ 				try {
+-					clientAddress = Inet4Address.getByName( ( (InetSocketAddress) clientSession.getRemoteAddress() ).getHostName() );
++					transport.setSource( InetAddress.getByName( netInterface )
++							.getHostAddress() );
+ 				} catch ( UnknownHostException e ) {
+-					log.warn( &quot;Unknown host: &quot; + clientSession.getRemoteAddress() );
++					transport.setSource( netInterface );
+ 				}
+-				int clientRdtPort = ((Integer) clientSession.getAttribute( clientRdtPortATTR ) ).intValue();
+-				track.setClientAddress( clientAddress, clientRdtPort );
+ 
+-				if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP ) {
+-					log.debug( &quot;Transport is TCP based.&quot; );
+-				} else {
+-					transport.setServerPort( RdtClientService.getPort() );
+-					try {
+-						transport.setSource( InetAddress.getByName( netInterface ).getHostAddress() );
+-					} catch ( UnknownHostException e ) {
+-						transport.setSource( netInterface );
+-					}
++				// Obtaing client specified ports
++				int port = ((Integer) clientSession.getAttribute( clientRdtPortATTR ))
++						.intValue();
++				transport.setClientPort( port );
+ 
+-					// Obtaing client specified ports
+-					int port = ((Integer) clientSession.getAttribute( clientRdtPortATTR ) ).intValue();
+-					transport.setClientPort( port );
++				log.debug( &quot;Transport Rewritten: &quot; + transport );
++			}
+ 
+-					log.debug( &quot;Transport Rewritten: &quot; + transport );
+-				}
++		} else {
++			sendResponse( clientSession, RtspResponse
++					.errorResponse( RtspCode.UnsupportedTransport ) );
++			return;
++		}
+ 
+-			} else {
+-				sendResponse( clientSession,
+-						RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
+-				return;
+-			}
+-
+ 		response.setHeader( &quot;Session&quot;, proxySession.getClientSessionId() );
+ 		response.setHeader( &quot;Transport&quot;, transport.toString() );
+ 
+@@ -405,7 +429,7 @@
+ 	 * Tries to connect to remote RTSP server.
+ 	 * 
+ 	 * @param url
+-	 *        the URI of the server
++	 *            the URI of the server
+ 	 * @throws IOException
+ 	 */
+ 	private void connectServerSide( URL url ) throws IOException
+@@ -436,8 +460,8 @@
+ 
+ 		} catch ( UnresolvedAddressException e ) {
+ 			log.warn( &quot;Destination unreachable: &quot; + host + &quot;:&quot; + port );
+-			sendResponse( clientSession,
+-					RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
++			sendResponse( clientSession, RtspResponse
++					.errorResponse( RtspCode.DestinationUnreachable ) );
+ 			clientSession.close();
+ 			return;
+ 		}
+@@ -462,7 +486,8 @@
+ 
+ 		// Remove ProxySession and Track instances
+ 		if ( clientSession != null ) {
+-			ProxySession proxySession = (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
++			ProxySession proxySession = (ProxySession) clientSession
++					.getAttribute( ProxySession.ATTR );
+ 			if ( proxySession != null )
+ 				proxySession.close();
+ 		}
+@@ -472,9 +497,9 @@
+ 	 * Sends an RTSP request message
+ 	 * 
+ 	 * @param session
+-	 *        current IoSession
++	 *            current IoSession
+ 	 * @param request
+-	 *        the message
++	 *            the message
+ 	 */
+ 	private void sendRequest( IoSession session, RtspRequest request )
+ 	{
+@@ -490,9 +515,9 @@
+ 	 * Sends an RTSP response message
+ 	 * 
+ 	 * @param session
+-	 *        current IoSession
++	 *            current IoSession
+ 	 * @param response
+-	 *        the message
++	 *            the message
+ 	 */
+ 	private void sendResponse( IoSession session, RtspResponse response )
+ 	{
+
+Modified: trunk/src/main/java/rtspproxy/proxy/track/RdtTrack.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/track/RdtTrack.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/proxy/track/RdtTrack.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -20,16 +20,18 @@
+ 	 * client.
+ 	 */
+ 	private IoSession rdtClientSession = null;
++
+ 	private IoSession rdtServerSession = null;
+ 
+ 	private int clientRdtPort;
++
+ 	private int serverRdtPort;
+ 
+ 	/**
+ 	 * Construct a new Track.
+ 	 * 
+ 	 * @param url
+-	 *        the control name for this track.
++	 *            the control name for this track.
+ 	 */
+ 	public RdtTrack( String url )
+ 	{
+@@ -44,7 +46,7 @@
+ 	 * same (live) track.
+ 	 * 
+ 	 * @param packet
+-	 *        a buffer containing a RDT packet
++	 *            a buffer containing a RDT packet
+ 	 */
+ 	public void forwardRdtToClient( ByteBuffer packet )
+ 	{
+@@ -52,8 +54,8 @@
+ 		// packet.setSsrc( proxySSRC );
+ 
+ 		if ( rdtClientSession == null ) {
+-			rdtClientSession = RdtClientService.newRdtSession( new InetSocketAddress(
+-					clientAddress, clientRdtPort ) );
++			rdtClientSession = RdtClientService.getInstance().newSession(
++					new InetSocketAddress( clientAddress, clientRdtPort ) );
+ 		}
+ 
+ 		log.debug( &quot;Packet: &quot; + packet );
+@@ -65,7 +67,7 @@
+ 	 * indicated by the server at RDT port.
+ 	 * 
+ 	 * @param packet
+-	 *        a RDT packet
++	 *            a RDT packet
+ 	 */
+ 	public void forwardRdtToServer( ByteBuffer packet )
+ 	{
+@@ -73,15 +75,15 @@
+ 			InetSocketAddress remoteAddress = new InetSocketAddress( serverAddress,
+ 					serverRdtPort );
+ 			log.debug( &quot;Creating RDT session to: &quot; + remoteAddress );
+-			rdtServerSession = RdtServerService.newRdtSession( remoteAddress );
++			rdtServerSession = RdtServerService.getInstance().newSession( remoteAddress );
+ 		}
+ 
+ 		// log.debug( &quot;Packet: &quot; + packet );
+ 		// packet.reset();
+ 		// log.debug(&quot;Packet: &quot; + packet );
+-		//  log.debug( &quot;Written bytes1: &quot; + rdtServerSession.getWrittenBytes() );
++		// log.debug( &quot;Written bytes1: &quot; + rdtServerSession.getWrittenBytes() );
+ 		rdtServerSession.write( packet );
+-//		 log.debug( &quot;Written bytes2: &quot; + rdtServerSession.getWrittenBytes() );
++		// log.debug( &quot;Written bytes2: &quot; + rdtServerSession.getWrittenBytes() );
+ 	}
+ 
+ 	/**
+@@ -91,9 +93,9 @@
+ 	 * same (live) track.
+ 	 * 
+ 	 * @param serverHost
+-	 *        The serverHost to set.
++	 *            The serverHost to set.
+ 	 * @param rdtpPort
+-	 *        the port number used for RDT packets
++	 *            the port number used for RDT packets
+ 	 */
+ 	public synchronized void setClientAddress( InetAddress clientAddress, int rdtPort )
+ 	{
+@@ -107,9 +109,9 @@
+ 	 * Set the address of the server associated with this track.
+ 	 * 
+ 	 * @param serverHost
+-	 *        The serverHost to set.
++	 *            The serverHost to set.
+ 	 * @param rdtPort
+-	 *        the port number used for RDT packets
++	 *            the port number used for RDT packets
+ 	 */
+ 	public synchronized void setServerAddress( InetAddress serverAddress, int rdtPort )
+ 	{
+
+Modified: trunk/src/main/java/rtspproxy/proxy/track/RtpTrack.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/track/RtpTrack.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/proxy/track/RtpTrack.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -12,23 +12,26 @@
+ import org.apache.log4j.Logger;
+ import org.apache.mina.common.IoSession;
+ 
++import rtspproxy.RtcpClientService;
++import rtspproxy.RtcpServerService;
+ import rtspproxy.RtpClientService;
+ import rtspproxy.RtpServerService;
+ import rtspproxy.lib.number.UnsignedInt;
+ import rtspproxy.rtp.RtpPacket;
+ import rtspproxy.rtp.rtcp.RtcpPacket;
+ 
+-public class RtpTrack extends Track {
+-	
++public class RtpTrack extends Track
++{
++
+ 	private static Logger log = Logger.getLogger( RtpTrack.class );
+ 
+ 	/** Maps a server SSRC id to a Track */
+ 	private static Map&lt;UnsignedInt, RtpTrack&gt; serverSsrcMap = new ConcurrentHashMap&lt;UnsignedInt, RtpTrack&gt;();
+-	
++
+ 	/** Keeps track of the SSRC IDs used by the proxy, to avoid collisions. */
+-	private static Set&lt;UnsignedInt&gt; proxySsrcList = Collections.synchronizedSet( new HashSet&lt;UnsignedInt&gt;() );
+-	
+-	
++	private static Set&lt;UnsignedInt&gt; proxySsrcList = Collections
++			.synchronizedSet( new HashSet&lt;UnsignedInt&gt;() );
++
+ 	/**
+ 	 * Get the track by looking at server SSRC id.
+ 	 * 
+@@ -38,39 +41,45 @@
+ 	{
+ 		return serverSsrcMap.get( serverSsrc );
+ 	}
+-	
+-	
++
+ 	/** SSRC id given by the server */
+ 	private UnsignedInt serverSSRC = new UnsignedInt( 0 );
++
+ 	/** SSRC id selected by the proxy */
+ 	private UnsignedInt proxySSRC = new UnsignedInt( 0 );
+-	
++
+ 	/**
+ 	 * Cached references to IoSession objects used to send packets to server and
+ 	 * client.
+ 	 */
+ 	private IoSession rtpServerSession = null;
++
+ 	private IoSession rtcpServerSession = null;
++
+ 	private IoSession rtpClientSession = null;
++
+ 	private IoSession rtcpClientSession = null;
+-	
++
+ 	private int clientRtpPort;
++
+ 	private int clientRtcpPort;
++
+ 	private int serverRtpPort;
++
+ 	private int serverRtcpPort;
+-	
++
+ 	/**
+ 	 * Construct a new Track.
+ 	 * 
+ 	 * @param url
+-	 *        the control name for this track.
++	 *            the control name for this track.
+ 	 */
+ 	public RtpTrack( String url )
+ 	{
+ 		super( url );
+ 		setProxySSRC( newSSRC() );
+ 	}
+-	
++
+ 	/**
+ 	 * @return the SSRC id used byt the proxy
+ 	 */
+@@ -126,7 +135,6 @@
+ 		serverSsrcMap.put( this.serverSSRC, this );
+ 	}
+ 
+-	
+ 	public void setRtcpClientSession( IoSession rtcpClientSession )
+ 	{
+ 		this.rtcpClientSession = rtcpClientSession;
+@@ -146,13 +154,13 @@
+ 	{
+ 		this.rtpServerSession = rtpServerSession;
+ 	}
+-	
++
+ 	/**
+ 	 * Forwards a RTP packet to server. The packet will be set to the address
+ 	 * indicated by the server at RTP (even) port.
+ 	 * 
+ 	 * @param packet
+-	 *        a RTP packet
++	 *            a RTP packet
+ 	 */
+ 	public void forwardRtpToServer( RtpPacket packet )
+ 	{
+@@ -160,8 +168,8 @@
+ 		packet.setSsrc( proxySSRC );
+ 
+ 		if ( rtpServerSession == null )
+-			rtpServerSession = RtpServerService.newRtpSession( new InetSocketAddress(
+-					serverAddress, serverRtpPort ) );
++			rtpServerSession = RtpServerService.getInstance().newSession(
++					new InetSocketAddress( serverAddress, serverRtpPort ) );
+ 
+ 		rtpServerSession.write( packet.toByteBuffer() );
+ 	}
+@@ -171,7 +179,7 @@
+ 	 * indicated by the server at RTCP (odd) port.
+ 	 * 
+ 	 * @param packet
+-	 *        a RTCP packet
++	 *            a RTCP packet
+ 	 */
+ 	public void forwardRtcpToServer( RtcpPacket packet )
+ 	{
+@@ -179,8 +187,8 @@
+ 		packet.setSsrc( proxySSRC );
+ 
+ 		if ( rtcpServerSession == null )
+-			rtcpServerSession = RtpServerService.newRtcpSession( new InetSocketAddress(
+-					serverAddress, serverRtcpPort ) );
++			rtcpServerSession = RtcpServerService.getInstance().newSession(
++					new InetSocketAddress( clientAddress, clientRtcpPort ) );
+ 
+ 		rtcpServerSession.write( packet.toByteBuffer() );
+ 	}
+@@ -193,7 +201,7 @@
+ 	 * same (live) track.
+ 	 * 
+ 	 * @param packet
+-	 *        a RTP packet
++	 *            a RTP packet
+ 	 */
+ 	public void forwardRtpToClient( RtpPacket packet )
+ 	{
+@@ -201,9 +209,8 @@
+ 		packet.setSsrc( proxySSRC );
+ 
+ 		if ( rtpClientSession == null ) {
+-			rtpClientSession = RtpClientService.newRtpSession( new InetSocketAddress(
+-					clientAddress, clientRtpPort ) );
+-
++			rtpClientSession = RtpClientService.getInstance().newSession(
++					new InetSocketAddress( clientAddress, clientRtpPort ) );
+ 		}
+ 
+ 		rtpClientSession.write( packet.toByteBuffer() );
+@@ -217,7 +224,7 @@
+ 	 * same (live) track.
+ 	 * 
+ 	 * @param packet
+-	 *        a RTCP packet
++	 *            a RTCP packet
+ 	 */
+ 	public void forwardRtcpToClient( RtcpPacket packet )
+ 	{
+@@ -225,14 +232,12 @@
+ 		packet.setSsrc( proxySSRC );
+ 
+ 		if ( rtcpClientSession == null ) {
+-			rtcpClientSession = RtpClientService.newRtcpSession( new InetSocketAddress(
+-					clientAddress, clientRtcpPort ) );
+-
++			rtcpClientSession = RtcpClientService.getInstance().newSession(
++					new InetSocketAddress( clientAddress, clientRtcpPort ) );
+ 		}
+ 
+ 		rtcpClientSession.write( packet.toByteBuffer() );
+ 	}
+-	
+ 
+ 	/**
+ 	 * Set the address of the server associated with this track.
+@@ -241,11 +246,11 @@
+ 	 * same (live) track.
+ 	 * 
+ 	 * @param serverHost
+-	 *        The serverHost to set.
++	 *            The serverHost to set.
+ 	 * @param rtpPort
+-	 *        the port number used for RTP packets
++	 *            the port number used for RTP packets
+ 	 * @param rtcpPort
+-	 *        the port number used for RTCP packets
++	 *            the port number used for RTCP packets
+ 	 */
+ 	public synchronized void setClientAddress( InetAddress clientAddress, int rtpPort,
+ 			int rtcpPort )
+@@ -262,11 +267,11 @@
+ 	 * Set the address of the server associated with this track.
+ 	 * 
+ 	 * @param serverHost
+-	 *        The serverHost to set.
++	 *            The serverHost to set.
+ 	 * @param rtpPort
+-	 *        the port number used for RTP packets
++	 *            the port number used for RTP packets
+ 	 * @param rtcpPort
+-	 *        the port number used for RTCP packets
++	 *            the port number used for RTCP packets
+ 	 */
+ 	public synchronized void setServerAddress( InetAddress serverAddress, int rtpPort,
+ 			int rtcpPort )
+@@ -278,7 +283,7 @@
+ 		serverAddressMap.put( new InetSocketAddress( serverAddress, rtpPort ), this );
+ 		serverAddressMap.put( new InetSocketAddress( serverAddress, rtcpPort ), this );
+ 	}
+-	
++
+ 	public synchronized void close()
+ 	{
+ 		if ( serverSSRC != null )
+@@ -294,7 +299,6 @@
+ 		log.debug( &quot;Closed track &quot; + url );
+ 	}
+ 
+-	
+ 	// ////////////////
+ 
+ 	/** Used in SSRC id generation */
+
+Modified: trunk/src/main/java/rtspproxy/proxy/track/Track.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/track/Track.java	2005-12-19 19:17:28 UTC (rev 349)
++++ trunk/src/main/java/rtspproxy/proxy/track/Track.java	2005-12-19 19:27:06 UTC (rev 350)
+@@ -48,24 +48,24 @@
+ 	 * Control Url of the track. This is the url handle given by the server to
+ 	 * control different tracks in a RTSP session.
+ 	 */
+-	protected
+-	String url;
++	protected String url;
+ 
+ 	/**
+-	 * IP address and RTP/RTCP ports for client and server.
++	 * IP address of client and server.
+ 	 * &lt;p&gt;
+ 	 * TODO: When using reflection, there will be more than one connected client
+ 	 * at a time to the same Track. So the track should keep a list of connected
+ 	 * clients and forward packets to each of them.
+ 	 */
+ 	protected InetAddress clientAddress;
++
+ 	protected InetAddress serverAddress;
+ 
+ 	/**
+ 	 * Construct a new Track.
+ 	 * 
+ 	 * @param url
+-	 *        the control name for this track.
++	 *            the control name for this track.
+ 	 */
+ 	public Track( String url )
+ 	{
+@@ -97,7 +97,6 @@
+ 
+ 	// /// Member methods
+ 
+-
+ 	public String getUrl()
+ 	{
+ 		return url;
+@@ -107,7 +106,7 @@
+ 	{
+ 		this.url = url;
+ 	}
+-	
++
+ 	public abstract void close();
+ 
+ 	public String toString()
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000033.html">[Rtspproxy-devel] r349 - trunk/src/main/java/rtspproxy/lib
+</A></li>
+	<LI>Next message: <A HREF="000036.html">[Rtspproxy-devel] r351 - trunk/src/main/java/rtspproxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#35">[ date ]</a>
+              <a href="thread.html#35">[ thread ]</a>
+              <a href="subject.html#35">[ subject ]</a>
+              <a href="author.html#35">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

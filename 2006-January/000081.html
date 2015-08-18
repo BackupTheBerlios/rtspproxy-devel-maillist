@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r397 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r397%20-%20trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite&In-Reply-To=%3C200601170013.k0H0DSIR002696%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000080.html">
+   <LINK REL="Next"  HREF="000082.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r397 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r397%20-%20trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite&In-Reply-To=%3C200601170013.k0H0DSIR002696%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r397 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite">rbieniek at berlios.de
+       </A><BR>
+    <I>Tue Jan 17 01:13:28 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000080.html">[Rtspproxy-devel] r396 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+        <LI>Next message: <A HREF="000082.html">[Rtspproxy-devel] r398 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#81">[ date ]</a>
+              <a href="thread.html#81">[ thread ]</a>
+              <a href="subject.html#81">[ subject ]</a>
+              <a href="author.html#81">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-17 01:13:17 +0100 (Tue, 17 Jan 2006)
+New Revision: 397
+
+Modified:
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java
+Log:
+- modified URL rewriting filter and provider interface to handle
+cases where the filter wishes to pass back a response to the
+client instead of just modifying the source URL
+
+Modified: trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java
+===================================================================
+--- trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java	2006-01-17 00:13:05 UTC (rev 396)
++++ trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java	2006-01-17 00:13:17 UTC (rev 397)
+@@ -41,7 +41,8 @@
+ 	/* (non-Javadoc)
+ 	 * @see rtspproxy.filter.rewrite.UrlRewritingProvider#rewriteRequestUrl(java.net.URL)
+ 	 */
+-	public URL rewriteRequestUrl(URL request, RtspRequest.Verb verb, SocketAddress client) {
++	public UrlRewritingResult rewriteRequestUrl(URL request, RtspRequest.Verb verb, SocketAddress client) {
++		UrlRewritingResult result = null;
+ 		URL rewritten = null;
+ 		String req = request.toString();
+ 		
+@@ -53,7 +54,7 @@
+ 			if((rewritten = this.optionsForwardMappings.get(request)) != null) {
+ 				logger.debug(&quot;found special OPTIONS rewrite URL: &quot; + rewritten);
+ 				
+-				return rewritten;
++				return new UrlRewritingResult(rewritten);
+ 			}
+ 		}
+ 		for(String prefix : this.forwardMappings.keySet()) {
+@@ -69,7 +70,10 @@
+ 		}
+ 		logger.debug(&quot;rewritten URL: &quot; + rewritten);
+ 		
+-		return rewritten;
++		if(rewritten != null)
++			result = new UrlRewritingResult(rewritten);
++		
++		return result;
+ 	}
+ 
+ 	/* (non-Javadoc)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000080.html">[Rtspproxy-devel] r396 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+	<LI>Next message: <A HREF="000082.html">[Rtspproxy-devel] r398 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#81">[ date ]</a>
+              <a href="thread.html#81">[ thread ]</a>
+              <a href="subject.html#81">[ subject ]</a>
+              <a href="author.html#81">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

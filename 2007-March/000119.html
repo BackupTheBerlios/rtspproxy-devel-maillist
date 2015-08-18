@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] Using rtspproxy on Debian
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20Using%20rtspproxy%20on%20Debian&In-Reply-To=%3C5e4c79910703140230t2492644ah48f5c833e7ccaf58%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] Using rtspproxy on Debian</H1>
+    <B>Marco De Vitis</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20Using%20rtspproxy%20on%20Debian&In-Reply-To=%3C5e4c79910703140230t2492644ah48f5c833e7ccaf58%40mail.gmail.com%3E"
+       TITLE="[Rtspproxy-devel] Using rtspproxy on Debian">marcodevitis at gmail.com
+       </A><BR>
+    <I>Wed Mar 14 10:30:33 CET 2007</I>
+    <P><UL>
+        
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#119">[ date ]</a>
+              <a href="thread.html#119">[ thread ]</a>
+              <a href="subject.html#119">[ subject ]</a>
+              <a href="author.html#119">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+I need to install a RTSP proxy on a Debian Sarge machine.
+Searching around, the only possible solution I found at the moment is
+your rtspproxy software, but I cannot make it work (I downloaded the
+latest 3.0 alpha2, I also tried downloading the previous 2.4.1 but the
+download link does not work).
+
+Debian has the java executable at /usr/bin/java, so I did set the
+JAVA_HOME env var to /usr, but when I launch the rtspproxy executable
+it just stops, writing &quot;Aborted&quot;, no other output, not even in the
+logfile, even though I activated the log options in the conf file.
+
+I wanted to try from the source, but I do not have Maven installed. I
+downloaded it, but it appears I cannot use it; if I do a &quot;mvn
+--version&quot;, as suggested in the docs, here is what I get:
+
+#&gt;mvn --version
+Sorry, but JDK 1.4 or above is required to execute Maven. You appear
+to be using Java:
+java version &quot;1.4.2&quot;
+Kaffe (build 1.1.4+cvs)
+Kaffe (build 1.1.4+cvs, &lt;unknown vm info&gt;)
+
+I also have a more recent Debian Etch machine available, so I tried
+there. Again I set JAVA_HOME to /usr, but when I run rtspproxy I get
+this error output and it quits:
+
+#&gt;./rtspproxy
+Exception in thread &quot;main&quot; java.lang.NoClassDefFoundError:
+org.slf4j.impl.StaticBinder
+   at java.lang.Class.initializeClass(libgcj.so.70)
+   at org.slf4j.LoggerFactory.&lt;clinit&gt;(LoggerFactory.java:82)
+   at java.lang.Class.initializeClass(libgcj.so.70)
+   at org.apache.mina.common.support.DefaultExceptionMonitor.&lt;clinit&gt;(DefaultExceptionMonitor.java:38)
+   at java.lang.Class.initializeClass(libgcj.so.70)
+   at org.apache.mina.common.support.BaseIoSessionManager.&lt;init&gt;(BaseIoSessionManager.java:37)
+   at org.apache.mina.common.support.BaseIoAcceptor.&lt;init&gt;(BaseIoAcceptor.java:42)
+   at org.apache.mina.transport.socket.nio.support.SocketAcceptorDelegate.&lt;init&gt;(SocketAcceptorDelegate.java:69)
+   at org.apache.mina.transport.socket.nio.SocketAcceptor.&lt;init&gt;(SocketAcceptor.java:38)
+   at org.apache.mina.registry.SimpleServiceRegistry.&lt;init&gt;(SimpleServiceRegistry.java:35)
+   at rtspproxy.Reactor.&lt;clinit&gt;(Reactor.java:33)
+   at java.lang.Class.initializeClass(libgcj.so.70)
+   at rtspproxy.Main.main(Main.java:51)
+Caused by: java.lang.ClassNotFoundException:
+org.slf4j.impl.BasicMarkerFactory not found in
+gnu.gcj.runtime.SystemClassLoader{urls=[file:./,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/asm-1.5.3.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/cglib-2.1_2.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/commons-collections-3.1.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/commons-logging-1.0.4.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/log4j-1.2.9.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/mina-0.9.0.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/rtspproxy-3.0-ALPHA2.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/slf4j-simple-1.0-beta9.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/spring-beans-1.2.5.jar,file:/root/rtspproxy-3.0-ALPHA2-bin/lib/spring-core-1.2.5.jar],
+parent=gnu.gcj.runtime.ExtensionClassLoader{urls=[], parent=null}}
+   at java.net.URLClassLoader.findClass(libgcj.so.70)
+   at gnu.gcj.runtime.SystemClassLoader.findClass(libgcj.so.70)
+   at java.lang.ClassLoader.loadClass(libgcj.so.70)
+   at java.lang.ClassLoader.loadClass(libgcj.so.70)
+   at java.lang.Class.forName(libgcj.so.70)
+   at java.lang.Class.initializeClass(libgcj.so.70)
+   ...12 more
+
+Just for the record, java -version reports:
+
+#&gt;java -version
+java version &quot;1.4.2&quot;
+gij (GNU libgcj) version 4.1.2 20061115 (prerelease) (Debian 4.1.1-20)
+
+So I tried again with mvn on this machine, where it seems to run fine:
+
+#&gt;mvn --version
+Maven version: 2.0.5
+
+But wherever I execute &quot;mvn&quot; in the rtspproxy source tree, it just
+outputs &quot;[INFO] Scanning for projects...&quot; and stops there forever,
+without taking any CPU cycles.
+
+Can you please help?
+Do you have any idea on how to use it on Debian?
+Thanks.
+
+-- 
+Ciao,
+  Marco.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#119">[ date ]</a>
+              <a href="thread.html#119">[ thread ]</a>
+              <a href="subject.html#119">[ subject ]</a>
+              <a href="author.html#119">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

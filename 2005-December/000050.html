@@ -1,0 +1,844 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r365 - in trunk/src/main/java/rtspproxy: . config filter filter/accounting
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r365%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20config%20filter%20filter/accounting&In-Reply-To=%3C200512260902.jBQ92Qst032199%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000049.html">
+   <LINK REL="Next"  HREF="000051.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r365 - in trunk/src/main/java/rtspproxy: . config filter filter/accounting</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r365%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20config%20filter%20filter/accounting&In-Reply-To=%3C200512260902.jBQ92Qst032199%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r365 - in trunk/src/main/java/rtspproxy: . config filter filter/accounting">merlimat at berlios.de
+       </A><BR>
+    <I>Mon Dec 26 10:02:26 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000049.html">[Rtspproxy-devel] r364 - trunk/src/site/xdoc
+</A></li>
+        <LI>Next message: <A HREF="000051.html">[Rtspproxy-devel] r366 - trunk/src/test/java/rtspproxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#50">[ date ]</a>
+              <a href="thread.html#50">[ thread ]</a>
+              <a href="subject.html#50">[ subject ]</a>
+              <a href="author.html#50">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-26 10:02:18 +0100 (Mon, 26 Dec 2005)
+New Revision: 365
+
+Added:
+   trunk/src/main/java/rtspproxy/filter/accounting/
+   trunk/src/main/java/rtspproxy/filter/accounting/AccountingFilter.java
+   trunk/src/main/java/rtspproxy/filter/accounting/AccountingProvider.java
+   trunk/src/main/java/rtspproxy/filter/accounting/PlainTextAccountingProvider.java
+Removed:
+   trunk/src/main/java/rtspproxy/Config.java
+Modified:
+   trunk/src/main/java/rtspproxy/config/Config.java
+   trunk/src/main/java/rtspproxy/filter/RtspClientFilters.java
+   trunk/src/main/java/rtspproxy/filter/RtspFilters.java
+Log:
+Added preliminary implementation of accounting filter.
+
+Deleted: trunk/src/main/java/rtspproxy/Config.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/Config.java	2005-12-26 08:59:46 UTC (rev 364)
++++ trunk/src/main/java/rtspproxy/Config.java	2005-12-26 09:02:18 UTC (rev 365)
+@@ -1,284 +0,0 @@
+-/***************************************************************************
+- *                                                                         *
+- *   This program is free software; you can redistribute it and/or modify  *
+- *   it under the terms of the GNU General Public License as published by  *
+- *   the Free Software Foundation; either version 2 of the License, or     *
+- *   (at your option) any later version.                                   *
+- *                                                                         *
+- *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
+- *                                                                         *
+- ***************************************************************************/
+-
+-/*
+- * $Id$
+- * 
+- * $URL$
+- * 
+- */
+-
+-package rtspproxy;
+-
+-import java.io.File;
+-import java.io.FileInputStream;
+-import java.io.IOException;
+-import java.util.Properties;
+-
+-import org.apache.log4j.Logger;
+-import org.apache.log4j.PropertyConfigurator;
+-
+-/**
+- * General configuration system.
+- */
+-public class Config
+-{
+-
+-	private static Logger log = Logger.getLogger( Config.class );
+-	private static Properties properties = new Properties();
+-
+-	private static String rtspproxy_home;
+-	private static String name;
+-	private static String version;
+-	private static String proxySignature;
+-
+-	protected Config()
+-	{
+-		rtspproxy_home = System.getProperty( &quot;rtspproxy.home&quot; );
+-		if ( rtspproxy_home == null ) {
+-			rtspproxy_home = System.getProperty( &quot;user.dir&quot; );
+-			if ( rtspproxy_home == null )
+-				rtspproxy_home = &quot;&quot;;
+-		}
+-
+-		// Read program name and version
+-		Properties jarProps = new Properties();
+-
+-		try {
+-			jarProps.load( Thread.currentThread().getContextClassLoader().getResourceAsStream(
+-					&quot;META-INF/application.properties&quot; ) );
+-			name = jarProps.getProperty( &quot;application.name&quot; );
+-			version = jarProps.getProperty( &quot;application.version&quot; );
+-		} catch ( Exception e ) {
+-			name = &quot;RtspProxy&quot;;
+-			version = &quot;&quot;;
+-		}
+-
+-		proxySignature = name + &quot; &quot; + version + &quot; (&quot; + System.getProperty( &quot;os.name&quot; )
+-				+ &quot; / &quot; + System.getProperty( &quot;os.version&quot; ) + &quot; / &quot;
+-				+ System.getProperty( &quot;os.arch&quot; ) + &quot;)&quot;;
+-
+-		String[] paths = new String[5];
+-
+-		// Used for testing purposes:
+-		// checks for the configuration file
+-		paths[4] = &quot;src&quot; + File.separator + &quot;resources&quot; + File.separator + &quot;conf&quot;
+-				+ File.separator + &quot;rtspproxy.properties&quot;;
+-
+-		// Current directory configuration
+-		paths[3] = &quot;rtspproxy.properties&quot;;
+-
+-		// RtspProxy home folder
+-		paths[2] = rtspproxy_home + File.separator + &quot;conf&quot; + File.separator
+-				+ &quot;rtspproxy.properties&quot;;
+-
+-		// Per user config
+-		paths[1] = System.getProperty( &quot;user.home&quot;, &quot;&quot; ) + File.separator
+-				+ &quot;.rtspproxy.properties&quot;;
+-		// System wide configuration (tipical in unix systems)
+-		paths[0] = &quot;/etc/rtspproxy.properties&quot;;
+-
+-		for ( String path : paths ) {
+-			try {
+-				properties.load( new FileInputStream( path ) );
+-				// Immediately apply debug settings!
+-				updateDebugSettings();
+-
+-				log.debug( &quot;Reading configurations from '&quot; + path + &quot;'&quot; );
+-				// break;
+-
+-			} catch ( IOException e ) {
+-				// Silently ignore
+-			}
+-		}
+-
+-		for ( Object key : properties.keySet() ) {
+-			log.debug( (String) key + &quot; : &quot; + properties.getProperty( (String) key ) );
+-		}
+-	}
+-
+-	public static String get( String key, String defaultValue )
+-	{
+-		return properties.getProperty( key, defaultValue );
+-	}
+-
+-	/**
+-	 * @param key
+-	 * @param defaultValue
+-	 * @return the value of an integer property
+-	 */
+-	public static int getInt( String key, int defaultValue )
+-	{
+-		try {
+-			return Integer.parseInt( properties.getProperty( key ) );
+-		} catch ( Exception e ) {
+-			return defaultValue;
+-		}
+-	}
+-
+-	/**
+-	 * Convert a list of comma separated integers string into an array of
+-	 * integers.
+-	 * 
+-	 * @param key
+-	 * @param defaultValue
+-	 * @return
+-	 */
+-	public static int[] getIntArray( String key, int defaultValue )
+-	{
+-		try {
+-			String toks[] = properties.getProperty( key ).split( &quot;,&quot; );
+-			int res[] = new int[toks.length];
+-			int i = 0;
+-			for ( String tok : toks ) {
+-				res[i++] = Integer.parseInt( tok.trim() );
+-			}
+-			return res;
+-
+-		} catch ( Exception e ) {
+-			int res[] = { defaultValue };
+-			return res;
+-		}
+-	}
+-
+-	/**
+-	 * Get a boolean property from config.
+-	 * 
+-	 * @param key
+-	 *        the name of the property
+-	 * @param defaultValue
+-	 *        its default value
+-	 * @return the boolean value
+-	 */
+-	public static boolean getBoolean( String key, boolean defaultValue )
+-	{
+-		String value;
+-
+-		try {
+-			value = properties.getProperty( key );
+-		} catch ( Exception e ) {
+-			return defaultValue;
+-		}
+-
+-		// Try to convert a a String to a boolean
+-		if ( &quot;true&quot;.equalsIgnoreCase( value ) || &quot;yes&quot;.equalsIgnoreCase( value )
+-				|| &quot;1&quot;.equalsIgnoreCase( value ) ) {
+-			return true;
+-		} else
+-			if ( &quot;false&quot;.equalsIgnoreCase( value ) || &quot;no&quot;.equalsIgnoreCase( value )
+-					|| &quot;0&quot;.equalsIgnoreCase( value ) ) {
+-				return false;
+-			}
+-
+-		return defaultValue;
+-	}
+-
+-	public static boolean getBoolean( String key )
+-	{
+-		return getBoolean( key, false );
+-	}
+-
+-	public static void set( String key, String value )
+-	{
+-		properties.setProperty( key, value );
+-	}
+-
+-	public static void setBoolean( String key, boolean value )
+-	{
+-		properties.setProperty( key, value ? &quot;true&quot; : &quot;false&quot; );
+-	}
+-
+-	/**
+-	 * @param key
+-	 * @param value
+-	 */
+-	public static void setInt( String key, int value )
+-	{
+-		properties.setProperty( key, Integer.toString( value ) );
+-	}
+-
+-	public static void setIntArray( String key, int[] values )
+-	{
+-		StringBuilder build = new StringBuilder();
+-		for ( int i = 0; i &lt; values.length; i++ ) {
+-			if ( i &gt; 0 )
+-				build.append( &quot;, &quot; );
+-			build.append( Integer.toString( values[i] ) );
+-		}
+-		properties.setProperty( key, build.toString() );
+-	}
+-
+-	/**
+-	 * @return the home directory of the proxy installation
+-	 */
+-	public static String getHome()
+-	{
+-		return rtspproxy_home;
+-	}
+-
+-	private static void updateDebugSettings()
+-	{
+-		Properties prop = new Properties();
+-		// common properties
+-		prop.setProperty( &quot;log4j.appender.A1.layout&quot;, &quot;org.apache.log4j.PatternLayout&quot; );
+-		prop.setProperty( &quot;log4j.appender.A1.layout.ConversionPattern&quot;,
+-				&quot;%7p [%t] (%F:%L) - %m%n&quot; );
+-
+-		if ( getBoolean( &quot;log.debug&quot; ) )
+-			prop.setProperty( &quot;log4j.rootLogger&quot;, &quot;DEBUG, A1&quot; );
+-		else
+-			// only write important messages
+-			prop.setProperty( &quot;log4j.rootLogger&quot;, &quot;INFO, A1&quot; );
+-
+-		if ( getBoolean( &quot;log.logtofile&quot; ) ) {
+-			// save logs in a file
+-			String filename = get( &quot;log.file&quot;, &quot;logs&quot; + File.separator + &quot;rtspproxy.log&quot; );
+-			prop.setProperty( &quot;log4j.appender.A1&quot;, &quot;org.apache.log4j.RollingFileAppender&quot; );
+-			prop.setProperty( &quot;log4j.appender.A1.File&quot;, filename );
+-
+-			// if logs directory does not exists, create it
+-			File logs = new File( rtspproxy_home + File.separator + &quot;logs&quot; );
+-			if ( !logs.exists() )
+-				logs.mkdir();
+-
+-		} else {
+-			// Log to console
+-			prop.setProperty( &quot;log4j.appender.A1&quot;, &quot;org.apache.log4j.ConsoleAppender&quot; );
+-		}
+-
+-		PropertyConfigurator.configure( prop );
+-	}
+-
+-	/**
+-	 * @return Returns the application name.
+-	 */
+-	public static String getName()
+-	{
+-		return name;
+-	}
+-
+-	/**
+-	 * @return Returns the application version.
+-	 */
+-	public static String getVersion()
+-	{
+-		return version;
+-	}
+-
+-	
+-	/**
+-	 * @return Returns the proxySignature.
+-	 */
+-	public static String getProxySignature()
+-	{
+-		return proxySignature;
+-	}
+-}
+
+Modified: trunk/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/Config.java	2005-12-26 08:59:46 UTC (rev 364)
++++ trunk/src/main/java/rtspproxy/config/Config.java	2005-12-26 09:02:18 UTC (rev 365)
+@@ -234,6 +234,18 @@
+ 			&quot;Host to bind the management services. Default is localhost, and the services &quot;
+ 					+ &quot;will only be reachable from local machine.&quot; );
+ 
++	public static final StringParameter proxyManagementUser = new StringParameter(
++			&quot;proxy.management.user&quot;, // name
++			null, // default value
++			true, // mutable
++			&quot;Remote management administrator user name.&quot; );
++	
++	public static final StringParameter proxyManagementPassword = new StringParameter(
++			&quot;proxy.management.password&quot;, // name
++			null, // default value
++			true, // mutable
++			&quot;Remote management administrator password.&quot; );
++
+ 	public static final BooleanParameter proxyManagementWebEnable = new BooleanParameter(
+ 			&quot;proxy.management.web.enable&quot;, // name
+ 			false, // default value
+@@ -281,8 +293,8 @@
+ 		// Read program name and version
+ 		Properties jarProps = new Properties();
+ 		try {
+-			jarProps.load( Thread.currentThread().getContextClassLoader()
+-					.getResourceAsStream( &quot;META-INF/application.properties&quot; ) );
++			jarProps.load( Thread.currentThread().getContextClassLoader().getResourceAsStream(
++					&quot;META-INF/application.properties&quot; ) );
+ 			name = jarProps.getProperty( &quot;application.name&quot; );
+ 			version = jarProps.getProperty( &quot;application.version&quot; );
+ 		} catch ( Exception e ) {
+@@ -314,7 +326,7 @@
+ 	 */
+ 	public void update( Observable o, Object arg )
+ 	{
+-		if ( !(o instanceof Parameter) )
++		if ( !( o instanceof Parameter ) )
+ 			throw new IllegalArgumentException( &quot;Only observe parameters&quot; );
+ 
+ 		if ( o == logDebug || o == logFile || o == logLogToFile ) {
+@@ -415,8 +427,8 @@
+ 	public static String debugParameters()
+ 	{
+ 		StringBuilder sb = new StringBuilder();
+-		Map&lt;String, Parameter&gt; parameters = new TreeMap&lt;String, Parameter&gt;( Config
+-				.getParametersMap() );
++		Map&lt;String, Parameter&gt; parameters = new TreeMap&lt;String, Parameter&gt;(
++				Config.getParametersMap() );
+ 		sb.append( &quot;Parameters:\n&quot; );
+ 		for ( Parameter parameter : parameters.values() ) {
+ 			sb.append( parameter.getName() );
+
+Modified: trunk/src/main/java/rtspproxy/filter/RtspClientFilters.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/RtspClientFilters.java	2005-12-26 08:59:46 UTC (rev 364)
++++ trunk/src/main/java/rtspproxy/filter/RtspClientFilters.java	2005-12-26 09:02:18 UTC (rev 365)
+@@ -33,6 +33,7 @@
+ 		addIpAddressFilter( chain );
+ 		addRtspCodecFilter( chain );
+ 		addAuthenticationFilter( chain );
++		addAccountingFilter( chain );
+ 	}
+ 
+ }
+
+Modified: trunk/src/main/java/rtspproxy/filter/RtspFilters.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/RtspFilters.java	2005-12-26 08:59:46 UTC (rev 364)
++++ trunk/src/main/java/rtspproxy/filter/RtspFilters.java	2005-12-26 09:02:18 UTC (rev 365)
+@@ -26,8 +26,10 @@
+ import org.apache.mina.filter.codec.ProtocolDecoder;
+ import org.apache.mina.filter.codec.ProtocolEncoder;
+ 
++import rtspproxy.ProxyServiceRegistry;
+ import rtspproxy.Reactor;
+ import rtspproxy.config.Config;
++import rtspproxy.filter.accounting.AccountingFilter;
+ import rtspproxy.filter.authentication.AuthenticationFilter;
+ import rtspproxy.filter.ipaddress.IpAddressFilter;
+ import rtspproxy.filter.rewrite.RequestUrlRewritingImpl;
+@@ -61,13 +63,25 @@
+ 		}
+ 	};
+ 
+-	private static IoFilter codecFilter = new ProtocolCodecFilter( codecFactory );
++	private static final IoFilter codecFilter = new ProtocolCodecFilter( codecFactory );
+ 
+ 	// These filters are instanciated only one time, when requested
+ 	private static IpAddressFilter ipAddressFilter = null;
+ 
+ 	private static AuthenticationFilter authenticationFilter = null;
+ 
++	private static AccountingFilter accountingFilter = null;
++
++	public static final String rtspCodecNAME = &quot;rtspCodec&quot;;
++
++	public static final String ipAddressFilterNAME = &quot;ipAddressFilter&quot;;
++
++	public static final String authenticationFilterNAME = &quot;authenticationFilter&quot;;
++
++	public static final String accountingFilterNAME = &quot;accountingFilter&quot;;
++
++	public static final String rewriteFilterNAME = &quot;rewriteFilter&quot;;
++
+ 	/**
+ 	 * IP Address filter.
+ 	 * &lt;p&gt;
+@@ -82,7 +96,9 @@
+ 		if ( enableIpAddressFilter ) {
+ 			if ( ipAddressFilter == null )
+ 				ipAddressFilter = new IpAddressFilter();
+-			chain.addLast( &quot;ipAddressFilter&quot;, ipAddressFilter );
++
++			chain.addAfter( ProxyServiceRegistry.threadPoolFilterNAME,
++					ipAddressFilterNAME, ipAddressFilter );
+ 		}
+ 	}
+ 
+@@ -92,7 +108,7 @@
+ 	 */
+ 	protected void addRtspCodecFilter( IoFilterChain chain )
+ 	{
+-		chain.addLast( &quot;codec&quot;, codecFilter );
++		chain.addLast( rtspCodecNAME, codecFilter );
+ 	}
+ 
+ 	/**
+@@ -106,20 +122,53 @@
+ 		if ( enableAuthenticationFilter ) {
+ 			if ( authenticationFilter == null )
+ 				authenticationFilter = new AuthenticationFilter();
+-			chain.addLast( &quot;authentication&quot;, authenticationFilter );
++			chain
++					.addAfter( rtspCodecNAME, authenticationFilterNAME,
++							authenticationFilter );
+ 		}
+ 	}
+ 
++	protected void addAccountingFilter( IoFilterChain chain )
++	{
++		boolean enableAccountingFilter = Config.proxyFilterAccountingEnable.getValue();
++
++		if ( enableAccountingFilter ) {
++			if ( accountingFilter == null ) {
++				accountingFilter = new AccountingFilter();
++			}
++			if ( chain.contains( authenticationFilterNAME ) ) {
++				/*
++				 * If we have the authentication filter in the chain, it's
++				 * preferable to have the accounting after that, to see the user
++				 * identity if authenticated.
++				 */
++				chain.addAfter( authenticationFilterNAME, accountingFilterNAME,
++						accountingFilter );
++			} else {
++				/*
++				 * At least we want to have it after the RTSP codec, because it
++				 * deals with already parsed RTSP messages.
++				 */
++				chain.addAfter( rtspCodecNAME, accountingFilterNAME, accountingFilter );
++			}
++		}
++	}
++
+ 	protected void addRewriteFilter( IoFilterChain chain )
+ 	{
+ 		// TODO: use different parameters..
+-		String rewritingFilter = null; //Config.get(
+-				//&quot;filter.requestUrlRewriting.implementationClass&quot;, null );
++		String rewritingFilter = null; // Config.get(
++		// &quot;filter.requestUrlRewriting.implementationClass&quot;, null );
+ 
+ 		try {
+-			if ( rewritingFilter != null )
+-				chain.addLast( &quot;requestUrlRewriting&quot;, new RequestUrlRewritingImpl(
+-						rewritingFilter ) );
++			if ( rewritingFilter != null ) {
++				/*
++				 * The rewrite filter will be placed after the codec filter
++				 * because it deals with already formed RTSP messages.
++				 */
++				chain.addAfter( rtspCodecNAME, rewriteFilterNAME,
++						new RequestUrlRewritingImpl( rewritingFilter ) );
++			}
+ 		} catch ( Exception e ) {
+ 			// already logged
+ 			Reactor.stop();
+
+Added: trunk/src/main/java/rtspproxy/filter/accounting/AccountingFilter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/accounting/AccountingFilter.java	2005-12-26 08:59:46 UTC (rev 364)
++++ trunk/src/main/java/rtspproxy/filter/accounting/AccountingFilter.java	2005-12-26 09:02:18 UTC (rev 365)
+@@ -0,0 +1,99 @@
++package rtspproxy.filter.accounting;
++
++import org.apache.log4j.Logger;
++import org.apache.mina.common.IoFilterAdapter;
++import org.apache.mina.common.IoSession;
++
++import rtspproxy.Reactor;
++import rtspproxy.config.Config;
++import rtspproxy.rtsp.RtspMessage;
++
++/**
++ * 
++ * @author Matteo Merli
++ */
++public class AccountingFilter extends IoFilterAdapter
++{
++
++	private static Logger log = Logger.getLogger( AccountingFilter.class );
++
++	private AccountingProvider provider = null;
++
++	public AccountingFilter()
++	{
++		// Check which backend implementation to use
++		// Default is plain-text implementation
++		String className = Config.proxyFilterAccountingImplementationClass.getValue();
++
++		Class providerClass;
++		try {
++			providerClass = Class.forName( className );
++
++		} catch ( ClassNotFoundException e ) {
++			log.fatal( &quot;Invalid AccountingProvider class: &quot; + className );
++			Reactor.stop();
++			return;
++		}
++
++		// Check if the class implements the IpAddressProvider interfaces
++		boolean found = false;
++		for ( Class interFace : providerClass.getInterfaces() ) {
++			if ( AccountingProvider.class.equals( interFace ) ) {
++				found = true;
++				break;
++			}
++		}
++
++		if ( !found ) {
++			log.fatal( &quot;Class (&quot; + providerClass
++					+ &quot;) does not implement the AccountingProvider interface.&quot; );
++			Reactor.stop();
++			return;
++		}
++
++		try {
++			provider = (AccountingProvider) providerClass.newInstance();
++			provider.init();
++
++		} catch ( Exception e ) {
++			log.fatal( &quot;Error starting AccountingProvider: &quot; + e );
++			Reactor.stop();
++			return;
++		}
++
++		log.info( &quot;Using AccountingFilter &quot; + &quot; (&quot; + className + &quot;)&quot; );
++	}
++
++	@Override
++	public void messageReceived( NextFilter nextFilter, IoSession session, Object message )
++			throws Exception
++	{
++		if ( provider != null ) {
++			if ( message instanceof RtspMessage )
++				provider.messageReceived( session, (RtspMessage) message );
++			else
++				log.error( &quot;Expecting a RtspMessage. Received a &quot;
++						+ message.getClass().getName() );
++		}
++
++		// Forward message
++		nextFilter.messageReceived( session, message );
++	}
++
++	@Override
++	public void messageSent( NextFilter nextFilter, IoSession session, Object message )
++			throws Exception
++	{
++		if ( provider != null ) {
++			if ( message instanceof RtspMessage )
++				provider.messageSent( session, (RtspMessage) message );
++			else
++				log.error( &quot;Expecting a RtspMessage. Received a &quot;
++						+ message.getClass().getName() );
++		}
++		
++		// Forward message
++		nextFilter.messageSent( session, message );
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/accounting/AccountingFilter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/filter/accounting/AccountingProvider.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/accounting/AccountingProvider.java	2005-12-26 08:59:46 UTC (rev 364)
++++ trunk/src/main/java/rtspproxy/filter/accounting/AccountingProvider.java	2005-12-26 09:02:18 UTC (rev 365)
+@@ -0,0 +1,32 @@
++package rtspproxy.filter.accounting;
++
++import org.apache.mina.common.IoSession;
++
++import rtspproxy.rtsp.RtspMessage;
++
++/**
++ * @author Matteo Merli
++ */
++public interface AccountingProvider
++{
++	
++	/**
++	 * Called once at service startup. Should be used to initialize the
++	 * provider.
++	 * 
++	 * @throws Exception
++	 */
++	public void init() throws Exception;
++
++	/**
++	 * Called once at service shutdown.
++	 * 
++	 * @throws Exception
++	 */
++	public void shutdown() throws Exception;
++
++	public void messageReceived( IoSession session, RtspMessage message );
++
++	public void messageSent( IoSession session, RtspMessage message );
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/accounting/AccountingProvider.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/filter/accounting/PlainTextAccountingProvider.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/accounting/PlainTextAccountingProvider.java	2005-12-26 08:59:46 UTC (rev 364)
++++ trunk/src/main/java/rtspproxy/filter/accounting/PlainTextAccountingProvider.java	2005-12-26 09:02:18 UTC (rev 365)
+@@ -0,0 +1,117 @@
++package rtspproxy.filter.accounting;
++
++import java.io.File;
++import java.net.InetSocketAddress;
++import java.text.SimpleDateFormat;
++import java.util.Date;
++import java.util.Observable;
++import java.util.Observer;
++
++import org.apache.log4j.Appender;
++import org.apache.log4j.Layout;
++import org.apache.log4j.Level;
++import org.apache.log4j.Logger;
++import org.apache.log4j.PatternLayout;
++import org.apache.log4j.RollingFileAppender;
++import org.apache.mina.common.IoSession;
++
++import rtspproxy.config.Config;
++import rtspproxy.filter.authentication.AuthenticationFilter;
++import rtspproxy.rtsp.RtspMessage;
++import rtspproxy.rtsp.RtspRequest;
++
++/**
++ * @author Matteo Merli
++ */
++public class PlainTextAccountingProvider implements AccountingProvider, Observer
++{
++
++	private static String datePattern = &quot;yyyy-MM-dd HH:mm:ss Z&quot;;
++	private static SimpleDateFormat format = new SimpleDateFormat( datePattern );
++
++	// This is not static since it's a separate log
++	private Logger accessLog;
++
++	public PlainTextAccountingProvider()
++	{
++		accessLog = Logger.getLogger( &quot;accessLog&quot; );
++
++		// Subcribe to changes notification
++		Config.proxyFilterAccountingTextFile.addObserver( this );
++	}
++
++	public void init() throws Exception
++	{
++		// Set the file appender
++		String fileName = Config.proxyFilterAccountingTextFile.getValue();
++		File file = new File( fileName );
++		if ( !file.isAbsolute() ) {
++			file = new File( Config.getHome() + File.separator + fileName );
++		}
++
++		// if logs directory does not exists, create it
++		File logs = file.getParentFile();
++		if ( !logs.exists() )
++			logs.mkdir();
++
++		Layout layout = new PatternLayout( &quot;%m%n&quot; );
++		Appender appender = new RollingFileAppender( layout, file.getAbsolutePath() );
++		accessLog.setAdditivity( false );
++		accessLog.addAppender( appender );
++		accessLog.setLevel( Level.INFO );
++	}
++
++	public void shutdown() throws Exception
++	{
++		// Do nothing
++	}
++
++	public void messageReceived( IoSession session, RtspMessage message )
++	{
++		StringBuilder logMessage = new StringBuilder();
++		if ( message instanceof RtspRequest ) {
++			logMessage.append( ( (RtspRequest) message ).getVerb() ).append( &quot; &quot; );
++			logMessage.append( ( (RtspRequest) message ).getUrl() );
++		}
++		accessLog.info( buildLogMessage( session, message, logMessage ) );
++	}
++
++	public void messageSent( IoSession session, RtspMessage message )
++	{
++		// StringBuilder sb = new StringBuilder();
++		// sb.append( &quot;ciao&quot; );
++		// accessLog.info( buildLogMessage( session, message, sb ) );
++	}
++
++	public void update( Observable o, Object arg )
++	{
++		if ( o == Config.proxyFilterAccountingTextFile ) {
++			try {
++				// Reload the configuration
++				init();
++			} catch ( Exception e ) {
++			}
++		}
++	}
++
++	private static String buildLogMessage( IoSession session, RtspMessage message,
++			StringBuilder logMessage )
++	{
++		StringBuilder sb = new StringBuilder( 150 );
++		String userName = (String) session.getAttribute( AuthenticationFilter.ATTR );
++		String userAgent = message.getHeader( &quot;User-Agent&quot; );
++		Date now = new Date();
++		String dateString = format.format( now );
++
++		sb.append( ( (InetSocketAddress) session.getRemoteAddress() ).getAddress().getHostAddress() );
++		sb.append( &quot; - &quot; );
++		sb.append( userName != null ? userName : &quot;-&quot; ).append( &quot; &quot; );
++		sb.append( &quot;[&quot; ).append( dateString ).append( &quot;] &quot; );
++		sb.append( &quot;\&quot;&quot; ).append( logMessage ).append( &quot;\&quot; &quot; );
++		if ( userAgent != null ) {
++			sb.append( &quot;\&quot;&quot; ).append( userAgent ).append( &quot;\&quot; &quot; );
++		}
++
++		return sb.toString();
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/accounting/PlainTextAccountingProvider.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000049.html">[Rtspproxy-devel] r364 - trunk/src/site/xdoc
+</A></li>
+	<LI>Next message: <A HREF="000051.html">[Rtspproxy-devel] r366 - trunk/src/test/java/rtspproxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#50">[ date ]</a>
+              <a href="thread.html#50">[ thread ]</a>
+              <a href="subject.html#50">[ subject ]</a>
+              <a href="author.html#50">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

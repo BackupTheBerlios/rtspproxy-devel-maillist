@@ -1,0 +1,421 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r322 - in trunk/src/main/java/rtspproxy/filter: . ipaddress
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r322%20-%20in%20trunk/src/main/java/rtspproxy/filter%3A%20.%20ipaddress&In-Reply-To=%3C200512080854.jB88sVkt005572%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000006.html">
+   <LINK REL="Next"  HREF="000008.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r322 - in trunk/src/main/java/rtspproxy/filter: . ipaddress</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r322%20-%20in%20trunk/src/main/java/rtspproxy/filter%3A%20.%20ipaddress&In-Reply-To=%3C200512080854.jB88sVkt005572%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r322 - in trunk/src/main/java/rtspproxy/filter: . ipaddress">merlimat at berlios.de
+       </A><BR>
+    <I>Thu Dec  8 09:54:31 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000006.html">[Rtspproxy-devel] r321 - in trunk/src/main/java/rtspproxy/filter: . rewrite
+</A></li>
+        <LI>Next message: <A HREF="000008.html">[Rtspproxy-devel] r323 - trunk/src/test/java/rtspproxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7">[ date ]</a>
+              <a href="thread.html#7">[ thread ]</a>
+              <a href="subject.html#7">[ subject ]</a>
+              <a href="author.html#7">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-08 09:54:20 +0100 (Thu, 08 Dec 2005)
+New Revision: 322
+
+Added:
+   trunk/src/main/java/rtspproxy/filter/ipaddress/
+   trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java
+   trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressProvider.java
+   trunk/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java
+Log:
+Moved IpAddressFilter to rtspproxy.filter.ipaddress
+
+Copied: trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java (from rev 317, trunk/src/main/java/rtspproxy/auth/IpAddressFilter.java)
+===================================================================
+--- trunk/src/main/java/rtspproxy/auth/IpAddressFilter.java	2005-12-04 23:45:01 UTC (rev 317)
++++ trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java	2005-12-08 08:54:20 UTC (rev 322)
+@@ -0,0 +1,115 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.filter.ipaddress;
++
++import java.net.InetSocketAddress;
++
++import org.apache.log4j.Logger;
++import org.apache.mina.common.IoFilterAdapter;
++import org.apache.mina.common.IoSession;
++
++import rtspproxy.Config;
++import rtspproxy.Reactor;
++
++/**
++ * @author Matteo Merli
++ *
++ */
++public class IpAddressFilter extends IoFilterAdapter
++{
++
++	private static Logger log = Logger.getLogger( IpAddressFilter.class );
++
++	private IpAddressProvider provider;
++
++	public IpAddressFilter()
++	{
++		// Check which backend implementation to use
++		// Default is plain-text implementation
++		String className = Config.get( &quot;auth.ipAddressFilter.implementationClass&quot;,
++				&quot;rtspproxy.auth.PlainTextIpAddressProvider&quot; );
++
++		Class providerClass;
++		try {
++			providerClass = Class.forName( className );
++
++		} catch ( ClassNotFoundException e ) {
++			log.fatal( &quot;Invalid IpAddressProvider class: &quot; + className );
++			Reactor.stop();
++			return;
++		}
++
++		// Check if the class implements the IpAddressProvider interfaces
++		boolean found = false;
++		for ( Class interFace : providerClass.getInterfaces() ) {
++			if ( IpAddressProvider.class.equals( interFace ) ) {
++				found = true;
++				break;
++			}
++		}
++
++		if ( !found ) {
++			log.fatal( &quot;Class (&quot; + provider
++					+ &quot;) does not implement the IpAddressProvider interface.&quot; );
++			Reactor.stop();
++			return;
++		}
++
++		try {
++			provider = (IpAddressProvider) providerClass.newInstance();
++			provider.init();
++		} catch ( Exception e ) {
++			log.fatal( &quot;Error starting IpAddressProvider: &quot; + e );
++			Reactor.stop();
++			return;
++		}
++
++		log.info( &quot;Using IpAddressFilter (&quot; + className + &quot;)&quot; );
++	}
++
++	@Override
++	public void messageReceived( NextFilter nextFilter, IoSession session, Object message )
++			throws Exception
++	{
++		if ( !provider.isBlocked( ( (InetSocketAddress) session.getRemoteAddress() ).getAddress() ) ) {
++			// forward if not blocked
++			nextFilter.messageReceived( session, message );
++		} else {
++			blockSession( session );
++		}
++	}
++
++	@Override
++	public void sessionCreated( NextFilter nextFilter, IoSession session )
++			throws Exception
++	{
++		if ( !provider.isBlocked( ( (InetSocketAddress) session.getRemoteAddress() ).getAddress() ) ) {
++			// forward if not blocked
++			nextFilter.sessionCreated( session );
++		} else {
++			blockSession( session );
++		}
++	}
++
++	protected void blockSession( IoSession session )
++	{
++		log.info( &quot;Blocked connection from : &quot; + session.getRemoteAddress() );
++		session.close();
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Copied: trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressProvider.java (from rev 317, trunk/src/main/java/rtspproxy/auth/IpAddressProvider.java)
+===================================================================
+--- trunk/src/main/java/rtspproxy/auth/IpAddressProvider.java	2005-12-04 23:45:01 UTC (rev 317)
++++ trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressProvider.java	2005-12-08 08:54:20 UTC (rev 322)
+@@ -0,0 +1,35 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.filter.ipaddress;
++
++import java.net.InetAddress;
++
++/**
++ * @author Matteo Merli
++ */
++public interface IpAddressProvider
++{
++
++	public void init() throws Exception;
++
++	public void shutdown() throws Exception;
++	
++	public boolean isBlocked( InetAddress address );
++	
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressProvider.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Copied: trunk/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java (from rev 317, trunk/src/main/java/rtspproxy/auth/PlainTextIpAddressProvider.java)
+===================================================================
+--- trunk/src/main/java/rtspproxy/auth/PlainTextIpAddressProvider.java	2005-12-04 23:45:01 UTC (rev 317)
++++ trunk/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java	2005-12-08 08:54:20 UTC (rev 322)
+@@ -0,0 +1,162 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.filter.ipaddress;
++
++import java.io.BufferedReader;
++import java.io.File;
++import java.io.FileReader;
++import java.io.IOException;
++import java.io.Reader;
++import java.net.InetAddress;
++import java.util.LinkedList;
++import java.util.List;
++import java.util.regex.Pattern;
++
++import org.apache.log4j.Logger;
++
++import rtspproxy.Config;
++
++/**
++ * Implementation of the IpAddressFilter that is based on plain 
++ * text file containing instruction on &quot;allowed&quot; and &quot;denied&quot; 
++ * addresses and hosts.
++ * 
++ * @author Matteo Merli
++ */
++public class PlainTextIpAddressProvider implements IpAddressProvider
++{
++
++	private static Logger log = Logger.getLogger( PlainTextIpAddressProvider.class );
++
++	private enum RuleType {
++		Allow, Deny
++	};
++
++	private static class Rule
++	{
++
++		public RuleType type;
++		public Pattern pattern;
++	}
++
++	private static List&lt;Rule&gt; rules = new LinkedList&lt;Rule&gt;();
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.auth.IpAddressProvider#init()
++	 */
++	public void init() throws Exception
++	{
++		// Load rules from file
++		String fileName = Config.getHome()
++				+ File.separator
++				+ Config.get( &quot;auth.ipfilter.text.file&quot;, &quot;conf&quot; + File.separator
++						+ &quot;ipfilter.txt&quot; );
++
++		loadRules( new FileReader( new File( fileName ) ) );
++
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.auth.IpAddressProvider#shutdown()
++	 */
++	public void shutdown() throws Exception
++	{
++		rules.clear();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.auth.IpAddressProvider#isBlocked(java.net.InetAddress)
++	 */
++	public boolean isBlocked( InetAddress address )
++	{
++		boolean blocked = true; // by default the address is blocked
++		String[] hostip = address.toString().split( &quot;/&quot; );
++		String host = hostip[0];
++		String ip = hostip[1];
++
++		for ( Rule rule : rules ) {
++			if ( blocked &amp;&amp; rule.type == RuleType.Deny )
++				// Don't need to check, up to now this IP is already
++				// blocked
++				continue;
++
++			if ( rule.pattern.matcher( ip ).matches()
++					|| rule.pattern.matcher( host ).matches() )
++				// the address matches the pattern 
++				// check if it's allow or deny
++				blocked = ( rule.type == RuleType.Allow ) ? false : true;
++		}
++
++		return blocked;
++	}
++
++	/** 
++	 * Reads the rules from a file
++	 * @param reader Reader of a file containing the access rules
++	 * @throws IOException
++	 */
++	protected void loadRules( Reader reader ) throws IOException
++	{
++		BufferedReader in = new BufferedReader( reader );
++
++		String line;
++		int lineNumber = 0;
++		try {
++			while ( ( line = in.readLine() ) != null ) {
++				line = line.replaceAll( &quot;\t&quot;, &quot; &quot; ); // replace tabs 
++				line = line.trim();
++				++lineNumber;
++
++				if ( line.length() == 0 )
++					continue; // Ignore empty lines 
++				if ( line.startsWith( &quot;#&quot; ) )
++					continue; // Ignore comments
++				RuleType ruleType = null;
++				if ( line.startsWith( &quot;Allow&quot; ) )
++					ruleType = RuleType.Allow;
++				else
++					if ( line.startsWith( &quot;Deny&quot; ) )
++						ruleType = RuleType.Deny;
++					else
++						throw new IOException( &quot;Invalid filter pattern (line &quot;
++								+ lineNumber + &quot;)&quot; );
++
++				// read the pattern
++				String[] patternSplit = line.split( &quot; &quot;, 2 );
++				if ( patternSplit.length != 2 )
++					throw new IOException( &quot;Invalid filter pattern (line &quot; + lineNumber
++							+ &quot;)&quot; );
++				String pattern = patternSplit[1];
++				log.debug( &quot;Rule: &quot; + ruleType + &quot; &quot; + pattern );
++
++				// Transform the patterns escaping &quot;.&quot; and &quot;*&quot; characters
++				pattern = pattern.replaceAll( &quot;\\.&quot;, &quot;\\\\.&quot; );
++				pattern = pattern.replaceAll( &quot;\\*&quot;, &quot;.*&quot; );
++
++				Rule rule = new Rule();
++				rule.type = ruleType;
++				rule.pattern = Pattern.compile( pattern );
++				rules.add( rule );
++			}
++		} catch ( IOException e ) {
++			log.error( &quot;Error reading IpAddressFilter rules: &quot; + e );
++			throw e;
++		}
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000006.html">[Rtspproxy-devel] r321 - in trunk/src/main/java/rtspproxy/filter: . rewrite
+</A></li>
+	<LI>Next message: <A HREF="000008.html">[Rtspproxy-devel] r323 - trunk/src/test/java/rtspproxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7">[ date ]</a>
+              <a href="thread.html#7">[ thread ]</a>
+              <a href="subject.html#7">[ subject ]</a>
+              <a href="author.html#7">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

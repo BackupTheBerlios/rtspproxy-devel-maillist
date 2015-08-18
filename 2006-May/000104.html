@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r421 - in trunk/RTSPProxy-Core/src/main/java: . rtspproxy/proxy/track rtspproxy/rdt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r421%20-%20in%20trunk/RTSPProxy-Core/src/main/java%3A%20.%20rtspproxy/proxy/track%20rtspproxy/rdt&In-Reply-To=%3C200605021526.k42FQUZu030188%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000103.html">
+   <LINK REL="Next"  HREF="000105.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r421 - in trunk/RTSPProxy-Core/src/main/java: . rtspproxy/proxy/track rtspproxy/rdt</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r421%20-%20in%20trunk/RTSPProxy-Core/src/main/java%3A%20.%20rtspproxy/proxy/track%20rtspproxy/rdt&In-Reply-To=%3C200605021526.k42FQUZu030188%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r421 - in trunk/RTSPProxy-Core/src/main/java: . rtspproxy/proxy/track rtspproxy/rdt">merlimat at berlios.de
+       </A><BR>
+    <I>Tue May  2 17:26:30 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000103.html">[Rtspproxy-devel] r420 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/rtcp
+</A></li>
+        <LI>Next message: <A HREF="000105.html">[Rtspproxy-devel] r422 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#104">[ date ]</a>
+              <a href="thread.html#104">[ thread ]</a>
+              <a href="subject.html#104">[ subject ]</a>
+              <a href="author.html#104">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-05-02 17:26:24 +0200 (Tue, 02 May 2006)
+New Revision: 421
+
+Removed:
+   trunk/RTSPProxy-Core/src/main/java/javax/
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/Track.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java
+Log:
+Removed 'false-alarm' TODO task.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/Track.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/Track.java	2006-05-02 15:19:33 UTC (rev 420)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/Track.java	2006-05-02 15:26:24 UTC (rev 421)
+@@ -84,7 +84,6 @@
+     protected static final String ATTR = Track.class.toString() + &quot;Attr&quot;;
+ 
+     /** Maps a client address to a Track */
+-    // TODO: bring back to protected
+     protected static Map&lt;InetSocketAddress, Track&gt; clientAddressMap = new ConcurrentHashMap&lt;InetSocketAddress, Track&gt;();
+ 
+     /** Maps a server address to a Track */
+@@ -178,6 +177,16 @@
+         this.url = url;
+     }
+ 
++    public InetAddress getClientAddress()
++    {
++        return clientAddress;
++    }
++
++    public InetAddress getServerAddress()
++    {
++        return serverAddress;
++    }
++
+     public abstract void close();
+ 
+     @Override
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java	2006-05-02 15:19:33 UTC (rev 420)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java	2006-05-02 15:26:24 UTC (rev 421)
+@@ -50,7 +50,6 @@
+ 	 * @see org.apache.mina.filter.codec.ProtocolDecoder#dispose(org.apache.mina.common.IoSession)
+ 	 */
+ 	public void dispose(IoSession arg0) throws Exception {
+-		// TODO Auto-generated method stub
+ 
+ 	}
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000103.html">[Rtspproxy-devel] r420 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/rtcp
+</A></li>
+	<LI>Next message: <A HREF="000105.html">[Rtspproxy-devel] r422 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#104">[ date ]</a>
+              <a href="thread.html#104">[ thread ]</a>
+              <a href="subject.html#104">[ subject ]</a>
+              <a href="author.html#104">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

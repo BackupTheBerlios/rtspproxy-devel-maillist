@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r334 - trunk/src/main/java/rtspproxy/filter
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r334%20-%20trunk/src/main/java/rtspproxy/filter&In-Reply-To=%3C200512081651.jB8Gp7TY008001%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000018.html">
+   <LINK REL="Next"  HREF="000020.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r334 - trunk/src/main/java/rtspproxy/filter</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r334%20-%20trunk/src/main/java/rtspproxy/filter&In-Reply-To=%3C200512081651.jB8Gp7TY008001%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r334 - trunk/src/main/java/rtspproxy/filter">merlimat at berlios.de
+       </A><BR>
+    <I>Thu Dec  8 17:51:07 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000018.html">[Rtspproxy-devel] r333 - in trunk/src/main/java/rtspproxy: . lib
+</A></li>
+        <LI>Next message: <A HREF="000020.html">[Rtspproxy-devel] r335 - in trunk: . src/changes src/resources/conf src/site src/site/xdoc
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#19">[ date ]</a>
+              <a href="thread.html#19">[ thread ]</a>
+              <a href="subject.html#19">[ subject ]</a>
+              <a href="author.html#19">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-08 17:51:03 +0100 (Thu, 08 Dec 2005)
+New Revision: 334
+
+Removed:
+   trunk/src/main/java/rtspproxy/filter/RequestUrlRewritingFilter.java
+Log:
+* Moved rewrite filter under rtspproxy.filter.rewrite
+
+Deleted: trunk/src/main/java/rtspproxy/filter/RequestUrlRewritingFilter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/RequestUrlRewritingFilter.java	2005-12-08 16:49:37 UTC (rev 333)
++++ trunk/src/main/java/rtspproxy/filter/RequestUrlRewritingFilter.java	2005-12-08 16:51:03 UTC (rev 334)
+@@ -1,40 +0,0 @@
+-/***************************************************************************
+- *                                                                         *
+- *   This program is free software; you can redistribute it and/or modify  *
+- *   it under the terms of the GNU General Public License as published by  *
+- *   the Free Software Foundation; either version 2 of the License, or     *
+- *   (at your option) any later version.                                   *
+- *                                                                         *
+- *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
+- *                                                                         *
+- ***************************************************************************/
+-
+-/*
+- * $Id: Handler.java 248 2005-10-23 18:47:41Z merlimat $
+- * 
+- * $URL: <A HREF="https://rbieniek@svn.berlios.de/svnroot/repos/rtspproxy/trunk/src/main/java/rtspproxy/rtsp/Handler.java">https://rbieniek@svn.berlios.de/svnroot/repos/rtspproxy/trunk/src/main/java/rtspproxy/rtsp/Handler.java</A> $
+- * 
+- */
+-package rtspproxy.filter;
+-
+-import java.net.URL;
+-
+-/**
+- * This filter is used to rewrite the requested URL before passing it
+- * to the upstream server.
+- * 
+- * @author Rainer Bieniek
+- */
+-public interface RequestUrlRewritingFilter {
+-	/**
+-	 * rewrite the request URL.
+-	 * @return a replacement URL or null if the URL is not to be modified.
+-	 */
+-	public URL rewriteRequestUrl(URL request);
+-
+-	/**
+-	 * rewrite an URL in a response header.
+-	 * @return a replacement URL or null if the URL is not to be modified.
+-	 */
+-	public URL rewriteResponseHeaderUrl(URL request);
+-}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000018.html">[Rtspproxy-devel] r333 - in trunk/src/main/java/rtspproxy: . lib
+</A></li>
+	<LI>Next message: <A HREF="000020.html">[Rtspproxy-devel] r335 - in trunk: . src/changes src/resources/conf src/site src/site/xdoc
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#19">[ date ]</a>
+              <a href="thread.html#19">[ thread ]</a>
+              <a href="subject.html#19">[ subject ]</a>
+              <a href="author.html#19">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

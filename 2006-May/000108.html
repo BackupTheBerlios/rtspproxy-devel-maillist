@@ -1,0 +1,412 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r425 - trunk/RTSPProxy-Core/src/main/java/rtspproxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r425%20-%20trunk/RTSPProxy-Core/src/main/java/rtspproxy&In-Reply-To=%3C200605021540.k42FehIc031791%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000107.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r425 - trunk/RTSPProxy-Core/src/main/java/rtspproxy</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r425%20-%20trunk/RTSPProxy-Core/src/main/java/rtspproxy&In-Reply-To=%3C200605021540.k42FehIc031791%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r425 - trunk/RTSPProxy-Core/src/main/java/rtspproxy">merlimat at berlios.de
+       </A><BR>
+    <I>Tue May  2 17:40:43 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000107.html">[Rtspproxy-devel] r424 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx: . mbeans
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#108">[ date ]</a>
+              <a href="thread.html#108">[ thread ]</a>
+              <a href="subject.html#108">[ subject ]</a>
+              <a href="author.html#108">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-05-02 17:40:29 +0200 (Tue, 02 May 2006)
+New Revision: 425
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/Reactor.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ShutdownHandler.java
+Log:
+Using only two acceptors, one for TCP and one for UDP, 
+instead of one per service.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-05-02 15:37:14 UTC (rev 424)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-05-02 15:40:29 UTC (rev 425)
+@@ -122,7 +122,7 @@
+ 
+             }
+         } catch ( IOException e ) {
+-            log.error( &quot;Can't start {}: {}&quot;, getName(), e );
++            log.error( &quot;Can't start {} ({}): &quot; + e.getMessage(), getName(), socketAddress  );
+             throw e;
+         }
+         log.info( &quot;{} Started - Listening on: {}&quot;, getName(), socketAddress );
+@@ -142,7 +142,11 @@
+             return;
+         }
+ 
+-        Reactor.getRegistry().unbind( this, false );
++        try {
++            Reactor.getRegistry().unbind( this, false );
++        } catch ( Exception e ) {
++            log.debug( &quot;Exception unbinding service: {}&quot;, e.getMessage() );
++        }
+ 
+         log.info( getName() + &quot; Stopped&quot; );
+         isRunning = false;
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-05-02 15:37:14 UTC (rev 424)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-05-02 15:40:29 UTC (rev 425)
+@@ -33,10 +33,14 @@
+ import org.apache.mina.common.IoFilterChain;
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+ import org.apache.mina.filter.ThreadPoolFilter;
+ import org.apache.mina.transport.socket.nio.DatagramAcceptor;
++import org.apache.mina.transport.socket.nio.DatagramAcceptorConfig;
++import org.apache.mina.transport.socket.nio.DatagramSessionConfig;
+ import org.apache.mina.transport.socket.nio.SocketAcceptor;
++import org.apache.mina.transport.socket.nio.SocketAcceptorConfig;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
+@@ -70,6 +74,10 @@
+     /** Map a ProxyService to its own IoAcceptor. */
+     private final ConcurrentMap&lt;ProxyService, IoAcceptor&gt; acceptors = new ConcurrentHashMap&lt;ProxyService, IoAcceptor&gt;();
+ 
++    private SocketAcceptor socketAcceptor = null;
++
++    private DatagramAcceptor datagramAcceptor = null;
++
+     /**
+      * Construct a new ProxyServiceRegistry. This class is a Singleton, so there
+      * can be only one instance.
+@@ -153,8 +161,18 @@
+             throws Exception
+     {
+         IoAcceptor acceptor = acceptors.get( service );
++
+         for ( SocketAddress address : addresses.get( service ) ) {
+             try {
++                // Disconnect all clients
++                Set sessions = acceptor.getManagedSessions( address );
++                log.debug( &quot;{} has {} connected clients.&quot;, service.getName(), sessions
++                        .size() );
++                for ( Object obj : sessions ) {
++                    IoSession session = (IoSession) obj;
++                    session.close();
++                }
++
+                 acceptor.unbind( address );
+             } catch ( Exception e ) {
+                 // log.debug( &quot;Error unbinding {}&quot;, service.getName() );
+@@ -250,13 +268,31 @@
+ 
+         // Create a new one
+         TransportType transportType = service.getTransportType();
+-        if ( transportType == TransportType.SOCKET )
+-            acceptor = new SocketAcceptor(); // socketAcceptor;
+-        else if ( transportType == TransportType.DATAGRAM )
+-            acceptor = new DatagramAcceptor(); // datagramAcceptor;
+-        else
+-            acceptor = null;
++        if ( transportType == TransportType.SOCKET ) {
++            if ( socketAcceptor == null ) {
++                socketAcceptor = new SocketAcceptor();
++                SocketAcceptorConfig config = (SocketAcceptorConfig) socketAcceptor
++                        .getDefaultConfig();
++                config.setReuseAddress( true );
++            }
++            acceptor = socketAcceptor;
+ 
++        } else if ( transportType == TransportType.DATAGRAM ) {
++            if ( datagramAcceptor == null ) {
++                datagramAcceptor = new DatagramAcceptor(); // datagramAcceptor;
++                DatagramAcceptorConfig config = (DatagramAcceptorConfig) datagramAcceptor
++                        .getDefaultConfig();
++                DatagramSessionConfig sessionConfig = (DatagramSessionConfig) config
++                        .getSessionConfig();
++                sessionConfig.setReuseAddress( true );
++            }
++            acceptor = datagramAcceptor;
++
++        } else {
++            log.debug( &quot;Unrecognized transport type: {}&quot;, transportType );
++            return null;
++        }
++
+         // Save the acceptor
+         acceptors.put( service, acceptor );
+         return acceptor;
+@@ -275,8 +311,8 @@
+         if ( o == Config.threadPoolSize ) {
+             // Update the thread pool size
+             threadPoolFilter.setMaximumPoolSize( Config.threadPoolSize.getValue() );
+-            log.info( &quot;Changed ThreadPool size. New max size: &quot;
+-                    + threadPoolFilter.getMaximumPoolSize() );
++            log.info( &quot;Changed ThreadPool size. New max size: {}&quot;, threadPoolFilter
++                    .getMaximumPoolSize() );
+         }
+     }
+ 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/Reactor.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/Reactor.java	2006-05-02 15:37:14 UTC (rev 424)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/Reactor.java	2006-05-02 15:40:29 UTC (rev 425)
+@@ -35,95 +35,96 @@
+ public class Reactor
+ {
+ 
+-	private static Logger log = LoggerFactory.getLogger( Reactor.class );
++    private static Logger log = LoggerFactory.getLogger( Reactor.class );
+ 
+-	private static ProxyServiceRegistry registry = null;
++    private static ProxyServiceRegistry registry = null;
+ 
+-	private static JmxAgent jmxAgent = null;
++    private static JmxAgent jmxAgent = null;
++    
++    private static boolean isStandalone = false;
++    
++    private static FilterRegistry filterRegistry = null;
+ 
+-	private static boolean isStandalone = false;
+-	
+-	private static FilterRegistry filterRegistry = null;
++    public static void setStandalone( boolean standalone )
++    {
++        isStandalone = standalone;
++    }
+ 
+-	public static void setStandalone( boolean standalone )
+-	{
+-		isStandalone = standalone;
+-	}
++    /**
++     * Constructor. Creates a new Reactor and starts it.
++     * The reactor relies on configuration info that has to be provided 
++     * &lt;b&gt;before&lt;/b&gt; starting the reactor.
++     * @exception Exception reactor startup failed.
++     */
++    static public void start() throws Exception
++    {
++        log.info( &quot;Starting &quot; + Config.getName() + &quot; &quot; + Config.getVersion() );
+ 
+-	/**
+-	 * Constructor. Creates a new Reactor and starts it.
+-	 * The reactor relies on configuration info that has to be provided 
+-	 * &lt;b&gt;before&lt;/b&gt; starting the reactor.
+-	 * @exception Exception reactor startup failed.
+-	 */
+-	static public void start() throws Exception
+-	{
+-		log.info( &quot;Starting &quot; + Config.getName() + &quot; &quot; + Config.getVersion() );
++        registry = new ProxyServiceRegistry();
+ 
+-		registry = new ProxyServiceRegistry();
++        // Register the &quot;<A HREF="rtsp://">rtsp://</A>&quot; protocol scheme
++        System.setProperty( &quot;java.protocol.handler.pkgs&quot;, &quot;rtspproxy&quot; );
+ 
+-		// Register the &quot;<A HREF="rtsp://">rtsp://</A>&quot; protocol scheme
+-		System.setProperty( &quot;java.protocol.handler.pkgs&quot;, &quot;rtspproxy&quot; );
++        ProxyService rtspService = new RtspService();
++        rtspService.start();
++        
++        ProxyService rtpClientService = new RtpClientService();
++        rtpClientService.start();
++        
++        ProxyService rtcpClientService = new RtcpClientService();
++        rtcpClientService.start();
+ 
+-		ProxyService rtspService = new RtspService();
+-		rtspService.start();
++        ProxyService rtpServerService = new RtpServerService();
++        rtpServerService.start();
++                
++        ProxyService rtcpServerService = new RtcpServerService();
++        rtcpServerService.start();
+ 
+-		ProxyService rtpClientService = new RtpClientService();
+-		rtpClientService.start();
++        ProxyService rdtClientService = new RdtClientService();
++        rdtClientService.start();
+ 
+-		ProxyService rtcpClientService = new RtcpClientService();
+-		rtcpClientService.start();
++        ProxyService rdtServerService = new RdtServerService();
++        rdtServerService.start();
+ 
+-		ProxyService rtpServerService = new RtpServerService();
+-		rtpServerService.start();
++        boolean enableJmx = Config.jmxEnable.getValue();
++        if ( enableJmx )
++            jmxAgent = new JmxAgent();
+ 
+-		ProxyService rtcpServerService = new RtcpServerService();
+-		rtcpServerService.start();
+-
+-		ProxyService rdtClientService = new RdtClientService();
+-		rdtClientService.start();
+-
+-		ProxyService rdtServerService = new RdtServerService();
+-		rdtServerService.start();
+-
+-		boolean enableJmx = Config.jmxEnable.getValue();
+-		if ( enableJmx )
+-			jmxAgent = new JmxAgent();
+-
+-		filterRegistry = new FilterRegistry();
+-		filterRegistry.populateRegistry();		
++        filterRegistry = new FilterRegistry();
++        filterRegistry.populateRegistry();		
+ 		
+-		PortrangeRtpServerSessionFactory portrangeFactory = new PortrangeRtpServerSessionFactory();
+-		portrangeFactory.setLocalAddress(rtpServerService.getAddress());
+-		portrangeFactory.start();
+-		
+-	}
++        PortrangeRtpServerSessionFactory portrangeFactory = new PortrangeRtpServerSessionFactory();
++        portrangeFactory.setLocalAddress(rtpServerService.getAddress());
++        portrangeFactory.start();
++        
++    }
+ 
+-	static public void stop()
+-	{
+-		try {
+-			PortrangeRtpServerSessionFactory.getInstance().stop();
+-			
+-			if ( jmxAgent != null )
+-				jmxAgent.stop();
++    static public void stop()
++    {
++        try {
++            // TODO: check why null pointer exception
++            // PortrangeRtpServerSessionFactory.getInstance().stop();
++            
++            if ( jmxAgent != null )
++                jmxAgent.stop();
++            
++            if ( registry != null )
++                registry.unbindAll();
++            
++            log.info( &quot;Shutdown completed&quot; );
+ 
+-			if ( registry != null )
+-				registry.unbindAll();
+-			
+-			log.info( &quot;Shutdown completed&quot; );
++        } catch ( Exception e ) {
++            log.warn( &quot;Error shutting down: {}&quot;, (Object)e );
++            Exceptions.logStackTrace( e );
++        }
+ 
+-		} catch ( Exception e ) {
+-			log.warn( &quot;Error shutting down: &quot; + e );
+-			Exceptions.logStackTrace( e );
+-		}
++        if ( isStandalone )
++            Runtime.getRuntime().halt( 0 );
++    }
+ 
+-		if ( isStandalone )
+-			Runtime.getRuntime().halt( 0 );
+-	}
++    protected static ProxyServiceRegistry getRegistry()
++    {        
++        return registry;
++    }
+ 
+-	protected static ProxyServiceRegistry getRegistry()
+-	{
+-		return registry;
+-	}
+-
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ShutdownHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ShutdownHandler.java	2006-05-02 15:37:14 UTC (rev 424)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ShutdownHandler.java	2006-05-02 15:40:29 UTC (rev 425)
+@@ -32,20 +32,19 @@
+ public class ShutdownHandler extends Thread
+ {
+ 
+-	private static Logger log = LoggerFactory.getLogger( ShutdownHandler.class );
+-
+-	@Override
++    private static Logger log = LoggerFactory.getLogger( ShutdownHandler.class );
++    
++    @Override
+     public void run()
+-	{
+-		log.info( &quot;Shutting down&quot; );
+-		try {
+-			log.info( &quot;Stopping {} {}&quot;, Config.getName(), Config.getVersion() );
+-			Reactor.stop();
++    {
++        log.info( &quot;Shutting down&quot; );
++        try {
++            log.info( &quot;Stopping {} {}&quot;, Config.getName(), Config.getVersion() );
++            Reactor.stop();
+ 
+-		} catch ( Exception e ) {
+-			log.error( &quot;Exception in the reactor: &quot;, e );
+-			Exceptions.logStackTrace( e );
+-		}
+-	}
+-
++        } catch ( Exception e ) {
++            log.error( &quot;Exception in the reactor: &quot;, e );
++            Exceptions.logStackTrace( e );
++        }
++    }
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000107.html">[Rtspproxy-devel] r424 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx: . mbeans
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#108">[ date ]</a>
+              <a href="thread.html#108">[ thread ]</a>
+              <a href="subject.html#108">[ subject ]</a>
+              <a href="author.html#108">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

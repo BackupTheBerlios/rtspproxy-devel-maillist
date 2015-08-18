@@ -1,0 +1,328 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r435 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r435%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy&In-Reply-To=%3C200610121647.k9CGlWJA016419%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000116.html">
+   <LINK REL="Next"  HREF="000118.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r435 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy</H1>
+    <B>merlimat at mail.berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r435%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy&In-Reply-To=%3C200610121647.k9CGlWJA016419%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r435 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy">merlimat at mail.berlios.de
+       </A><BR>
+    <I>Thu Oct 12 18:47:32 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000116.html">[Rtspproxy-devel] r434 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+        <LI>Next message: <A HREF="000118.html">[Rtspproxy-devel] r436 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#117">[ date ]</a>
+              <a href="thread.html#117">[ thread ]</a>
+              <a href="subject.html#117">[ subject ]</a>
+              <a href="author.html#117">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-10-12 18:47:25 +0200 (Thu, 12 Oct 2006)
+New Revision: 435
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+Log:
+Resolved nasty problem with messages sent when there's no 
+connection with server. Now it's all done asynchronously, 
+but in the &quot;right way&quot;. 
+When connection to server completes (whithout blocking) 
+all pending messages will be sent to server.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 16:12:14 UTC (rev 434)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 16:47:25 UTC (rev 435)
+@@ -25,13 +25,16 @@
+ import java.net.URL;
+ import java.net.UnknownHostException;
+ import java.util.HashMap;
++import java.util.Queue;
+ import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.ConcurrentLinkedQueue;
+ 
+ import org.apache.mina.common.ConnectFuture;
+ import org.apache.mina.common.IoFuture;
+ import org.apache.mina.common.IoFutureListener;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TrafficMask;
++import org.apache.mina.common.WriteFuture;
+ import org.apache.mina.filter.executor.ExecutorExecutor;
+ import org.apache.mina.transport.socket.nio.SocketConnector;
+ import org.apache.mina.transport.socket.nio.SocketSessionConfig;
+@@ -87,6 +90,8 @@
+     private ConcurrentHashMap&lt;String, Object&gt; sharedSessionObjects =
+             new ConcurrentHashMap&lt;String, Object&gt;();
+     
++    private Queue&lt;RtspMessage&gt; outgoingMessages;
++    
+     /**
+      * Creates a new ProxyHandler from a client side protocol session.
+      * 
+@@ -94,6 +99,7 @@
+      */
+     public ProxyHandler( IoSession clientSession )
+     {
++        outgoingMessages = new ConcurrentLinkedQueue&lt;RtspMessage&gt;();
+         this.clientSession = clientSession;
+         this.clientSession.setAttribute(
+                                          ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
+@@ -107,20 +113,16 @@
+         {
+             ProxySession proxySession =
+                     ProxySession.getByClientSessionID( message.getHeader( &quot;Session&quot; ) );
+-            if ( proxySession != null )
++            if ( proxySession == null )
+             {
+-                // Session is Ok
+-                message.setHeader( &quot;Session&quot;, proxySession.getServerSessionId() );
+-            }
+-            else
+-            {
+                 // Error. The client specified a session ID but it's
+                 // not valid
+-                sendMessage(
+-                             clientSession,
+-                             RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++                sendError( clientSession, RtspCode.SessionNotFound );
+                 return;
+             }
++            
++            // Session is Ok
++            message.setHeader( &quot;Session&quot;, proxySession.getServerSessionId() );
+         }
+         
+         if ( serverSession == null
+@@ -135,7 +137,7 @@
+             RtspRequest request = (RtspRequest) message;
+             try
+             {
+-                connectServerSide( request.getUrl() );
++                connectServerSide( request );
+                 
+             } catch ( IOException e )
+             {
+@@ -143,6 +145,7 @@
+                 // closeAll();
+             } finally
+             {
++                log.debug( &quot;Server session != null: {}&quot;, serverSession != null );
+                 if ( serverSession == null ) return;
+             }
+         }
+@@ -173,13 +176,9 @@
+         {
+             ProxySession proxySession =
+                     ProxySession.getByServerSessionID( message.getHeader( &quot;Session&quot; ) );
+-            if ( proxySession != null )
++            
++            if ( proxySession == null )
+             {
+-                // Session is Ok
+-                message.setHeader( &quot;Session&quot;, proxySession.getClientSessionId() );
+-            }
+-            else
+-            {
+                 if ( message.getType() == RtspMessage.Type.TypeResponse )
+                 {
+                     // create a proxy session on the fly if message is a
+@@ -198,12 +197,13 @@
+                 {
+                     // Error. The client specified a session ID but it's
+                     // not valid
+-                    sendMessage(
+-                                 clientSession,
+-                                 RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++                    sendError( clientSession, RtspCode.SessionNotFound );
+                     return;
+                 }
+             }
++            
++            // Session is Ok
++            message.setHeader( &quot;Session&quot;, proxySession.getClientSessionId() );
+         }
+         
+         switch ( message.getType() )
+@@ -253,9 +253,7 @@
+                 // not valid
+                 log.debug( &quot;Invalid sessionId: {}&quot;,
+                            request.getHeader( &quot;Session&quot; ) );
+-                sendMessage(
+-                             clientSession,
+-                             RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++                sendError( clientSession, RtspCode.SessionNotFound );
+                 return;
+             }
+         }
+@@ -270,7 +268,7 @@
+              */
+             try
+             {
+-                connectServerSide( request.getUrl() );
++                connectServerSide( request );
+             } catch ( IOException e )
+             {
+                 log.error( &quot;I/O exception&quot;, e );
+@@ -298,9 +296,7 @@
+              * transports set.
+              */
+             log.debug( &quot;No supported transport was found.&quot; );
+-            sendMessage(
+-                         clientSession,
+-                         RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
++            sendError( clientSession, RtspCode.UnsupportedTransport );
+             return;
+         }
+         
+@@ -350,9 +346,8 @@
+                                       &quot;failed to allocate local RTP/RTCP ports&quot;,
+                                       ioe );
+                             
+-                            sendMessage(
+-                                         clientSession,
+-                                         RtspResponse.errorResponse( RtspCode.InternalServerError ) );
++                            sendError( clientSession,
++                                       RtspCode.InternalServerError );
+                             return;
+                         }
+                     }
+@@ -562,9 +557,7 @@
+         }
+         else
+         {
+-            sendMessage(
+-                         clientSession,
+-                         RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
++            sendError( clientSession, RtspCode.UnsupportedTransport );
+             return;
+         }
+         
+@@ -583,8 +576,11 @@
+      *            the URI of the server
+      * @throws IOException
+      */
+-    private void connectServerSide( URL url ) throws IOException
++    private void connectServerSide( RtspRequest request ) throws IOException
+     {
++        URL url = request.getUrl();
++        outgoingMessages.add( request );
++        
+         log.debug( &quot;Connect to Server url: {}&quot;, url );
+         String host = url.getHost();
+         int port = url.getPort();
+@@ -602,9 +598,7 @@
+         if ( addr.isUnresolved() )
+         {
+             log.warn( &quot;Cannot resolve hostname: {}&quot;, host );
+-            sendMessage(
+-                         clientSession,
+-                         RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
++            sendError( clientSession, RtspCode.DestinationUnreachable );
+             clientSession.close();
+             return;
+         }
+@@ -630,9 +624,7 @@
+         {
+             log.warn( &quot;Destination unreachable: {}&quot;,
+                       connectFuture.getSession().getRemoteAddress() );
+-            sendMessage(
+-                         clientSession,
+-                         RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
++            sendError( clientSession, RtspCode.DestinationUnreachable );
+             clientSession.close();
+             return;
+         }
+@@ -657,6 +649,23 @@
+                                     sharedSessionObjects );
+         
+         log.debug( &quot;Server session: {}&quot;, serverSession.getAttributeKeys() );
++        
++        // Send pending outgoing messages
++        while ( ! outgoingMessages.isEmpty() )
++        {
++            RtspMessage message = outgoingMessages.poll();
++            if (message.getType() == RtspMessage.Type.TypeRequest )
++            {
++                RtspRequest request = (RtspRequest)message;
++                if ( request.getVerb() == RtspRequest.Verb.SETUP )
++                {
++                    passSetupRequestToServer( request );
++                    return;
++                }   
++            }
++            
++            passToServer( message );
++        }
+     }
+     
+     /**
+@@ -727,4 +736,25 @@
+         }
+     }
+     
++    /**
++     * Sends an RTSP error message response
++     * 
++     * @param session
++     *            current IoSession
++     * @param errorCode
++     *            the message
++     */
++    private void sendError( IoSession session, RtspCode errorCode )
++    {
++        try
++        {
++            WriteFuture future =
++                    session.write( RtspResponse.errorResponse( errorCode ) );
++            future.addListener( CLOSE );
++        } catch ( Exception e )
++        {
++            log.error( &quot;exception sending RTSP error message&quot;, e.getCause() );
++        }
++    }
++    
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000116.html">[Rtspproxy-devel] r434 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+	<LI>Next message: <A HREF="000118.html">[Rtspproxy-devel] r436 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#117">[ date ]</a>
+              <a href="thread.html#117">[ thread ]</a>
+              <a href="subject.html#117">[ subject ]</a>
+              <a href="author.html#117">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

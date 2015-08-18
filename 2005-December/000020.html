@@ -1,0 +1,1278 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r335 - in trunk: . src/changes src/resources/conf src/site src/site/xdoc
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r335%20-%20in%20trunk%3A%20.%20src/changes%20src/resources/conf%20src/site%20src/site/xdoc&In-Reply-To=%3C200512082046.jB8KkO12026207%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000019.html">
+   <LINK REL="Next"  HREF="000021.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r335 - in trunk: . src/changes src/resources/conf src/site src/site/xdoc</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r335%20-%20in%20trunk%3A%20.%20src/changes%20src/resources/conf%20src/site%20src/site/xdoc&In-Reply-To=%3C200512082046.jB8KkO12026207%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r335 - in trunk: . src/changes src/resources/conf src/site src/site/xdoc">merlimat at berlios.de
+       </A><BR>
+    <I>Thu Dec  8 21:46:24 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000019.html">[Rtspproxy-devel] r334 - trunk/src/main/java/rtspproxy/filter
+</A></li>
+        <LI>Next message: <A HREF="000021.html">[Rtspproxy-devel] r336 - in trunk/src/main/java/rtspproxy/filter: . authentication ipaddress
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#20">[ date ]</a>
+              <a href="thread.html#20">[ thread ]</a>
+              <a href="subject.html#20">[ subject ]</a>
+              <a href="author.html#20">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-08 21:46:19 +0100 (Thu, 08 Dec 2005)
+New Revision: 335
+
+Added:
+   trunk/src/resources/conf/users.txt
+   trunk/src/site/xdoc/authentication.xml
+   trunk/src/site/xdoc/filters.xml
+   trunk/src/site/xdoc/ipAddressFilter.xml
+   trunk/src/site/xdoc/sources.xml
+Modified:
+   trunk/pom.xml
+   trunk/src/changes/changes.xml
+   trunk/src/resources/conf/rtspproxy.properties
+   trunk/src/site/site.xml
+   trunk/src/site/xdoc/configuration.xml
+   trunk/src/site/xdoc/download.xml
+   trunk/src/site/xdoc/index.xml
+   trunk/src/site/xdoc/todo.xml
+Log:
+Updated documentation
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/pom.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -12,7 +12,7 @@
+ 	&lt;name&gt;RTSP Proxy&lt;/name&gt;
+ 	&lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+ 	&lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
+-	&lt;version&gt;3.0-ALPHA1&lt;/version&gt;
++	&lt;version&gt;3.0-ALPHA2&lt;/version&gt;
+ 	&lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+ 	&lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+ 
+@@ -92,7 +92,7 @@
+ 		&lt;dependency&gt;
+ 			&lt;groupId&gt;org.apache.directory.network&lt;/groupId&gt;
+ 			&lt;artifactId&gt;mina&lt;/artifactId&gt;
+-			&lt;version&gt;0.9.0-SNAPSHOT&lt;/version&gt;
++			&lt;version&gt;0.9.0&lt;/version&gt;
+ 		&lt;/dependency&gt;
+ 
+ 		&lt;dependency&gt;
+@@ -147,7 +147,7 @@
+ 				&lt;configuration&gt;
+ 					&lt;outputEncoding&gt;UTF-8&lt;/outputEncoding&gt;
+ 				&lt;/configuration&gt;
+-				&lt;version&gt;2.0-beta-2&lt;/version&gt;
++				&lt;!--  &lt;version&gt;2.0-beta-2&lt;/version&gt; --&gt;
+ 			&lt;/plugin&gt;
+ 			&lt;plugin&gt;
+ 				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+@@ -202,7 +202,6 @@
+ 				&lt;artifactId&gt;
+ 					maven-project-info-reports-plugin
+ 				&lt;/artifactId&gt;
+-				&lt;!-- &lt;version&gt;2.0-beta-1&lt;/version&gt; --&gt;
+ 			&lt;/plugin&gt;
+ 			&lt;plugin&gt;
+ 				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+@@ -216,38 +215,34 @@
+ 				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+ 				&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
+ 			&lt;/plugin&gt;
+-			&lt;!--
+-				&lt;plugin&gt;
++			&lt;plugin&gt;
+ 				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+ 				&lt;artifactId&gt;taglist-maven-plugin&lt;/artifactId&gt;
+-				&lt;/plugin&gt;
+-				
+-				&lt;plugin&gt;
++			&lt;/plugin&gt;
++&lt;!-- 
++			&lt;plugin&gt;
+ 				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+ 				&lt;artifactId&gt;maven-javadoc-plugin&lt;/artifactId&gt;
+ 				&lt;configuration&gt;
+-				&lt;charset&gt;UTF-8&lt;/charset&gt;
+-				&lt;docencoding&gt;UTF-8&lt;/docencoding&gt;
+-				&lt;link&gt;
+-				<A HREF="http://java.sun.com/j2se/1.5.0/docs/api/,">http://java.sun.com/j2se/1.5.0/docs/api/,</A>
+-				<A HREF="http://www.junit.org/junit/javadoc/3.8.1/,">http://www.junit.org/junit/javadoc/3.8.1/,</A>
+-				<A HREF="http://directory.apache.org/subprojects/network/apidocs/">http://directory.apache.org/subprojects/network/apidocs/</A>
+-				&lt;/link&gt;
+-				&lt;minmemory&gt;128m&lt;/minmemory&gt;
+-				&lt;maxmemory&gt;512&lt;/maxmemory&gt;
++					&lt;charset&gt;UTF-8&lt;/charset&gt;
++					&lt;docencoding&gt;UTF-8&lt;/docencoding&gt;
++					&lt;link&gt;
++						<A HREF="http://java.sun.com/j2se/1.5.0/docs/api/,">http://java.sun.com/j2se/1.5.0/docs/api/,</A>
++						<A HREF="http://www.junit.org/junit/javadoc/3.8.1/,">http://www.junit.org/junit/javadoc/3.8.1/,</A>
++						<A HREF="http://directory.apache.org/subprojects/network/apidocs/">http://directory.apache.org/subprojects/network/apidocs/</A>
++					&lt;/link&gt;
+ 				&lt;/configuration&gt;
+-				&lt;version&gt;2.0-beta-1&lt;/version&gt;
+-				&lt;/plugin&gt;
+-			--&gt;
++			&lt;/plugin&gt;
++--&gt;
+ 			&lt;!-- 
+-			&lt;plugin&gt;
++				&lt;plugin&gt;
+ 				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+ 				&lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
+ 				&lt;configuration&gt;
+-					&lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;1.5&lt;/targetJdk&gt;
++				&lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;1.5&lt;/targetJdk&gt;
+ 				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
+-			 --&gt;
++				&lt;/plugin&gt;
++			--&gt;
+ 		&lt;/plugins&gt;
+ 	&lt;/reporting&gt;
+ 
+
+Modified: trunk/src/changes/changes.xml
+===================================================================
+--- trunk/src/changes/changes.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/changes/changes.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -6,7 +6,7 @@
+ 	&lt;/properties&gt;
+ 	&lt;body&gt;
+ 
+-		&lt;release version=&quot;3.0-ALPHA2-SNAPSHOT&quot; date=&quot;in SVN&quot;&gt;
++		&lt;release version=&quot;3.0-ALPHA2&quot; date=&quot;2005-12-08&quot;&gt;
+ 			&lt;action dev=&quot;merlimat&quot; type=&quot;add&quot;&gt;
+ 				Added preliminary implementation of the IP address and
+ 				host name filter.
+@@ -14,16 +14,19 @@
+ 			&lt;action dev=&quot;merlimat&quot; type=&quot;fix&quot;&gt;
+ 				Fixed Windows startup script.
+ 			&lt;/action&gt;
++			&lt;action dev=&quot;merlimat&quot; type=&quot;update&quot;&gt;
++				Using only a UDP port pair for all RTP/RTCP packet
++				handling and sending for all the connected clients.
++			&lt;/action&gt;
+ 			&lt;action dev=&quot;merlimat&quot; type=&quot;fix&quot;&gt;
++				Properly clear session data when a session is closed.
++			&lt;/action&gt;
++			&lt;action dev=&quot;merlimat&quot; type=&quot;fix&quot;&gt;
+ 				Fixed several NullPointerException.
+ 			&lt;/action&gt;
+ 			&lt;action dev=&quot;merlimat&quot; type=&quot;update&quot;&gt;
+ 				Faster parsing of RTSP messages.
+ 			&lt;/action&gt;
+-			&lt;action dev=&quot;merlimat&quot; type=&quot;update&quot;&gt;
+-				Using only a UDP port pair for all RTP/RTCP packet
+-				handling and sending for all the connected clients.
+-			&lt;/action&gt;
+ 			&lt;action dev=&quot;merlimat&quot; type=&quot;add&quot;&gt;
+ 				Handling proper shutdown of the service.
+ 			&lt;/action&gt;
+
+Modified: trunk/src/resources/conf/rtspproxy.properties
+===================================================================
+--- trunk/src/resources/conf/rtspproxy.properties	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/resources/conf/rtspproxy.properties	2005-12-08 20:46:19 UTC (rev 335)
+@@ -14,7 +14,7 @@
+ 
+ # This flag let you to enable or disable the debug 
+ # output of the program..
+-log.debug = Yes
++log.debug = No
+ 
+ # If you want to save to a file the debug output
+ # set this to Yes
+@@ -78,15 +78,32 @@
+ ##################################################
+ 
+ # Unconmment the following line to enable filtering
+-# proxy.auth.ipAddressFilter.enable = true
++# proxy.filter.ipaddress.enable = true
+ 
+ # Use an alternative backend class. The default is 
+-# rtspproxy.auth.PlainTextIpAddressProvider
++# rtspproxy.filter.ipaddress.PlainTextIpAddressProvider
+ # This can be any class that implements the 
+-# rtspproxy.auth.IpAddressProvider interface.
+-# auth.ipAddressFilter.implementationClass = rtspproxy.auth.OtherImplementation
++# rtspproxy.filter.ipaddress.IpAddressProvider interface.
++# proxy.filter.ipaddress.implementationClass = rtspproxy.auth.OtherImplementation
+ 
+ # Plain Text based implementation specific configuration
+-# proxy.auth.ipAddressFilter.plainText.file = conf/ipfilter.txt
++# proxy.filter.ipaddress.text.file = conf/ipfilter.txt
+ # 
+ 
++##################################################
++#             AUTHENTICATION FILTER              # 
++##################################################
++
++# Unconmment the following line to enable filtering
++# proxy.filter.authentication.enable = true
++
++# Use an alternative backend class. The default is 
++# rtspproxy.filter.authentication.PlainTextAuthenticationProvider
++# This can be any class that implements the 
++# rtspproxy.filter.authentication.AuthenticationProvider interface.
++# proxy.filter.authentication.implementationClass = rtspproxy.OtherImplementationClass
++
++# Plain Text based implementation specific configuration
++# proxy.filter.authentication.text.file = conf/ipfilter.txt
++# 
++
+
+Added: trunk/src/resources/conf/users.txt
+===================================================================
+--- trunk/src/resources/conf/users.txt	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/resources/conf/users.txt	2005-12-08 20:46:19 UTC (rev 335)
+@@ -0,0 +1,6 @@
++
++# List here the users and passwords
++#
++# myuser : itspassword
++# joe : zxsfsdfdsdg
++#
+
+
+Property changes on: trunk/src/resources/conf/users.txt
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/src/site/site.xml
+===================================================================
+--- trunk/src/site/site.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/site.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -23,12 +23,24 @@
+ 			&lt;item
+ 				name=&quot;Overview&quot;
+ 				href=&quot;overview.html&quot; /&gt;
+-			&lt;!-- &lt;item
+-				name=&quot;Install&quot;
+-				href=&quot;install.html&quot; /&gt; --&gt;
+ 			&lt;item
+ 				name=&quot;Configuration&quot;
+-				href=&quot;configuration.html&quot; /&gt;
++				href=&quot;configuration.html&quot;&gt;
++				
++				&lt;item
++					name=&quot;Compile from sources&quot;
++					href=&quot;sources.html&quot; /&gt;
++				&lt;item
++					name=&quot;Filters&quot;
++					href=&quot;filters.html&quot;&gt;
++					&lt;item
++						name=&quot;Authentication&quot;
++						href=&quot;authentication.html&quot; /&gt;
++					&lt;item
++						name=&quot;IP address filter&quot;
++						href=&quot;ipAddressFilter.html&quot; /&gt;
++				&lt;/item&gt;
++			&lt;/item&gt;
+ 		&lt;/menu&gt;
+ 
+ 		&lt;menu name=&quot;Project&quot;&gt;
+@@ -36,9 +48,6 @@
+ 				name=&quot;Download&quot;
+ 				href=&quot;download.html&quot; /&gt;
+ 			&lt;item
+-				name=&quot;SVN&quot;
+-				href=&quot;source-repository.html&quot; /&gt;
+-			&lt;item
+ 				name=&quot;Mailing Lists&quot;
+ 				href=&quot;mail-lists.html&quot; /&gt;
+ 			&lt;item
+@@ -57,6 +66,9 @@
+ 
+ 		&lt;menu name=&quot;Development&quot;&gt;
+ 			&lt;item
++				name=&quot;SVN&quot;
++				href=&quot;source-repository.html&quot; /&gt;
++			&lt;item
+ 				name=&quot;Todo&quot;
+ 				href=&quot;todo.html&quot; /&gt;
+ 			&lt;item
+@@ -65,29 +77,13 @@
+ 			&lt;item
+ 				name=&quot;File Activity&quot;
+ 				href=&quot;file-activity.html&quot; /&gt;
++				&lt;!-- 
+ 			&lt;item
+ 				name=&quot;Javadocs&quot;
+-				href=&quot;apidocs/index.html&quot; 
+-				target=&quot;_blank&quot;/&gt;
++				href=&quot;apidocs/index.html&quot;
++				target=&quot;_blank&quot; /&gt;
++				--&gt;
+ 		&lt;/menu&gt;
+-		&lt;!-- 
+-			&lt;menu name=&quot;Download&quot;&gt;
+-			&lt;item
+-			name=&quot;Source Code&quot;
+-			href=&quot;download/source_code.html&quot; /&gt;
+-			&lt;item
+-			name=&quot;Binaries&quot;
+-			href=&quot;download/binaries.html&quot;
+-			collapse=&quot;true&quot;&gt;
+-			&lt;item
+-			name=&quot;Unix&quot;
+-			href=&quot;download/unix.html&quot; /&gt;
+-			&lt;item
+-			name=&quot;Windows&quot;
+-			href=&quot;download/windows.html&quot; /&gt;
+-			&lt;/item&gt;
+-			&lt;/menu&gt;
+-		--&gt;
+ 
+ 	&lt;/body&gt;
+ &lt;/project&gt;
+\ No newline at end of file
+
+Added: trunk/src/site/xdoc/authentication.xml
+===================================================================
+--- trunk/src/site/xdoc/authentication.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/xdoc/authentication.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -0,0 +1,211 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
++
++&lt;document&gt;
++	&lt;properties&gt;
++		&lt;title&gt;Authentication&lt;/title&gt;
++		&lt;author email=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>&quot;&gt;Matteo Merli&lt;/author&gt;
++	&lt;/properties&gt;
++
++	&lt;body&gt;
++		&lt;section name=&quot;Authentication&quot;&gt;
++			&lt;p&gt;
++				&lt;b&gt;Beware: The authentication support is still a work in progress.&lt;/b&gt;
++			&lt;/p&gt;
++			&lt;p&gt;
++				The RTSP specification foresees the optional presence of
++				a proxy-level authentication layer. This authentication
++				works in the same way of RTSP and HTTP server
++				authentication.
++
++			&lt;/p&gt;
++			
++							&lt;p&gt;
++					The default implementation of this filter reads the
++					users from a plain text file located in
++					&lt;code&gt;conf/users.txt&lt;/code&gt;.
++				&lt;/p&gt;
++
++
++				&lt;table&gt;
++					&lt;thead&gt;
++						&lt;tr&gt;
++							&lt;th&gt;Name&lt;/th&gt;
++							&lt;th&gt;Type&lt;/th&gt;
++							&lt;th&gt;Default&lt;/th&gt;
++							&lt;th&gt;Description&lt;/th&gt;
++						&lt;/tr&gt;
++					&lt;/thead&gt;
++					&lt;tbody&gt;
++						&lt;tr&gt;
++							&lt;td&gt;
++								&lt;code&gt;
++									proxy.filter.authentication.enable
++								&lt;/code&gt;
++							&lt;/td&gt;
++							&lt;td&gt;Boolean&lt;/td&gt;
++							&lt;td&gt;
++								&lt;code&gt;false&lt;/code&gt;
++							&lt;/td&gt;
++							&lt;td&gt;
++								This flag let you to enable or disable
++								the authentication filter.
++							&lt;/td&gt;
++						&lt;/tr&gt;
++						&lt;tr&gt;
++							&lt;td&gt;
++								&lt;code&gt;
++									proxy.filter.authentication.
++	implementationClass
++								&lt;/code&gt;
++							&lt;/td&gt;
++							&lt;td&gt;String&lt;/td&gt;
++							&lt;td&gt;
++								&lt;code&gt;
++									rtspproxy.filter.authentication.
++	PlainTextAuthenticationProvider
++								&lt;/code&gt;
++							&lt;/td&gt;
++							&lt;td&gt;
++								Name of a class that implements the
++								&lt;code&gt;
++									rtspproxy.filter.authentication. AuthenticationProvider
++								&lt;/code&gt;
++								interface.
++							&lt;/td&gt;
++						&lt;/tr&gt;
++					&lt;/tbody&gt;
++				&lt;/table&gt;
++
++				&lt;subsection name=&quot;Plain text Implementation&quot;&gt;
++					&lt;p&gt;
++						This is the default implementation of the authentication
++						 filter. The users and associated password 
++						 should be contained into a a text file, by default
++						 located in &lt;code&gt;conf/users.txt&lt;/code&gt;.
++					&lt;/p&gt;
++					&lt;p&gt;
++						The users file will contain one user per line:
++					&lt;/p&gt;
++					&lt;source&gt;joe : joepass 
++bill : passwd&lt;/source&gt;
++					&lt;p&gt;
++						That's all you need to know.
++					&lt;/p&gt;
++					&lt;subsection name=&quot;Properties&quot;&gt;
++						&lt;table&gt;
++							&lt;thead&gt;
++								&lt;tr&gt;
++									&lt;th&gt;Name&lt;/th&gt;
++									&lt;th&gt;Type&lt;/th&gt;
++									&lt;th&gt;Default&lt;/th&gt;
++									&lt;th&gt;Description&lt;/th&gt;
++								&lt;/tr&gt;
++							&lt;/thead&gt;
++							&lt;tbody&gt;
++								&lt;tr&gt;
++									&lt;td&gt;
++										&lt;code&gt;
++											proxy.filter.authentication.text.file
++										&lt;/code&gt;
++									&lt;/td&gt;
++									&lt;td&gt;String&lt;/td&gt;
++									&lt;td&gt;
++										&lt;code&gt;conf/users.txt&lt;/code&gt;
++									&lt;/td&gt;
++									&lt;td&gt;Location of the users file.&lt;/td&gt;
++								&lt;/tr&gt;
++							&lt;/tbody&gt;
++						&lt;/table&gt;
++					&lt;/subsection&gt;
++				&lt;/subsection&gt;
++
++				&lt;subsection
++					name=&quot;Using an alternative implementation&quot;&gt;
++					&lt;p&gt;
++						The PlainTextAuthenticationProvider is a very basic 
++						backend system, mostly meant as a guideline. 
++						In real world situations users will be kept in a 
++						relational database, LDAP, etc..
++					&lt;/p&gt;
++					&lt;p&gt;
++						In all of these situations, you can provide a
++						custom implementation of the backend. All it
++						needs to be done is to provide a class that
++						implements the
++						&lt;code&gt;proxy.filter.authentication.AuthenticationProvider&lt;/code&gt;
++						interface.
++					&lt;/p&gt;
++					&lt;source&gt;public interface AuthenticationProvider 
++{ 
++	public void init() throws Exception; 
++	public void shutdown() throws Exception; 
++	public boolean isAuthenticated( Credentials credentials );
++}&lt;/source&gt;
++					&lt;p&gt;
++						This interface is only composed of three
++						methods:
++					&lt;/p&gt;
++					&lt;table&gt;
++						&lt;thead&gt;
++							&lt;tr&gt;
++								&lt;th&gt;Method&lt;/th&gt;
++								&lt;th&gt;Description&lt;/th&gt;
++							&lt;/tr&gt;
++						&lt;/thead&gt;
++						&lt;tbody&gt;
++							&lt;tr&gt;
++								&lt;td&gt;init()&lt;/td&gt;
++								&lt;td&gt;
++									Called at startup. Should be used to
++									properly setup the subsystem.
++								&lt;/td&gt;
++							&lt;/tr&gt;
++							&lt;tr&gt;
++								&lt;td&gt;shutdown()&lt;/td&gt;
++								&lt;td&gt;
++									Called before the proxy shutdown.
++									Should be used close opened
++									connections...
++								&lt;/td&gt;
++							&lt;/tr&gt;
++							&lt;tr&gt;
++								&lt;td&gt;
++									public boolean isAuthenticated( Credentials credentials )
++								&lt;/td&gt;
++								&lt;td&gt;
++									This method must return
++									&lt;code&gt;true&lt;/code&gt;
++									if the user identificated with 
++									&lt;code&gt;credentials&lt;/code&gt; has the right
++									to access to the RtspProxy system
++									and &lt;code&gt;false&lt;/code&gt;
++									otherwise.
++								&lt;/td&gt;
++							&lt;/tr&gt;
++						&lt;/tbody&gt;
++					&lt;/table&gt;
++					
++					&lt;p&gt;
++						&lt;code&gt;Credentials&lt;/code&gt; is a class that holds the data supplied
++						by the user, typically username and password.
++					&lt;/p&gt;
++
++					&lt;p&gt;
++						To use your custom implementation instead of the
++						default one, the class should be made available
++						in the Java ClassPath (eg: by putting the
++						containing Jar in the
++						&lt;code&gt;lib&lt;/code&gt;
++						directory). Then you should tell the
++						AuthenticationFilter to use your implementation by
++						adding the following line in the
++						&lt;code&gt;rtspproxy.properties&lt;/code&gt;
++						file.
++					&lt;/p&gt;
++					&lt;source&gt;proxy.filter.authentication.implementationClass = path.to.MyCustomClass&lt;/source&gt;
++
++				&lt;/subsection&gt;
++
++		&lt;/section&gt;
++	&lt;/body&gt;
++&lt;/document&gt;
+\ No newline at end of file
+
+
+Property changes on: trunk/src/site/xdoc/authentication.xml
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/src/site/xdoc/configuration.xml
+===================================================================
+--- trunk/src/site/xdoc/configuration.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/xdoc/configuration.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -24,30 +24,6 @@
+ 				&lt;source&gt;$ export PATH=$PATH:/path/to/rtspproxy/folder&lt;/source&gt;
+ 			&lt;/subsection&gt;
+ 
+-			&lt;subsection name=&quot;Installing from sources&quot;&gt;
+-				&lt;p&gt;
+-					In order to compile the sources, you will need the
+-					&lt;a href=&quot;<A HREF="http://maven.apache.org/maven2">http://maven.apache.org/maven2</A>&quot;&gt;Maven 2&lt;/a&gt;
+-					tool. This is a tool that assist in project
+-					management, builds and releases and it is especially
+-					tailored to Java projects. Please refer to its
+-					website for installing and configuring it.
+-				&lt;/p&gt;
+-				&lt;p&gt;
+-					Once you have Maven configured and working you can
+-					compile the project simply by doing:
+-				&lt;/p&gt;
+-				&lt;source&gt;$ mvn&lt;/source&gt;
+-				&lt;p&gt;in the base project folder.&lt;/p&gt;
+-				&lt;p&gt;
+-					This will produce, if there are no problems, 
+-					a folder named &lt;code&gt;target/rtspproxy-&lt;i&gt;[version]&lt;/i&gt;-default&lt;/code&gt;
+-					containing the binaries and generated 
+-					documentations.
+-					Then you can proceed like explained above.
+-				&lt;/p&gt;
+-			&lt;/subsection&gt;
+-
+ 			&lt;subsection name=&quot;Setup&quot;&gt;
+ 				&lt;p&gt;
+ 					The proxy parameters are managed trough a
+@@ -246,210 +222,20 @@
+ 
+ 			&lt;/subsection&gt;
+ 			
+-			&lt;subsection name=&quot;Authorization and Authentication&quot;&gt;
++			&lt;subsection name=&quot;Running RtspProxy&quot;&gt;
++			
+ 				&lt;p&gt;
+-					The RtspProxy is capable of restricting access only to 
+-					authorized clients. This access control scheme is 
+-					completeley separated from the server access control 
+-					because it's proxy specific.
+-				&lt;/p&gt;
++					On Unix-like systems the proxy can be launched using the script
++					located in the base directory: 
++				&lt;/p&gt;	
++				&lt;source&gt;$ ./rtspproxy&lt;/source&gt;
++				
+ 				&lt;p&gt;
+-					If the server ask for authentication to give access to 
+-					media content, the two access control layers will work
+-					together, providing a two step authentication. The proxy
+-					will forward client authorization data to the server in 
+-					order to obtain itself access to protected contents.
++					For Windows systems there is a batch script: &lt;code&gt;rtspproxy.bat&lt;/code&gt;. 
+ 				&lt;/p&gt;
+-				&lt;p&gt;
+-					There are two possible access control schemes that can be 
+-					enabled at the proxy level, one based on user/password
+-					data sent by client and the other that use the client IP 
+-					address or host name.
+-				&lt;/p&gt;
+-				
+-				&lt;subsection name=&quot;Authentication&quot;&gt;
+-					&lt;p&gt;
+-						The RTSP specification foresees the optional presence of 
+-						a proxy-level authentication layer. This authentication
+-						works in the same way of RTSP and HTTP server authentication.
+-						
+-					&lt;/p&gt;
+-				&lt;/subsection&gt;
+-				
+-				&lt;subsection name=&quot;IP address / host name filter&quot;&gt;
+-					&lt;p&gt;
+-						This access control scheme does use a set of user defined
+-						rules to evaluate if a client has or not the right to use 
+-						the proxy services. 
+-					&lt;/p&gt;
+-					&lt;p&gt;
+-						The default implementation of this filter reads the rules
+-						from a plain text file located in &lt;code&gt;conf/ipfilter.txt&lt;/code&gt;.
+-						T
+-					&lt;/p&gt;
+-					
+-					
+-					&lt;table&gt;
+-						&lt;thead&gt;
+-							&lt;tr&gt;
+-								&lt;th&gt;Name&lt;/th&gt;
+-								&lt;th&gt;Type&lt;/th&gt;
+-								&lt;th&gt;Default&lt;/th&gt;
+-								&lt;th&gt;Description&lt;/th&gt;
+-							&lt;/tr&gt;
+-						&lt;/thead&gt;
+-						&lt;tbody&gt;
+-							&lt;tr&gt;
+-								&lt;td&gt;
+-									&lt;code&gt;proxy.auth.ipAddressFilter.enable&lt;/code&gt;
+-								&lt;/td&gt;
+-								&lt;td&gt;Boolean&lt;/td&gt;
+-								&lt;td&gt;
+-									&lt;code&gt;false&lt;/code&gt;
+-								&lt;/td&gt;
+-								&lt;td&gt;
+-									This flag let you to enable or disable
+-									the IP address filter.
+-								&lt;/td&gt;
+-							&lt;/tr&gt;
+-							&lt;tr&gt;
+-								&lt;td&gt;
+-									&lt;code&gt;auth.ipAddressFilter.implementationClass&lt;/code&gt;
+-								&lt;/td&gt;
+-								&lt;td&gt;String&lt;/td&gt;
+-								&lt;td&gt;&lt;code&gt;rtspproxy.auth.PlainTextIpAddressProvider&lt;/code&gt;&lt;/td&gt;
+-								&lt;td&gt;
+-									Name of a class that implements the 
+-									&lt;code&gt;rtspproxy.auth.IpAddressProvider&lt;/code&gt; interface.
+-								&lt;/td&gt;
+-							&lt;/tr&gt;
+-						&lt;/tbody&gt;
+-					&lt;/table&gt;
+-					
+-					&lt;subsection name=&quot;Plain text Implementation&quot;&gt;
+-						&lt;p&gt;	
+-							This is the default implementation of the IP address filter. It reads 
+-							the rules from a plain text file and try to match IP address and hostname
+-							of clients with these rules.
+-						&lt;/p&gt;
+-						&lt;p&gt;
+-							The rules file consist of a sequence of directives, for example:
+-						&lt;/p&gt;
+-						&lt;source&gt;Deny *
+-Allow 10.0.0.*
+-Allow *.mydomain.com&lt;/source&gt;
+-						&lt;p&gt;
+-							The order of the rules is extremely important, because the client
+-							address will be compared with all of these rules in the given order.
+-							In the example, the above rules file states that are denied all 
+-							connection except from clients which addresses are in the subnet 
+-							&lt;code&gt;10.0.0.0-255&lt;/code&gt; and those that have an hostname that 
+-							contains &lt;code&gt;mydomain.com&lt;/code&gt;.
+-						&lt;/p&gt;
+-						&lt;p&gt;
+-							The inverse situation would be to allow connection from all addresses
+-							and deny a few selected ones.
+-						&lt;/p&gt;
+-						&lt;source&gt;Allow *
+-Deny 192.123.25.*
+-Deny *.bad-domain.com&lt;/source&gt;
+-						&lt;p&gt;
+-							You can put as many rules as you want to acheive a fine grained 
+-							access control.
+-						&lt;/p&gt;
+-						&lt;subsection name=&quot;Properties&quot;&gt;
+-							&lt;table&gt;
+-								&lt;thead&gt;
+-									&lt;tr&gt;
+-										&lt;th&gt;Name&lt;/th&gt;
+-										&lt;th&gt;Type&lt;/th&gt;
+-										&lt;th&gt;Default&lt;/th&gt;
+-										&lt;th&gt;Description&lt;/th&gt;
+-									&lt;/tr&gt;
+-								&lt;/thead&gt;
+-								&lt;tbody&gt;
+-									&lt;tr&gt;
+-										&lt;td&gt;
+-											&lt;code&gt;proxy.auth.ipAddressFilter.plainText.file&lt;/code&gt;
+-										&lt;/td&gt;
+-										&lt;td&gt;String&lt;/td&gt;
+-										&lt;td&gt;
+-											&lt;code&gt;conf/ipfilter.txt&lt;/code&gt;
+-										&lt;/td&gt;
+-										&lt;td&gt;
+-											Location of the rules file.
+-										&lt;/td&gt;
+-									&lt;/tr&gt;
+-								&lt;/tbody&gt;
+-							&lt;/table&gt;
+-						&lt;/subsection&gt;
+-					&lt;/subsection&gt;
+-					
+-					&lt;subsection name=&quot;Using an alternative implementation&quot;&gt;
+-						&lt;p&gt;
+-							Sometimes a fixed set of rules is not enough to set 
+-							up a good access control policy, or perhaps the 
+-							authorization must be integrated with an existing
+-							system.
+-						&lt;/p&gt;
+-						&lt;p&gt;
+-							In all of these situations, you can provide a custom
+-							implementation of the backend. All it needs to be done
+-							is to provide a class that implements the
+-							&lt;code&gt;rtspproxy.auth.IpAddressProvider&lt;/code&gt; interface.
+-						&lt;/p&gt;
+-						&lt;source&gt;public interface IpAddressProvider
+-{
+-	public void init() throws Exception;
+-	public void shutdown() throws Exception;
+-	public boolean isBlocked( InetAddress address );
+-}&lt;/source&gt;
+-						&lt;p&gt;
+-							This interface is only composed of three methods:
+-						&lt;/p&gt;
+-						&lt;table&gt;
+-							&lt;thead&gt;
+-								&lt;tr&gt;
+-									&lt;th&gt;Method&lt;/th&gt;
+-									&lt;th&gt;Description&lt;/th&gt;
+-								&lt;/tr&gt;
+-							&lt;/thead&gt;
+-							&lt;tbody&gt;
+-								&lt;tr&gt;
+-									&lt;td&gt;init()&lt;/td&gt;
+-									&lt;td&gt;Called at startup. Should be used to &lt;/td&gt;
+-								&lt;/tr&gt;
+-								&lt;tr&gt;
+-									&lt;td&gt;shutdown()&lt;/td&gt;
+-									&lt;td&gt;Called before the proxy shutdown. Should be used close
+-										opened connections...
+-									&lt;/td&gt;
+-								&lt;/tr&gt;
+-								&lt;tr&gt;
+-									&lt;td&gt;isBlocked( InetAddress address )&lt;/td&gt;
+-									&lt;td&gt;This method must return &lt;code&gt;true&lt;/code&gt; if the
+-										connection from the given &lt;code&gt;address&lt;/code&gt; should
+-										be closed or &lt;code&gt;false&lt;/code&gt; otherwise.
+-									&lt;/td&gt;
+-								&lt;/tr&gt;
+-							&lt;/tbody&gt;
+-						&lt;/table&gt;
+-
+-						&lt;p&gt;
+-							To use your custom implementation instead of the default one, the class
+-							should be made available in the Java ClassPath (eg: by putting the 
+-							containing Jar in the &lt;code&gt;lib&lt;/code&gt; directory). Then you should 
+-							tell the IpAddressFilter to use you implementation by adding 
+-							the following line in the &lt;code&gt;rtspproxy.properties&lt;/code&gt; file.
+-						&lt;/p&gt;
+-						&lt;source&gt;auth.ipAddressFilter.implementationClass = path.to.MyCustomClass&lt;/source&gt;
+-						
+-					&lt;/subsection&gt;
+-					
+-				&lt;/subsection&gt;
+-				
++			
+ 			&lt;/subsection&gt;
+-
++				
+ 		&lt;/section&gt;
+ 	&lt;/body&gt;
+ &lt;/document&gt;
+
+Modified: trunk/src/site/xdoc/download.xml
+===================================================================
+--- trunk/src/site/xdoc/download.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/xdoc/download.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -37,8 +37,8 @@
+ 						&lt;tr&gt;
+ 							&lt;td&gt;
+ 								&lt;a
+-									href=&quot;<A HREF="http://download.berlios.de/rtspproxy/rtspproxy-3.0-ALPHA1-src.zip">http://download.berlios.de/rtspproxy/rtspproxy-3.0-ALPHA1-src.zip</A>&quot;&gt;
+-									rtspproxy-3.0-ALPHA1-src.zip
++									href=&quot;<A HREF="http://download.berlios.de/rtspproxy/rtspproxy-3.0-ALPHA2-src.zip">http://download.berlios.de/rtspproxy/rtspproxy-3.0-ALPHA2-src.zip</A>&quot;&gt;
++									rtspproxy-3.0-ALPHA2-src.zip
+ 								&lt;/a&gt;
+ 							&lt;/td&gt;
+ 							&lt;td&gt;Sources&lt;/td&gt;
+@@ -47,8 +47,8 @@
+ 						&lt;tr&gt;
+ 							&lt;td&gt;
+ 								&lt;a
+-									href=&quot;<A HREF="http://download.berlios.de/rtspproxy/rtspproxy-3.0-ALPHA1-bin.zip">http://download.berlios.de/rtspproxy/rtspproxy-3.0-ALPHA1-bin.zip</A>&quot;&gt;
+-									rtspproxy-3.0-ALPHA1-bin.zip
++									href=&quot;<A HREF="http://download.berlios.de/rtspproxy/rtspproxy-3.0-ALPHA2-bin.zip">http://download.berlios.de/rtspproxy/rtspproxy-3.0-ALPHA2-bin.zip</A>&quot;&gt;
++									rtspproxy-3.0-ALPHA2-bin.zip
+ 								&lt;/a&gt;
+ 							&lt;/td&gt;
+ 							&lt;td&gt;Binaries&lt;/td&gt;
+
+Added: trunk/src/site/xdoc/filters.xml
+===================================================================
+--- trunk/src/site/xdoc/filters.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/xdoc/filters.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -0,0 +1,35 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
++
++&lt;document&gt;
++	&lt;properties&gt;
++		&lt;title&gt;Filters&lt;/title&gt;
++		&lt;author email=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>&quot;&gt;Matteo Merli&lt;/author&gt;
++	&lt;/properties&gt;
++
++	&lt;body&gt;
++		&lt;section name=&quot;Filters&quot;&gt;
++			&lt;subsection name=&quot;Authorization and Authentication&quot;&gt;
++				&lt;p&gt;
++					The RtspProxy is capable of restricting access only
++					to authorized clients. This access control scheme is
++					completeley separated from the server access control
++					because it's proxy specific.
++				&lt;/p&gt;
++				&lt;p&gt;
++					If the server ask for authentication to give access
++					to media content, the two access control layers will
++					work together, providing a two step authentication.
++					The proxy will forward client authorization data to
++					the server in order to obtain itself access to
++					protected contents.
++				&lt;/p&gt;
++				&lt;p&gt;
++					There are two possible access control schemes that
++					can be enabled at the proxy level, one based on
++					user/password data sent by client and the other that
++					use the client IP address or host name.
++				&lt;/p&gt;
++			&lt;/subsection&gt;
++		&lt;/section&gt;
++	&lt;/body&gt;
++&lt;/document&gt;
+\ No newline at end of file
+
+
+Property changes on: trunk/src/site/xdoc/filters.xml
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/src/site/xdoc/index.xml
+===================================================================
+--- trunk/src/site/xdoc/index.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/xdoc/index.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -39,8 +39,13 @@
+ 
+ 
+ 		&lt;section name=&quot;News&quot;&gt;
++			&lt;subsection name=&quot;08 Dec 2005 - Released RtspProxy 3.0-ALPHA2&quot;&gt;
++				&lt;p&gt;
++				&lt;/p&gt;
++			&lt;/subsection&gt;
++		
+ 			&lt;subsection
+-				name=&quot;24 Oct 2005 - Released RTSP Proxy 3.0-ALPHA1&quot;&gt;
++				name=&quot;24 Oct 2005 - Released RtspProxy 3.0-ALPHA1&quot;&gt;
+ 				&lt;p&gt;
+ 					The first release of the brand new Java based
+ 					RtspProxy branch has been released.
+
+Added: trunk/src/site/xdoc/ipAddressFilter.xml
+===================================================================
+--- trunk/src/site/xdoc/ipAddressFilter.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/xdoc/ipAddressFilter.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -0,0 +1,226 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
++
++&lt;document&gt;
++	&lt;properties&gt;
++		&lt;title&gt;Filters&lt;/title&gt;
++		&lt;author email=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>&quot;&gt;Matteo Merli&lt;/author&gt;
++	&lt;/properties&gt;
++
++	&lt;body&gt;
++		&lt;section name=&quot;Filters&quot;&gt;
++			&lt;subsection name=&quot;IP address / host name filter&quot;&gt;
++				&lt;p&gt;
++					This access control scheme does use a set of user
++					defined rules to evaluate if a client has or not the
++					right to use the proxy services.
++				&lt;/p&gt;
++				&lt;p&gt;
++					The default implementation of this filter reads the
++					rules from a plain text file located in
++					&lt;code&gt;conf/ipfilter.txt&lt;/code&gt;
++					.
++				&lt;/p&gt;
++
++
++				&lt;table&gt;
++					&lt;thead&gt;
++						&lt;tr&gt;
++							&lt;th&gt;Name&lt;/th&gt;
++							&lt;th&gt;Type&lt;/th&gt;
++							&lt;th&gt;Default&lt;/th&gt;
++							&lt;th&gt;Description&lt;/th&gt;
++						&lt;/tr&gt;
++					&lt;/thead&gt;
++					&lt;tbody&gt;
++						&lt;tr&gt;
++							&lt;td&gt;
++								&lt;code&gt;
++									proxy.filter.ipaddress.enable
++								&lt;/code&gt;
++							&lt;/td&gt;
++							&lt;td&gt;Boolean&lt;/td&gt;
++							&lt;td&gt;
++								&lt;code&gt;false&lt;/code&gt;
++							&lt;/td&gt;
++							&lt;td&gt;
++								This flag let you to enable or disable
++								the IP address filter.
++							&lt;/td&gt;
++						&lt;/tr&gt;
++						&lt;tr&gt;
++							&lt;td&gt;
++								&lt;code&gt;
++									proxy.filter.ipaddress.
++	implementationClass
++								&lt;/code&gt;
++							&lt;/td&gt;
++							&lt;td&gt;String&lt;/td&gt;
++							&lt;td&gt;
++								&lt;code&gt;
++									rtspproxy.filter.ipaddress.
++	PlainTextIpAddressProvider
++								&lt;/code&gt;
++							&lt;/td&gt;
++							&lt;td&gt;
++								Name of a class that implements the
++								&lt;code&gt;
++									rtspproxy.filter.ipaddress. IpAddressProvider
++								&lt;/code&gt;
++								interface.
++							&lt;/td&gt;
++						&lt;/tr&gt;
++					&lt;/tbody&gt;
++				&lt;/table&gt;
++
++				&lt;subsection name=&quot;Plain text Implementation&quot;&gt;
++					&lt;p&gt;
++						This is the default implementation of the IP
++						address filter. It reads the rules from a plain
++						text file and try to match IP address and
++						hostname of clients with these rules.
++					&lt;/p&gt;
++					&lt;p&gt;
++						The rules file consist of a sequence of
++						directives, for example:
++					&lt;/p&gt;
++					&lt;source&gt;Deny * 
++Allow 10.0.0.* 
++Allow *.mydomain.com	&lt;/source&gt;
++					&lt;p&gt;
++						The order of the rules is extremely important,
++						because the client address will be compared with
++						all of these rules in the given order. In the
++						example, the above rules file states that are
++						denied all connection except from clients which
++						addresses are in the subnet
++						&lt;code&gt;10.0.0.0-255&lt;/code&gt;
++						and those that have an hostname that contains
++						&lt;code&gt;mydomain.com&lt;/code&gt;
++						.
++					&lt;/p&gt;
++					&lt;p&gt;
++						The inverse situation would be to allow
++						connection from all addresses and deny a few
++						selected ones.
++					&lt;/p&gt;
++					&lt;source&gt;Allow * 
++Deny 192.123.25.* 
++Deny *.bad-domain.com	&lt;/source&gt;
++					&lt;p&gt;
++						You can put as many rules as you want to acheive
++						a fine grained access control.
++					&lt;/p&gt;
++					&lt;subsection name=&quot;Properties&quot;&gt;
++						&lt;table&gt;
++							&lt;thead&gt;
++								&lt;tr&gt;
++									&lt;th&gt;Name&lt;/th&gt;
++									&lt;th&gt;Type&lt;/th&gt;
++									&lt;th&gt;Default&lt;/th&gt;
++									&lt;th&gt;Description&lt;/th&gt;
++								&lt;/tr&gt;
++							&lt;/thead&gt;
++							&lt;tbody&gt;
++								&lt;tr&gt;
++									&lt;td&gt;
++										&lt;code&gt;
++											proxy.filter.ipaddress.text.file
++										&lt;/code&gt;
++									&lt;/td&gt;
++									&lt;td&gt;String&lt;/td&gt;
++									&lt;td&gt;
++										&lt;code&gt;conf/ipfilter.txt&lt;/code&gt;
++									&lt;/td&gt;
++									&lt;td&gt;Location of the rules file.&lt;/td&gt;
++								&lt;/tr&gt;
++							&lt;/tbody&gt;
++						&lt;/table&gt;
++					&lt;/subsection&gt;
++				&lt;/subsection&gt;
++
++				&lt;subsection
++					name=&quot;Using an alternative implementation&quot;&gt;
++					&lt;p&gt;
++						Sometimes a fixed set of rules is not enough to
++						set up a good access control policy, or perhaps
++						the authorization must be integrated with an
++						existing system.
++					&lt;/p&gt;
++					&lt;p&gt;
++						In all of these situations, you can provide a
++						custom implementation of the backend. All it
++						needs to be done is to provide a class that
++						implements the
++						&lt;code&gt;proxy.filter.ipaddress.IpAddressProvider&lt;/code&gt;
++						interface.
++					&lt;/p&gt;
++					&lt;source&gt;public interface IpAddressProvider 
++{ 
++	public void init() throws Exception; 
++	public void shutdown() throws Exception; 
++	public boolean isBlocked( InetAddress address ); 
++}&lt;/source&gt;
++					&lt;p&gt;
++						This interface is only composed of three
++						methods:
++					&lt;/p&gt;
++					&lt;table&gt;
++						&lt;thead&gt;
++							&lt;tr&gt;
++								&lt;th&gt;Method&lt;/th&gt;
++								&lt;th&gt;Description&lt;/th&gt;
++							&lt;/tr&gt;
++						&lt;/thead&gt;
++						&lt;tbody&gt;
++							&lt;tr&gt;
++								&lt;td&gt;init()&lt;/td&gt;
++								&lt;td&gt;
++									Called at startup. Should be used to
++									properly setup the subsystem.
++								&lt;/td&gt;
++							&lt;/tr&gt;
++							&lt;tr&gt;
++								&lt;td&gt;shutdown()&lt;/td&gt;
++								&lt;td&gt;
++									Called before the proxy shutdown.
++									Should be used close opened
++									connections...
++								&lt;/td&gt;
++							&lt;/tr&gt;
++							&lt;tr&gt;
++								&lt;td&gt;
++									isBlocked( InetAddress address )
++								&lt;/td&gt;
++								&lt;td&gt;
++									This method must return
++									&lt;code&gt;true&lt;/code&gt;
++									if the connection from the given
++									&lt;code&gt;address&lt;/code&gt;
++									should be closed or
++									&lt;code&gt;false&lt;/code&gt;
++									otherwise.
++								&lt;/td&gt;
++							&lt;/tr&gt;
++						&lt;/tbody&gt;
++					&lt;/table&gt;
++
++					&lt;p&gt;
++						To use your custom implementation instead of the
++						default one, the class should be made available
++						in the Java ClassPath (eg: by putting the
++						containing Jar in the
++						&lt;code&gt;lib&lt;/code&gt;
++						directory). Then you should tell the
++						IpAddressFilter to use your implementation by
++						adding the following line in the
++						&lt;code&gt;rtspproxy.properties&lt;/code&gt;
++						file.
++					&lt;/p&gt;
++					&lt;source&gt;proxy.filter.ipaddress.implementationClass = path.to.MyCustomClass&lt;/source&gt;
++
++				&lt;/subsection&gt;
++
++			&lt;/subsection&gt;
++		&lt;/section&gt;
++	&lt;/body&gt;
++&lt;/document&gt;
+\ No newline at end of file
+
+
+Property changes on: trunk/src/site/xdoc/ipAddressFilter.xml
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/site/xdoc/sources.xml
+===================================================================
+--- trunk/src/site/xdoc/sources.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/xdoc/sources.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -0,0 +1,61 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
++
++&lt;document&gt;
++	&lt;properties&gt;
++		&lt;title&gt;Compiling from sources&lt;/title&gt;
++		&lt;author email=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>&quot;&gt;Matteo Merli&lt;/author&gt;
++	&lt;/properties&gt;
++
++	&lt;body&gt;
++		&lt;section name=&quot;Compiling from sources&quot;&gt;
++			&lt;p&gt;
++				In order to compile the sources, you will need the
++				&lt;a href=&quot;<A HREF="http://maven.apache.org">http://maven.apache.org</A>&quot;&gt;Maven 2&lt;/a&gt;
++				tool. This is a tool that assist in project management,
++				builds and releases and it is especially tailored to
++				Java projects. Please refer to its website for
++				installing and configuring it.
++			&lt;/p&gt;
++			&lt;p&gt;
++				Once you have Maven configured and working you can
++				compile the project simply by doing:
++			&lt;/p&gt;
++			&lt;source&gt;$ mvn&lt;/source&gt;
++			&lt;p&gt;in the base project folder.&lt;/p&gt;
++			&lt;p&gt;
++				This will produce, if there are no problems, a folder
++				named
++				&lt;code&gt;
++					target/rtspproxy-&lt;i&gt;[version]&lt;/i&gt;-default
++				&lt;/code&gt;
++				containing the binaries.
++			&lt;/p&gt;
++
++			&lt;p&gt;To generate the documentation, just enter:&lt;/p&gt;
++			&lt;source&gt;$ mvn site&lt;/source&gt;
++			&lt;p&gt;
++				Documentation will be put under
++				&lt;code&gt;target/site&lt;/code&gt;
++				directory.
++			&lt;/p&gt;
++			
++			&lt;subsection name=&quot;Eclipse&quot;&gt;
++				&lt;p&gt;
++					If you want to import the project into 
++					&lt;a href=&quot;<A HREF="http://www.eclipse.org">http://www.eclipse.org</A>&quot;&gt;Eclipse&lt;/a&gt;, you can generate 
++					the project files using:
++				&lt;/p&gt;
++				&lt;source&gt;$ mvn eclipse:eclipse&lt;/source&gt;
++				&lt;p&gt;
++					Also, be sure to check that the &lt;code&gt;M2_REPO&lt;/code&gt; variable 
++					is defined in Eclipse. If not, set it to the path of your
++					Maven repository which in Unix systems is usually located
++					in 
++					&lt;code&gt;~/.m2/repository&lt;/code&gt;.
++				&lt;/p&gt;
++				
++			&lt;/subsection&gt;
++		&lt;/section&gt;
++	&lt;/body&gt;
++&lt;/document&gt;
++
+
+
+Property changes on: trunk/src/site/xdoc/sources.xml
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/src/site/xdoc/todo.xml
+===================================================================
+--- trunk/src/site/xdoc/todo.xml	2005-12-08 16:51:03 UTC (rev 334)
++++ trunk/src/site/xdoc/todo.xml	2005-12-08 20:46:19 UTC (rev 335)
+@@ -79,7 +79,7 @@
+ 						&lt;tr&gt;
+ 							&lt;td&gt;
+ 								&lt;strong&gt;
+-									Remote Control Interface
++									Remote Management Interface
+ 								&lt;/strong&gt;
+ 							&lt;/td&gt;
+ 							&lt;td&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000019.html">[Rtspproxy-devel] r334 - trunk/src/main/java/rtspproxy/filter
+</A></li>
+	<LI>Next message: <A HREF="000021.html">[Rtspproxy-devel] r336 - in trunk/src/main/java/rtspproxy/filter: . authentication ipaddress
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#20">[ date ]</a>
+              <a href="thread.html#20">[ thread ]</a>
+              <a href="subject.html#20">[ subject ]</a>
+              <a href="author.html#20">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

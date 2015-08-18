@@ -1,0 +1,401 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r423 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter: . ipaddress
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r423%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter%3A%20.%20ipaddress&In-Reply-To=%3C200605021535.k42FZHt4031294%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000105.html">
+   <LINK REL="Next"  HREF="000107.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r423 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter: . ipaddress</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r423%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter%3A%20.%20ipaddress&In-Reply-To=%3C200605021535.k42FZHt4031294%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r423 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter: . ipaddress">merlimat at berlios.de
+       </A><BR>
+    <I>Tue May  2 17:35:17 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000105.html">[Rtspproxy-devel] r422 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+        <LI>Next message: <A HREF="000107.html">[Rtspproxy-devel] r424 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx: . mbeans
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#106">[ date ]</a>
+              <a href="thread.html#106">[ thread ]</a>
+              <a href="subject.html#106">[ subject ]</a>
+              <a href="author.html#106">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-05-02 17:35:05 +0200 (Tue, 02 May 2006)
+New Revision: 423
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterBase.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterRegistry.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java
+Log:
+Reworked the way filter are stopped/resumed at run time.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterBase.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterBase.java	2006-05-02 15:27:15 UTC (rev 422)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterBase.java	2006-05-02 15:35:05 UTC (rev 423)
+@@ -22,28 +22,36 @@
+     private static Logger log = LoggerFactory.getLogger( FilterBase.class );
+ 
+     /** running flag */
+-    private boolean isRunning = true;
++    private boolean isRunning = false;
+ 
+-    /** MBean name assigned by JMX interface */
+-    private ObjectName mbeanName;
+-
+     /** chain name of filter */
+     private String chainName;
+ 
++    private T providerReference = null;
++
+     // Abstract methods
+     public abstract String getName();
+ 
+-    public String getProviderClassName() { return null; }
++    public String getProviderClassName()
++    {
++        return null;
++    }
+ 
+-    protected Class&lt;T&gt; getProviderInterface() { return null; }
++    protected Class&lt;T&gt; getProviderInterface()
++    {
++        return null;
++    }
+ 
+-    protected void setProvider( T provider ) {}
++    protected void setProvider( T provider )
++    {
++    }
+ 
+     /**
+      * Subclasses can overload the method to read theyr own configuration
+      * parameters.
+      * 
+-     * @param configuration A {Configuration} object to read from.
++     * @param configuration
++     *            A {Configuration} object to read from.
+      */
+     protected void doConfigure( Configuration configuration )
+     {
+@@ -62,6 +70,9 @@
+      */
+     public final void suspend()
+     {
++        if ( providerReference != null )
++            providerReference.stop();
++
+         isRunning = false;
+         log.info( &quot;{} suspended&quot;, getChainName() );
+     }
+@@ -71,6 +82,14 @@
+      */
+     public final void resume()
+     {
++        if ( providerReference != null ) {
++            try {
++                providerReference.start();
++            } catch ( Exception e ) {
++                log.error( &quot;Error starting {}: {}&quot;, getProviderClassName(), e.getMessage() );
++                return;
++            }
++        }
+         isRunning = true;
+         log.info( &quot;{} resumed&quot;, getChainName() );
+     }
+@@ -84,28 +103,6 @@
+     }
+ 
+     /**
+-     * @return Returns the mbeanName.
+-     */
+-    public ObjectName getMbeanName()
+-    {
+-        return mbeanName;
+-    }
+-
+-    /**
+-     * Set the name of the MBean used for filter management. This property is
+-     * write-once.
+-     * 
+-     * @param mbeanName
+-     *            The mbeanName to set.
+-     */
+-    public void setMbeanName( ObjectName mbeanName )
+-    {
+-        // once set it can not change
+-        if ( this.mbeanName == null )
+-            this.mbeanName = mbeanName;
+-    }
+-
+-    /**
+      * get the chain name for the filter.
+      */
+     public String getChainName()
+@@ -133,12 +130,12 @@
+         doConfigure( configuration );
+ 
+         Class providerClass;
+-	String className = getProviderClassName(); 
+-	if ( className == null ) {
+-		// The filter does not have a provider 
+-		// system. Ignore it.
+-		return;
+-	}
++        String className = getProviderClassName();
++        if ( className == null ) {
++            // The filter does not have a provider
++            // system. Ignore it.
++            return;
++        }
+ 
+         try {
+             providerClass = Class.forName( className );
+@@ -166,10 +163,11 @@
+             return;
+         }
+ 
+-	// Instanciate the provider and configure it.
++        // Instanciate the provider and configure it.
+         try {
+             T provider = (T) providerClass.newInstance();
+             setProvider( provider );
++            providerReference = provider;
+             provider.configure( configuration );
+             provider.start();
+ 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterRegistry.java	2006-05-02 15:27:15 UTC (rev 422)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterRegistry.java	2006-05-02 15:35:05 UTC (rev 423)
+@@ -81,23 +81,27 @@
+ 
+         Configuration config = XMLConfigReader.getConfiguration();
+ 
+-        if ( Config.filtersAuthenticationEnable.getValue() ) {
++        try {
++            
+             authenticationFilter = new AuthenticationFilter();
+             authenticationFilter.configure( config );
+             registerFilterMBean( authenticationFilter );
+-        }
++            if ( Config.filtersAuthenticationEnable.getValue() ) {
++                authenticationFilter.resume();
++            }
+ 
+-        if ( Config.filtersIpAddressEnable.getValue() ) {
+             clientAddressFilter = new IpAddressFilter( Side.Client );
+             clientAddressFilter.configure( config );
+             registerFilterMBean( clientAddressFilter );
+ 
+             serverAddressFilter = new IpAddressFilter( Side.Server );
+             serverAddressFilter.configure( config );
+-            registerFilterMBean( serverAddressFilter );         
+-        }
++            registerFilterMBean( serverAddressFilter );
++            if ( Config.filtersIpAddressEnable.getValue() ) {
++                clientAddressFilter.resume();
++                serverAddressFilter.resume();
++            }
+ 
+-        if ( Config.filtersRewriteEnable.getValue() ) {
+             clientRewritingFilter = new UrlRewritingFilter( Side.Client );
+             clientRewritingFilter.configure( config );
+             registerFilterMBean( clientRewritingFilter );
+@@ -105,10 +109,17 @@
+             serverRewritingFilter = new UrlRewritingFilter( Side.Server );
+             serverRewritingFilter.configure( config );
+             registerFilterMBean( serverRewritingFilter );
+-        }
++            if ( Config.filtersRewriteEnable.getValue() ) {
++                clientRewritingFilter.resume();
++                serverRewritingFilter.resume();
++            }
+ 
+-        try {
+-            // TODO: XXXXX
++            accountingFilter = new AccountingFilter();
++            accountingFilter.configure( config );
++            registerFilterMBean( accountingFilter );
++            if ( Config.filtersAccountingEnable.getValue() ) {
++                accountingFilter.resume();
++            }
+ 
+         } catch ( Throwable t ) {
+             log.error( &quot;Failed to populate filter registry&quot;, t );
+@@ -116,7 +127,7 @@
+             Reactor.stop();
+         }
+ 
+-        this.populated = true;
++        populated = true;
+     }
+ 
+     private void registerFilterMBean( FilterBase filter )
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-05-02 15:27:15 UTC (rev 422)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-05-02 15:35:05 UTC (rev 423)
+@@ -76,15 +76,15 @@
+     protected void addIpAddressFilter( IoFilterChain chain, Side side )
+     {
+         IpAddressFilter filter;
+-	if ( side == Side.Client )
+-		filter = FilterRegistry.getInstance().getClientAddressFilter();
+-	else
+-		filter = FilterRegistry.getInstance().getServerAddressFilter();
++        if ( side == Side.Client )
++            filter = FilterRegistry.getInstance().getClientAddressFilter();
++        else
++            filter = FilterRegistry.getInstance().getServerAddressFilter();
+ 
+-	if ( filter == null )
+-		return;
++        if ( filter == null || !filter.isRunning() )
++            return;
+ 
+-	chain.addAfter( ProxyServiceRegistry.threadPoolFilterNAME, filter.getChainName(),
++        chain.addAfter( ProxyServiceRegistry.threadPoolFilterNAME, filter.getChainName(),
+                 filter );
+     }
+ 
+@@ -105,35 +105,35 @@
+         AuthenticationFilter filter = FilterRegistry.getInstance()
+                 .getAuthenticationFilter();
+ 
+-	if ( filter == null )
+-		return;
++        if ( !filter.isRunning() )
++            return;
+ 
+         chain.addAfter( rtspCodecNAME, filter.getChainName(), filter );
+     }
+ 
+     protected void addAccountingFilter( IoFilterChain chain )
+     {
+-	AccountingFilter filter = FilterRegistry.getInstance().getAccountingFilter();
+-    
+-	if ( filter == null )
+-		return;
+-    
+-	chain.addAfter( rtspCodecNAME, filter.getChainName(), filter ); 
++        AccountingFilter filter = FilterRegistry.getInstance().getAccountingFilter();
++
++        if ( !filter.isRunning() )
++            return;
++
++        chain.addAfter( rtspCodecNAME, filter.getChainName(), filter );
+     }
+ 
+     protected void addRewriteFilter( IoFilterChain chain, Side side )
+     {
+-	UrlRewritingFilter filter;
+-	
+-	if ( side == Side.Client )
+-		filter = FilterRegistry.getInstance().getClientRewritingFilter();
+-	else
+-		filter = FilterRegistry.getInstance().getServerRewritingFilter();
+-	
+-	if ( filter == null )
+-		return;
+-          
+-         chain.addAfter( rtspCodecNAME, filter.getChainName(), filter ); 
++        UrlRewritingFilter filter;
++
++        if ( side == Side.Client )
++            filter = FilterRegistry.getInstance().getClientRewritingFilter();
++        else
++            filter = FilterRegistry.getInstance().getServerRewritingFilter();
++
++        if ( !filter.isRunning() )
++            return;
++
++        chain.addAfter( rtspCodecNAME, filter.getChainName(), filter );
+     }
+ 
+     protected void addControlFilter( IoFilterChain chain )
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java	2006-05-02 15:27:15 UTC (rev 422)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java	2006-05-02 15:35:05 UTC (rev 423)
+@@ -45,7 +45,7 @@
+ 
+     public IpAddressFilter( Side side )
+     {
+-	this.side = side;
++        this.side = side;
+     }
+ 
+     /*
+@@ -90,14 +90,14 @@
+     protected void setProvider( IpAddressProvider provider )
+     {
+         this.provider = provider;
+-	this.provider.setSide( side );
++        this.provider.setSide( side );
+     }
+ 
+     @Override
+     public void messageReceived( NextFilter nextFilter, IoSession session, Object message )
+             throws Exception
+     {
+-	log.debug( &quot;Testing address: {}&quot;, session.getRemoteAddress() );
++        log.debug( &quot;Testing address: {}&quot;, session.getRemoteAddress() );
+ 
+         if ( !isRunning() ) {
+             // forward because filter is suspended
+@@ -126,7 +126,7 @@
+         if ( !isRunning() ) {
+             // forward because filter is suspended
+             nextFilter.sessionCreated( session );
+-            
++
+         } else if ( !provider.isBlocked( ((InetSocketAddress) session.getRemoteAddress())
+                 .getAddress() ) ) {
+             // forward if not blocked
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000105.html">[Rtspproxy-devel] r422 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+	<LI>Next message: <A HREF="000107.html">[Rtspproxy-devel] r424 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx: . mbeans
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#106">[ date ]</a>
+              <a href="thread.html#106">[ thread ]</a>
+              <a href="subject.html#106">[ subject ]</a>
+              <a href="author.html#106">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

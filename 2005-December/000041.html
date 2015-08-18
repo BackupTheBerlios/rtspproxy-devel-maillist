@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r356 - trunk/src/resources/conf
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r356%20-%20trunk/src/resources/conf&In-Reply-To=%3C200512202042.jBKKgUel002045%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000039.html">
+   <LINK REL="Next"  HREF="000042.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r356 - trunk/src/resources/conf</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r356%20-%20trunk/src/resources/conf&In-Reply-To=%3C200512202042.jBKKgUel002045%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r356 - trunk/src/resources/conf">merlimat at berlios.de
+       </A><BR>
+    <I>Tue Dec 20 21:42:30 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000039.html">[Rtspproxy-devel] r355 - in trunk/src/main/java/rtspproxy: filter filter/authentication filter/authentication/scheme filter/ipaddress lib
+</A></li>
+        <LI>Next message: <A HREF="000042.html">[Rtspproxy-devel] r357 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#41">[ date ]</a>
+              <a href="thread.html#41">[ thread ]</a>
+              <a href="subject.html#41">[ subject ]</a>
+              <a href="author.html#41">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-20 21:42:27 +0100 (Tue, 20 Dec 2005)
+New Revision: 356
+
+Modified:
+   trunk/src/resources/conf/rtspproxy.properties
+Log:
+* Removed deleted parameters (dynamic ports)
+* Added (commented out) the authentication scheme parameter
+
+Modified: trunk/src/resources/conf/rtspproxy.properties
+===================================================================
+--- trunk/src/resources/conf/rtspproxy.properties	2005-12-20 20:23:02 UTC (rev 355)
++++ trunk/src/resources/conf/rtspproxy.properties	2005-12-20 20:42:27 UTC (rev 356)
+@@ -32,11 +32,6 @@
+ # RTSP connection. The default is 554, like normal RTSP servers.
+ proxy.rtsp.port = 5540
+ 
+-# If you need to define a particular network interface
+-# to bind on, specify it here.
+-# Default is to listen on all interfaces.
+-## proxy.rtsp.interface = 10.0.0.10
+-
+ ##################################################
+ #         RTP/RTCP CONNECTION TO SERVERS         # 
+ ##################################################
+@@ -50,11 +45,6 @@
+ # listen on all interfaces.
+ ## proxy.server.interface = 10.0.0.24
+ 
+-# If true the proxy will try to bind the listener
+-# for packet in the first available ports.
+-# Default is false.
+-proxy.server.dynamicPorts = True
+-
+ ##################################################
+ #        RTP/RTCP CONNECTION TO CLIENTS          # 
+ ##################################################
+@@ -68,11 +58,6 @@
+ # listen on all interfaces.
+ ## proxy.client.interface = 10.0.0.23
+ 
+-# If true the proxy will try to bind the listener
+-# for packet in the first available ports.
+-# Default is false.
+-proxy.client.dynamicPorts = True
+-
+ ##################################################
+ #          IP ADDRESS / HOSTNAME FILTER          # 
+ ##################################################
+@@ -97,6 +82,9 @@
+ # Unconmment the following line to enable filtering
+ # proxy.filter.authentication.enable = true
+ 
++# Select the desired authentication scheme: default is Basic
++# proxy.filter.authentication.scheme = Digest
++
+ # Use an alternative backend class. The default is 
+ # rtspproxy.filter.authentication.PlainTextAuthenticationProvider
+ # This can be any class that implements the 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000039.html">[Rtspproxy-devel] r355 - in trunk/src/main/java/rtspproxy: filter filter/authentication filter/authentication/scheme filter/ipaddress lib
+</A></li>
+	<LI>Next message: <A HREF="000042.html">[Rtspproxy-devel] r357 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#41">[ date ]</a>
+              <a href="thread.html#41">[ thread ]</a>
+              <a href="subject.html#41">[ subject ]</a>
+              <a href="author.html#41">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

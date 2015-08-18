@@ -1,0 +1,187 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r411 - in trunk: RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r411%20-%20in%20trunk%3A%20RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite%20RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite&In-Reply-To=%3C200602061749.k16HnNrr008411%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000094.html">
+   <LINK REL="Next"  HREF="000096.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r411 - in trunk: RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r411%20-%20in%20trunk%3A%20RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite%20RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite&In-Reply-To=%3C200602061749.k16HnNrr008411%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r411 - in trunk: RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite">rbieniek at berlios.de
+       </A><BR>
+    <I>Mon Feb  6 18:49:23 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000094.html">[Rtspproxy-devel] r410 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp
+</A></li>
+        <LI>Next message: <A HREF="000096.html">[Rtspproxy-devel] r412 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#95">[ date ]</a>
+              <a href="thread.html#95">[ thread ]</a>
+              <a href="subject.html#95">[ subject ]</a>
+              <a href="author.html#95">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-02-06 18:48:54 +0100 (Mon, 06 Feb 2006)
+New Revision: 411
+
+Modified:
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingProvider.java
+Log:
+- extended URL rewriting 
+
+
+Modified: trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java
+===================================================================
+--- trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java	2006-02-03 10:40:46 UTC (rev 410)
++++ trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java	2006-02-06 17:48:54 UTC (rev 411)
+@@ -17,6 +17,7 @@
+ import rtspproxy.config.AAAConfigurable;
+ import rtspproxy.filter.GenericProviderAdapter;
+ import rtspproxy.rtsp.RtspRequest;
++import rtspproxy.rtsp.RtspRequest.Verb;
+ 
+ /**
+  * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
+@@ -44,7 +45,7 @@
+ 	 * @see rtspproxy.filter.rewrite.UrlRewritingProvider#rewriteRequestUrl(java.net.URL)
+ 	 */
+ 	public UrlRewritingResult rewriteRequestUrl(URL request, RtspRequest.Verb verb, SocketAddress client,
+-			Map&lt;String, String&gt; requestHeaders) {
++			Map&lt;String, String&gt; requestHeaders, Map&lt;String, Object&gt; exposedSessionAttributes) {
+ 		UrlRewritingResult result = null;
+ 		URL rewritten = null;
+ 		String req = request.toString();
+@@ -149,4 +150,9 @@
+ 		}
+ 	}
+ 
++	public String[] getWantedSessionAttributes() {
++		// no attributes wanted
++		return null;
++	}
++
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-02-03 10:40:46 UTC (rev 410)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-02-06 17:48:54 UTC (rev 411)
+@@ -5,6 +5,7 @@
+ 
+ import java.net.MalformedURLException;
+ import java.net.URL;
++import java.util.HashMap;
+ import java.util.List;
+ 
+ import javax.management.MBeanServer;
+@@ -40,6 +41,9 @@
+ 	// the filter instance
+ 	protected UrlRewritingProvider provider;
+ 
++	// list of exposed session attributes
++	private String[] exposedAttributes;
++	
+ 	/**
+ 	 * construct the IoFilter around the filter class denoted by the clazz name
+ 	 * parameter.
+@@ -51,6 +55,10 @@
+ 		this.provider = (UrlRewritingProvider)loadConfigInitProvider(className, 
+ 				UrlRewritingProvider.class, 
+ 				configElements);
++		
++		this.exposedAttributes = this.provider.getWantedSessionAttributes();
++		if(this.exposedAttributes == null)
++			this.exposedAttributes = new String[0];
+ 	}
+ 
+ 	public abstract void messageReceived(NextFilter nextFilter, IoSession session,
+@@ -65,8 +73,14 @@
+ 		boolean passOn = true;
+ 		
+ 		if (req.getUrl() != null) {
++			HashMap&lt;String, Object&gt; exposedSessionAttributes = new HashMap&lt;String, Object&gt;();
++			
++			for(String attr : this.exposedAttributes)
++				if(session.containsAttribute(attr))
++					exposedSessionAttributes.put(attr, session.getAttribute(attr));
++			
+ 			UrlRewritingResult result = this.provider.rewriteRequestUrl(req.getUrl(), req.getVerb(), 
+-					session.getRemoteAddress(), req.getHeaders()); 
++					session.getRemoteAddress(), req.getHeaders(), exposedSessionAttributes); 
+ 			
+ 			if(result != null) {
+ 				URL rewritten = result.getRewrittenUrl();
+@@ -81,6 +95,8 @@
+ 
+ 					resp.setCommonHeaders();
+ 					resp.setSequenceNumber(req.getSequenceNumber());
++					if(resp.getHeader(&quot;Session&quot;) != null)
++						resp.setHeader(&quot;Session&quot;, req.getHeader(&quot;Session&quot;));
+ 					logger.debug(&quot;dropped  request, return response: &quot; + resp);
+ 
+ 					session.write(resp);
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingProvider.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingProvider.java	2006-02-03 10:40:46 UTC (rev 410)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingProvider.java	2006-02-06 17:48:54 UTC (rev 411)
+@@ -37,11 +37,16 @@
+ 	 * sent back to the client. If null is returned, the URL is passed on without modification.
+ 	 */
+ 	public UrlRewritingResult rewriteRequestUrl(URL request, RtspRequest.Verb verb, SocketAddress client,
+-			Map&lt;String, String&gt; requestHeaders);
++			Map&lt;String, String&gt; requestHeaders, Map&lt;String, Object&gt; sessionAttributes);
+ 
+ 	/**
+ 	 * rewrite an URL in a response header.
+ 	 * @return a replacement URL or null if the URL is not to be modified.
+ 	 */
+ 	public URL rewriteResponseHeaderUrl(URL request);
++	
++	/**
++	 * get a list of session attributes the filter wants to get exposed from the session
++	 */
++	public String[] getWantedSessionAttributes();
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000094.html">[Rtspproxy-devel] r410 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp
+</A></li>
+	<LI>Next message: <A HREF="000096.html">[Rtspproxy-devel] r412 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#95">[ date ]</a>
+              <a href="thread.html#95">[ thread ]</a>
+              <a href="subject.html#95">[ subject ]</a>
+              <a href="author.html#95">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

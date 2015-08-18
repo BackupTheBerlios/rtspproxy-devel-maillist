@@ -1,0 +1,381 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r408 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . config lib
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r408%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20config%20lib&In-Reply-To=%3C200602021904.k12J4Xq8017882%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000093.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r408 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . config lib</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r408%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20config%20lib&In-Reply-To=%3C200602021904.k12J4Xq8017882%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r408 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . config lib">rbieniek at berlios.de
+       </A><BR>
+    <I>Thu Feb  2 20:04:33 CET 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000093.html">[Rtspproxy-devel] r409 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#92">[ date ]</a>
+              <a href="thread.html#92">[ thread ]</a>
+              <a href="subject.html#92">[ subject ]</a>
+              <a href="author.html#92">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-02-02 20:04:23 +0100 (Thu, 02 Feb 2006)
+New Revision: 408
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtcpClientService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtcpServerService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtpClientService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtpServerService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtspService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/NetworkInterface.java
+Log:
+- Changed interface binding parameter to the meaning to bind to a 
+  named interface (not an interface address)
+- Binding to a specific address is now done with a address parameter
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -81,34 +81,44 @@
+ 			return;
+ 		}
+ 
+-		String netInterface = getNetworkInterface();
+ 		int port = getBindPort();
+ 
+ 		try {
++			if (getNetworkAddress() != null) {
++				socketAddress = new InetSocketAddress(getNetworkAddress(), port);
++				log.debug(&quot;binding to specific address: &quot; + socketAddress);
+ 
+-			Set&lt;InetAddress&gt; addressSet = NetworkInterface.getAddresses( netInterface );
++				Reactor.getRegistry().bind(this, getIoHandler(),
++						socketAddress, getFilterChainBuilder());				
++			} else {
++				String netInterface = getNetworkInterface();
+ 
+-			for ( InetAddress inetAddress : addressSet ) {
+-				// Bind to all addresses
++				Set&lt;InetAddress&gt; addressSet = NetworkInterface.getInterfaceAddresses(netInterface);
+ 
+-				socketAddress = new InetSocketAddress( inetAddress, port );
++				for (InetAddress inetAddress : addressSet) {
++					// Bind to all addresses
+ 
+-				Reactor.getRegistry().bind( this, getIoHandler(), socketAddress,
+-						getFilterChainBuilder() );
++					log.debug(&quot;binding to address from set: &quot; + socketAddress);
++					socketAddress = new InetSocketAddress(inetAddress, port);
+ 
+-			}
++					Reactor.getRegistry().bind(this, getIoHandler(),
++							socketAddress, getFilterChainBuilder());
+ 
+-			// Choose a bind address
+-			InetAddress inetAddress = NetworkInterface.getBindAddress( addressSet );
+-			socketAddress = new InetSocketAddress( inetAddress, port );
++				}
+ 
+-			log.info( getName() + &quot; Started - Listening on: &quot; + socketAddress );
++				// Choose a bind address
++				InetAddress inetAddress = NetworkInterface
++						.getBindAddress(addressSet);
++				socketAddress = new InetSocketAddress(inetAddress, port);
+ 
+-		} catch ( IOException e ) {
+-			log.error( &quot;Can't start &quot; + getName(), e );
++			}
++		} catch (IOException e) {
++			log.error(&quot;Can't start &quot; + getName(), e);
+ 			throw e;
+ 		}
++		log.info( getName() + &quot; Started - Listening on: &quot; + socketAddress );
+ 
++
+ 		isRunning = true;
+ 	}
+ 
+@@ -181,12 +191,21 @@
+ 	public abstract String getName();
+ 
+ 	/**
++	 * Get the network interface to bind to. This is only used if there is no more specific
++	 * IP address configured.
+ 	 * @return the network interface to bind this service on, as it appears in
+ 	 *         the configuratio registry (Config).
+ 	 */
+ 	public abstract String getNetworkInterface();
+ 
+ 	/**
++	 * @return the network address to bind this service on, as it appears in
++	 *         the configuratio registry (Config). If null, the network interface
++	 *         configuration parameter is used.
++	 */
++	public abstract String getNetworkAddress();
++
++	/**
+ 	 * @return the port to bind on, as it appear in the configuration registry.
+ 	 */
+ 	public abstract int getBindPort();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -81,6 +81,12 @@
+ 	}
+ 
+ 	@Override
++	public String getNetworkAddress()
++	{
++		return Config.proxyClientAddress.getValue();
++	}
++
++	@Override
+ 	public int getBindPort()
+ 	{
+ 		return Config.proxyClientRdtPort.getValue();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -79,6 +79,12 @@
+ 	}
+ 
+ 	@Override
++	public String getNetworkAddress()
++	{
++		return Config.proxyServerAddress.getValue();
++	}
++
++	@Override
+ 	public int getBindPort()
+ 	{
+ 		return Config.proxyServerRdtPort.getValue();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtcpClientService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtcpClientService.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtcpClientService.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -72,6 +72,12 @@
+ 	}
+ 
+ 	@Override
++	public String getNetworkAddress()
++	{
++		return Config.proxyClientAddress.getValue();
++	}
++
++	@Override
+ 	public int getBindPort()
+ 	{
+ 		return Config.proxyClientRtcpPort.getValue();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtcpServerService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtcpServerService.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtcpServerService.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -72,6 +72,12 @@
+ 	}
+ 
+ 	@Override
++	public String getNetworkAddress()
++	{
++		return Config.proxyServerAddress.getValue();
++	}
++
++	@Override
+ 	public int getBindPort()
+ 	{
+ 		return Config.proxyServerRtcpPort.getValue();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtpClientService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtpClientService.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtpClientService.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -69,6 +69,12 @@
+ 	}
+ 
+ 	@Override
++	public String getNetworkAddress()
++	{
++		return Config.proxyClientAddress.getValue();
++	}
++
++	@Override
+ 	public int getBindPort()
+ 	{
+ 		return Config.proxyClientRtpPort.getValue();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtpServerService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtpServerService.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtpServerService.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -69,6 +69,12 @@
+ 	}
+ 
+ 	@Override
++	public String getNetworkAddress()
++	{
++		return Config.proxyServerAddress.getValue();
++	}
++
++	@Override
+ 	public int getBindPort()
+ 	{
+ 		return Config.proxyServerRtpPort.getValue();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtspService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtspService.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RtspService.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -89,6 +89,12 @@
+ 	}
+ 
+ 	@Override
++	public String getNetworkAddress()
++	{
++		return Config.proxyClientAddress.getValue();
++	}
++
++	@Override
+ 	public int getBindPort()
+ 	{
+ 		return Config.proxyRtspPort.getValue();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -82,6 +82,22 @@
+ 			&quot;/rtspproxy/proxy/server/interface&quot; // pathExpr
+ 			);
+ 
++	public static final StringParameter proxyClientAddress = new StringParameter(
++			&quot;proxy.client.address&quot;, // name
++			null, // default value
++			false, // mutable
++			&quot;Specify a network address.&quot; ,
++			&quot;/rtspproxy/proxy/client/address&quot; // xpathExpr
++			);
++
++	public static final StringParameter proxyServerAddress = new StringParameter(
++			&quot;proxy.server.address&quot;, // name
++			null, // default value
++			false, // mutable
++			&quot;Specify a network address.&quot;,
++			&quot;/rtspproxy/proxy/server/address&quot; // pathExpr
++			);
++
+ 	public static final IntegerParameter proxyServerRtpPort = new IntegerParameter(
+ 			&quot;proxy.server.rtp.port&quot;, // name
+ 			new Integer( 0 ), // min value
+@@ -217,7 +233,7 @@
+ 			false, // mutable
+ 			&quot;Host to bind the management services. Default is localhost, and the services &quot;
+ 					+ &quot;will only be reachable from local machine.&quot;,
+-			&quot;/rtspproxy/jmx/interface&quot; // xpathExpr
++			&quot;/rtspproxy/jmx/address&quot; // xpathExpr
+ 			 );
+ 
+ 	public static final StringParameter proxyManagementUser = new StringParameter(
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/NetworkInterface.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/NetworkInterface.java	2006-01-30 18:01:51 UTC (rev 407)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/NetworkInterface.java	2006-02-02 19:04:23 UTC (rev 408)
+@@ -81,6 +81,47 @@
+ 		return addresses;
+ 	}
+ 
++	/**
++	 * Return all the addresses associated with the given interface. If the
++	 * supplied interface name is null, all the addresses from all interfaces
++	 * will be returned.
++	 * 
++	 * @param interfaceName
++	 * @return a set of InetAddress
++	 */
++	public static Set&lt;InetAddress&gt; getInterfaceAddresses( String interfaceName )
++	{
++		Set&lt;InetAddress&gt; addresses = new HashSet&lt;InetAddress&gt;();
++
++		if ( interfaceName != null ) {
++			try {
++				// InetAddress address = InetAddress.getByName( interfaceName );
++				java.net.NetworkInterface networkInterface = java.net.NetworkInterface.getByName(interfaceName);
++				addresses.addAll( getAddresses( networkInterface ) );
++
++			} catch ( Exception e ) {
++				log.error( &quot;Cannot register network interface: &quot; + interfaceName, e );
++				return null;
++			}
++		} else {
++			// Add all addresses from all interfaces
++
++			Enumeration&lt;java.net.NetworkInterface&gt; interfaces;
++			try {
++				interfaces = java.net.NetworkInterface.getNetworkInterfaces();
++			} catch ( SocketException se ) {
++				log.error( &quot;Cannot get the interfaces list.&quot; );
++				return null;
++			}
++
++			while ( interfaces.hasMoreElements() ) {
++				addresses.addAll( getAddresses( interfaces.nextElement() ) );
++			}
++		}
++
++		return addresses;
++	}
++
+ 	private static Set&lt;InetAddress&gt; getAddresses(
+ 			java.net.NetworkInterface networkInterface )
+ 	{
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000093.html">[Rtspproxy-devel] r409 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#92">[ date ]</a>
+              <a href="thread.html#92">[ thread ]</a>
+              <a href="subject.html#92">[ subject ]</a>
+              <a href="author.html#92">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

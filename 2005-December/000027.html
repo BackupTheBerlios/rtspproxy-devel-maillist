@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r342 - in trunk: . src/site src/site/xdoc
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r342%20-%20in%20trunk%3A%20.%20src/site%20src/site/xdoc&In-Reply-To=%3C200512090013.jB90D3Yh005742%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000026.html">
+   <LINK REL="Next"  HREF="000028.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r342 - in trunk: . src/site src/site/xdoc</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r342%20-%20in%20trunk%3A%20.%20src/site%20src/site/xdoc&In-Reply-To=%3C200512090013.jB90D3Yh005742%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r342 - in trunk: . src/site src/site/xdoc">merlimat at berlios.de
+       </A><BR>
+    <I>Fri Dec  9 01:13:03 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000026.html">[Rtspproxy-devel] r341 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000028.html">[Rtspproxy-devel] r343 - in trunk/src/main/java/rtspproxy: proxy rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#27">[ date ]</a>
+              <a href="thread.html#27">[ thread ]</a>
+              <a href="subject.html#27">[ subject ]</a>
+              <a href="author.html#27">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-09 01:12:05 +0100 (Fri, 09 Dec 2005)
+New Revision: 342
+
+Modified:
+   trunk/pom.xml
+   trunk/src/site/site.xml
+   trunk/src/site/xdoc/index.xml
+Log:
+Started with 3.0-ALPHA3-SNAPSHOT
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2005-12-08 21:25:33 UTC (rev 341)
++++ trunk/pom.xml	2005-12-09 00:12:05 UTC (rev 342)
+@@ -12,7 +12,7 @@
+ 	&lt;name&gt;RTSP Proxy&lt;/name&gt;
+ 	&lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+ 	&lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
+-	&lt;version&gt;3.0-ALPHA2&lt;/version&gt;
++	&lt;version&gt;3.0-ALPHA3-SNAPSHOT&lt;/version&gt;
+ 	&lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+ 	&lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+ 
+
+Modified: trunk/src/site/site.xml
+===================================================================
+--- trunk/src/site/site.xml	2005-12-08 21:25:33 UTC (rev 341)
++++ trunk/src/site/site.xml	2005-12-09 00:12:05 UTC (rev 342)
+@@ -26,7 +26,7 @@
+ 			&lt;item
+ 				name=&quot;Configuration&quot;
+ 				href=&quot;configuration.html&quot;&gt;
+-				
++
+ 				&lt;item
+ 					name=&quot;Compile from sources&quot;
+ 					href=&quot;sources.html&quot; /&gt;
+@@ -77,12 +77,17 @@
+ 			&lt;item
+ 				name=&quot;File Activity&quot;
+ 				href=&quot;file-activity.html&quot; /&gt;
+-				&lt;!-- 
++
+ 			&lt;item
++				name=&quot;Project page on BerliOS&quot;
++				href=&quot;<A HREF="http://developer.berlios.de/projects/rtspproxy">http://developer.berlios.de/projects/rtspproxy</A>&quot;
++				target=&quot;_blank&quot; /&gt;
++			&lt;!-- 
++				&lt;item
+ 				name=&quot;Javadocs&quot;
+ 				href=&quot;apidocs/index.html&quot;
+ 				target=&quot;_blank&quot; /&gt;
+-				--&gt;
++			--&gt;
+ 		&lt;/menu&gt;
+ 
+ 	&lt;/body&gt;
+
+Modified: trunk/src/site/xdoc/index.xml
+===================================================================
+--- trunk/src/site/xdoc/index.xml	2005-12-08 21:25:33 UTC (rev 341)
++++ trunk/src/site/xdoc/index.xml	2005-12-09 00:12:05 UTC (rev 342)
+@@ -41,6 +41,9 @@
+ 		&lt;section name=&quot;News&quot;&gt;
+ 			&lt;subsection name=&quot;08 Dec 2005 - Released RtspProxy 3.0-ALPHA2&quot;&gt;
+ 				&lt;p&gt;
++					Second alpha release with many bugfix and improvements.
++					See &lt;a href=&quot;changes-report.html#3.0-ALPHA2&quot;&gt;Changes&lt;/a&gt; for an 
++					overview.
+ 				&lt;/p&gt;
+ 			&lt;/subsection&gt;
+ 		
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000026.html">[Rtspproxy-devel] r341 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000028.html">[Rtspproxy-devel] r343 - in trunk/src/main/java/rtspproxy: proxy rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#27">[ date ]</a>
+              <a href="thread.html#27">[ thread ]</a>
+              <a href="subject.html#27">[ subject ]</a>
+              <a href="author.html#27">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

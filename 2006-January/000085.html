@@ -1,0 +1,1377 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r401 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite jmx jmx/mbeans proxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r401%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20filter/rewrite%20jmx%20jmx/mbeans%20proxy&In-Reply-To=%3C200601191506.k0JF6kAw009056%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000084.html">
+   <LINK REL="Next"  HREF="000086.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r401 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite jmx jmx/mbeans proxy</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r401%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20filter/rewrite%20jmx%20jmx/mbeans%20proxy&In-Reply-To=%3C200601191506.k0JF6kAw009056%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r401 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite jmx jmx/mbeans proxy">rbieniek at berlios.de
+       </A><BR>
+    <I>Thu Jan 19 16:06:46 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000084.html">[Rtspproxy-devel] r400 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+        <LI>Next message: <A HREF="000086.html">[Rtspproxy-devel] r402 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#85">[ date ]</a>
+              <a href="thread.html#85">[ thread ]</a>
+              <a href="subject.html#85">[ subject ]</a>
+              <a href="author.html#85">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-19 16:06:34 +0100 (Thu, 19 Jan 2006)
+New Revision: 401
+
+Added:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxManageable.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxManageable2.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Filter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/FilterMBean.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Info.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/InfoMBean.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacade.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacadeMBean.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Service.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ServiceMBean.java
+Removed:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Filter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/FilterMBean.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Info.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/InfoMBean.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Service.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/ServiceMBean.java
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxAgent.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxySession.java
+Log:
+- proxy sessions are now vivsible as JMX managed objects.
+- a MBean server reference is passed to filters (if they implement
+a special interface) which allows filters to add their own 
+MBeans which are not covered by the standard mechanism
+-- TODO: make client/server session visible as managed objects and
+link them to the proxy session managed object
+-- TODO: allow proxy session to be closed from the management console.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -7,6 +7,9 @@
+ import java.net.URL;
+ import java.util.List;
+ 
++import javax.management.MBeanServer;
++import javax.management.ObjectName;
++
+ import org.apache.mina.common.IoFilter;
+ import org.apache.mina.common.IoFilterAdapter;
+ import org.apache.mina.common.IoSession;
+@@ -16,6 +19,8 @@
+ import org.slf4j.LoggerFactory;
+ 
+ import rtspproxy.filter.FilterBase;
++import rtspproxy.jmx.JmxManageable;
++import rtspproxy.jmx.JmxManageable2;
+ import rtspproxy.rtsp.RtspMessage;
+ import rtspproxy.rtsp.RtspRequest;
+ import rtspproxy.rtsp.RtspResponse;
+@@ -24,7 +29,7 @@
+  * @author bieniekr
+  * 
+  */
+-public abstract class UrlRewritingFilter extends FilterBase {
++public abstract class UrlRewritingFilter extends FilterBase implements JmxManageable {
+ 	/**
+ 	 * Logger for this class
+ 	 */
+@@ -126,4 +131,25 @@
+ 			}
+ 		}
+ 	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.JmxManageable#setMBeanServer(javax.management.MBeanServer)
++	 */
++	public void setMBeanServer(MBeanServer mbeanServer) {
++		if(this.provider instanceof JmxManageable)
++			((JmxManageable)this.provider).setMBeanServer(mbeanServer);
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.filter.FilterBase#getDetailMBean()
++	 */
++	@Override
++	public ObjectName getDetailMBean() {
++		ObjectName name = null;
++		
++		if(this.provider instanceof JmxManageable2)
++			name = ((JmxManageable2)this.provider).getMBean();
++		
++		return name;
++	}
+ }
+
+Deleted: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Filter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Filter.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Filter.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -1,80 +0,0 @@
+-/**
+- * 
+- */
+-package rtspproxy.jmx;
+-
+-import javax.management.MBeanException;
+-import javax.management.MalformedObjectNameException;
+-import javax.management.ObjectName;
+-
+-import java.util.Hashtable;
+-
+-import rtspproxy.filter.FilterBase;
+-
+-/**
+- * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
+- *
+- */
+-public class Filter implements FilterMBean {
+-
+-	// managed filter
+-	private FilterBase filter;
+-	
+-	// object name
+-	private ObjectName name;
+-	
+-	/**
+-	 * @throws NullPointerException 
+-	 * @throws MalformedObjectNameException 
+-	 * 
+-	 */
+-	Filter(FilterBase filter) throws MalformedObjectNameException, NullPointerException {
+-		this.filter = filter;
+-		
+-		// build the MBean name
+-		Hashtable&lt;String, String&gt; keys = new Hashtable&lt;String, String&gt;();
+-		
+-		keys.put(&quot;filter&quot;, filter.getTypeName());
+-		keys.put(&quot;side&quot;, filter.getSide().toString());
+-		keys.put(&quot;classname&quot;, filter.getClassName());
+-		keys.put(&quot;id&quot;, Long.toHexString(System.identityHashCode(filter)));
+-		
+-		this.name = new ObjectName(JmxAgent.DOMAIN, keys);
+-	}
+-
+-	/* (non-Javadoc)
+-	 * @see rtspproxy.jmx.FilterMBean#getDetailMBean()
+-	 */
+-	public ObjectName getDetailMBean() {
+-		return this.filter.getDetailMBean();
+-	}
+-
+-	/* (non-Javadoc)
+-	 * @see rtspproxy.jmx.FilterMBean#isRunning()
+-	 */
+-	public boolean isRunning() {
+-		return this.filter.isRunning();
+-	}
+-
+-	/* (non-Javadoc)
+-	 * @see rtspproxy.jmx.FilterMBean#suspend()
+-	 */
+-	public void suspend() throws MBeanException {
+-		this.filter.suspend();
+-	}
+-
+-	/* (non-Javadoc)
+-	 * @see rtspproxy.jmx.FilterMBean#resume()
+-	 */
+-	public void resume() throws MBeanException {
+-		this.filter.resume();
+-	}
+-
+-	/**
+-	 * @return Returns the name.
+-	 */
+-	public ObjectName getName() {
+-		return name;
+-	}
+-
+-}
+
+Deleted: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/FilterMBean.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/FilterMBean.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/FilterMBean.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -1,25 +0,0 @@
+-/**
+- * 
+- */
+-package rtspproxy.jmx;
+-
+-import javax.management.MBeanException;
+-import javax.management.ObjectName;
+-
+-/**
+- * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
+- *
+- */
+-public interface FilterMBean {
+-
+-	public ObjectName getDetailMBean();
+-	
+-	public boolean isRunning();
+-
+-	/* Actions */
+-
+-	public void suspend() throws MBeanException;
+-
+-	public void resume() throws MBeanException;
+-
+-}
+
+Deleted: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Info.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Info.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Info.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -1,86 +0,0 @@
+-/***************************************************************************
+- *                                                                         *
+- *   This program is free software; you can redistribute it and/or modify  *
+- *   it under the terms of the GNU General Public License as published by  *
+- *   the Free Software Foundation; either version 2 of the License, or     *
+- *   (at your option) any later version.                                   *
+- *                                                                         *
+- *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
+- *                                                                         *
+- ***************************************************************************/
+-
+-/*
+- * $Id$
+- * 
+- * $URL$
+- * 
+- */
+-package rtspproxy.jmx;
+-
+-import java.util.Date;
+-
+-import rtspproxy.config.Config;
+-
+-public class Info implements InfoMBean
+-{
+-
+-	public String getName()
+-	{
+-		return Config.getName();
+-	}
+-
+-	public String getVersion()
+-	{
+-		return Config.getVersion();
+-	}
+-
+-	public Date getStartDate()
+-	{
+-		return Config.getStartDate();
+-	}
+-
+-	public String getOSInfo()
+-	{
+-		StringBuilder sb = new StringBuilder();
+-		sb.append( System.getProperty( &quot;os.name&quot; ) );
+-		sb.append( &quot; / &quot; ).append( System.getProperty( &quot;os.version&quot; ) );
+-		sb.append( &quot; / &quot; ).append( System.getProperty( &quot;os.arch&quot; ) );
+-		return sb.toString();
+-	}
+-
+-	public String getJVMInfo()
+-	{
+-		StringBuilder sb = new StringBuilder();
+-		sb.append( System.getProperty( &quot;java.vm.vendor&quot; ) );
+-		sb.append( &quot; / &quot; );
+-		sb.append( System.getProperty( &quot;java.vm.version&quot; ) );
+-		return sb.toString();
+-	}
+-
+-	public double getFreeMemoryMB()
+-	{
+-		double mb = (double) Runtime.getRuntime().freeMemory() / (1024 * 1024);
+-		return mb;
+-		// Formatter f = new Formatter();
+-		// return f.format( &quot;%1$.2f MB&quot;, mb ).toString();
+-	}
+-
+-	public double getTotalMemoryMB()
+-	{
+-		double mb = (double) Runtime.getRuntime().totalMemory() / (1024 * 1024);
+-		return mb;
+-		//Formatter f = new Formatter();
+-		//return f.format( &quot;%1$.2f MB&quot;, mb ).toString();
+-	}
+-
+-	public void runGarbageCollector()
+-	{
+-		Runtime.getRuntime().gc();
+-	}
+-
+-	public int getActiveThreadsNumber()
+-	{
+-		return Thread.activeCount();
+-	}
+-
+-}
+
+Deleted: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/InfoMBean.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/InfoMBean.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/InfoMBean.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -1,50 +0,0 @@
+-/***************************************************************************
+- *                                                                         *
+- *   This program is free software; you can redistribute it and/or modify  *
+- *   it under the terms of the GNU General Public License as published by  *
+- *   the Free Software Foundation; either version 2 of the License, or     *
+- *   (at your option) any later version.                                   *
+- *                                                                         *
+- *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
+- *                                                                         *
+- ***************************************************************************/
+-
+-/*
+- * $Id$
+- * 
+- * $URL$
+- * 
+- */
+-
+-package rtspproxy.jmx;
+-
+-import java.util.Date;
+-
+-/**
+- * MBean interface for exposing basic proxy informations.
+- * 
+- * @author Matteo Merli
+- */
+-public interface InfoMBean
+-{
+-
+-	/** 
+-	 * @return the name of the application
+-	 */
+-	public String getName();
+-	public String getVersion();
+-	public Date getStartDate();
+-	
+-	public String getOSInfo();
+-	public String getJVMInfo();
+-	
+-	public double getFreeMemoryMB();
+-	public double getTotalMemoryMB();
+-	
+-	public int getActiveThreadsNumber();
+-	
+-	// Actions
+-	
+-	public void runGarbageCollector();
+-	
+-}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxAgent.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxAgent.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxAgent.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -21,6 +21,7 @@
+ import java.util.HashMap;
+ import java.util.Map;
+ 
++import javax.management.InstanceNotFoundException;
+ import javax.management.MBeanServer;
+ import javax.management.MBeanServerFactory;
+ import javax.management.ObjectName;
+@@ -48,7 +49,12 @@
+ import rtspproxy.RtspService;
+ import rtspproxy.config.Config;
+ import rtspproxy.filter.FilterBase;
++import rtspproxy.jmx.mbeans.Filter;
++import rtspproxy.jmx.mbeans.Info;
++import rtspproxy.jmx.mbeans.ProxySessionFacade;
++import rtspproxy.jmx.mbeans.Service;
+ import rtspproxy.lib.Singleton;
++import rtspproxy.proxy.ProxySession;
+ 
+ /**
+  * Entry point class for all the JMX interface.
+@@ -60,7 +66,11 @@
+ 
+ 	private static Logger log = LoggerFactory.getLogger( JmxAgent.class );
+ 
+-	static final String DOMAIN = &quot;RtspProxy&quot;;
++	public static final String DOMAIN = &quot;RtspProxy&quot;;
++	public static final String SERVICES_DOMAIN = &quot;RtspProxy.Services&quot;;
++	public static final String FILTERS_DOMAIN = &quot;RtspProxy.Filters&quot;;
++	public static final String RTSP_SESSION_DOMAIN = &quot;RtspProxy.Sessions.RTSP&quot;;
++	public static final String PROXY_SESSION_DOMAIN = &quot;RtspProxy.Sessions.Proxy&quot;;
+ 
+ 	private MBeanServer mbeanServer = null;
+ 
+@@ -98,7 +108,7 @@
+ 					RtpClientService.getInstance(), RtpServerService.getInstance() };
+ 			ObjectName objectName;
+ 			for ( ProxyService proxyService : proxyServices ) {
+-				objectName = ObjectName.getInstance( DOMAIN + &quot;:name=&quot;
++				objectName = ObjectName.getInstance( SERVICES_DOMAIN + &quot;:name=&quot;
+ 						+ proxyService.getName() );
+ 				mbeanServer.registerMBean( new Service( proxyService ), objectName );
+ 			}
+@@ -201,6 +211,8 @@
+ 			
+ 			mbeanServer.registerMBean(mbean, mbean.getName());
+ 			filter.setMbeanName(mbean.getName());
++			if(filter instanceof JmxManageable)
++				((JmxManageable)filter).setMBeanServer(mbeanServer);
+ 		} catch(Exception e) {
+ 			log.error( &quot;failed to register filter MBean: filter=&quot; + filter, e );			
+ 		}
+@@ -257,4 +269,54 @@
+ 			this.m_logger = LoggerFactory.getLogger(arg0);
+ 		}		
+ 	}
++
++	/**
++	 * @return Returns the mbeanServer.
++	 */
++	public MBeanServer getMbeanServer() {
++		return mbeanServer;
++	}
++	
++	/**
++	 * register a proxy session
++	 * 
++	 */
++	public void registerProxySession(ProxySession session) {
++		boolean enabled = Config.proxyManagementRemoteEnable.getValue();
++		if ( !enabled )
++			return;
++
++		try {
++			ProxySessionFacade mbean = new ProxySessionFacade(session);
++			ObjectName name = mbean.buildName();
++		
++			mbeanServer.registerMBean(mbean, name);
++			session.setObjectName(name);
++		} catch(Exception e) {
++			log.error( &quot;failed to register proxy session MBean: session=&quot; + session, e );
++		}
++	}
++	
++	/**
++	 * unregister a proxy session
++	 */
++	public void unregisterProxySession(ProxySession session) {
++		boolean enabled = Config.proxyManagementRemoteEnable.getValue();
++		if ( !enabled )
++			return;
++
++		try {
++			ObjectName name = session.getObjectName();
++		
++			if(name != null) {
++				mbeanServer.unregisterMBean(name);
++				session.setObjectName(null);
++			}
++		} catch(InstanceNotFoundException infe) {
++			log.debug(&quot;internal problem: MBean not found, name=&quot; + session.getObjectName(), infe);
++		} catch(Exception e) {
++			log.error( &quot;failed to register proxy session MBean: session=&quot; + session, e );
++		}
++		
++	}
+ }
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxManageable.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxManageable.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxManageable.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,21 @@
++/**
++ * 
++ */
++package rtspproxy.jmx;
++
++import javax.management.MBeanServer;
++
++/**
++ * This interface is implemented by components that wish you expose its own MBeans to the
++ * managment interface.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ */
++public interface JmxManageable {
++	/**
++	 * set the MBeanServer instance. This method becomes called after the MBean managing the
++	 * component has been created and attached to the MBeanServer.
++	 * @param mbeanServer the MBeanServer instance used to manage the RTSPProxy.
++	 */
++	public void setMBeanServer(MBeanServer mbeanServer);
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxManageable2.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxManageable2.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxManageable2.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,20 @@
++/**
++ * 
++ */
++package rtspproxy.jmx;
++
++import javax.management.ObjectName;
++
++/**
++ * Extension of the JmxManageable interface for components that wish to make their 
++ * managed csub-components visible.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public interface JmxManageable2 extends JmxManageable {
++	/**
++	 * get the sub-component object name
++	 */
++	public ObjectName getMBean();
++}
+
+Deleted: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Service.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Service.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Service.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -1,95 +0,0 @@
+-/***************************************************************************
+- *                                                                         *
+- *   This program is free software; you can redistribute it and/or modify  *
+- *   it under the terms of the GNU General Public License as published by  *
+- *   the Free Software Foundation; either version 2 of the License, or     *
+- *   (at your option) any later version.                                   *
+- *                                                                         *
+- *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
+- *                                                                         *
+- ***************************************************************************/
+-
+-/*
+- * $Id$
+- * 
+- * $URL$
+- * 
+- */
+-
+-package rtspproxy.jmx;
+-
+-import javax.management.MBeanException;
+-
+-import rtspproxy.ProxyService;
+-import rtspproxy.config.IntegerParameter;
+-import rtspproxy.config.Parameter;
+-
+-/**
+- * Service MBean implementations
+- * 
+- * @author Matteo Merli
+- */
+-public class Service implements ServiceMBean
+-{
+-
+-	ProxyService proxyService;
+-
+-	public Service( ProxyService proxyService )
+-	{
+-		this.proxyService = proxyService;
+-	}
+-
+-	public String getNetworkInterface()
+-	{
+-		return proxyService.getNetworkInterfaceParameter().getStringValue();
+-	}
+-
+-	public int getPort()
+-	{
+-		Parameter parameter = proxyService.getPortParameter();
+-		return ((IntegerParameter) parameter).getValue();
+-	}
+-
+-	public void setPort( int port ) throws MBeanException
+-	{
+-		Parameter parameter = proxyService.getPortParameter();
+-		try {
+-			parameter.setObjectValue( new Integer( port ) );
+-		} catch ( Exception e ) {
+-			throw new MBeanException( e );
+-		}
+-	}
+-
+-	public boolean isRunning()
+-	{
+-		return proxyService.isRunning();
+-	}
+-
+-	public void start() throws MBeanException
+-	{
+-		try {
+-			proxyService.start();
+-		} catch ( Exception e ) {
+-			throw new MBeanException( e );
+-		}
+-	}
+-
+-	public void stop() throws MBeanException
+-	{
+-		try {
+-			proxyService.stop();
+-		} catch ( Exception e ) {
+-			throw new MBeanException( e );
+-		}
+-	}
+-
+-	public void restart() throws MBeanException
+-	{
+-		try {
+-			proxyService.restart();
+-		} catch ( Exception e ) {
+-			throw new MBeanException( e );
+-		}
+-	}
+-
+-}
+
+Deleted: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/ServiceMBean.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/ServiceMBean.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/ServiceMBean.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -1,46 +0,0 @@
+-/***************************************************************************
+- *                                                                         *
+- *   This program is free software; you can redistribute it and/or modify  *
+- *   it under the terms of the GNU General Public License as published by  *
+- *   the Free Software Foundation; either version 2 of the License, or     *
+- *   (at your option) any later version.                                   *
+- *                                                                         *
+- *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
+- *                                                                         *
+- ***************************************************************************/
+-
+-/*
+- * $Id$
+- * 
+- * $URL$
+- * 
+- */
+-
+-package rtspproxy.jmx;
+-
+-import javax.management.MBeanException;
+-
+-/**
+- * @author Matteo Merli
+- */
+-public interface ServiceMBean
+-{
+-	/* Attributes */
+-
+-	public String getNetworkInterface();
+-
+-	public int getPort();
+-
+-	public void setPort( int port ) throws MBeanException;
+-
+-	public boolean isRunning();
+-
+-	/* Actions */
+-
+-	public void start() throws MBeanException;
+-
+-	public void stop() throws MBeanException;
+-
+-	public void restart() throws MBeanException;
+-
+-}
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Filter.java (from rev 400, trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Filter.java)
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Filter.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Filter.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,81 @@
++/**
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++import javax.management.MBeanException;
++import javax.management.MalformedObjectNameException;
++import javax.management.ObjectName;
++
++import java.util.Hashtable;
++
++import rtspproxy.filter.FilterBase;
++import rtspproxy.jmx.JmxAgent;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class Filter implements FilterMBean {
++
++	// managed filter
++	private FilterBase filter;
++	
++	// object name
++	private ObjectName name;
++	
++	/**
++	 * @throws NullPointerException 
++	 * @throws MalformedObjectNameException 
++	 * 
++	 */
++	public Filter(FilterBase filter) throws MalformedObjectNameException, NullPointerException {
++		this.filter = filter;
++		
++		// build the MBean name
++		Hashtable&lt;String, String&gt; keys = new Hashtable&lt;String, String&gt;();
++		
++		keys.put(&quot;filter&quot;, filter.getTypeName());
++		keys.put(&quot;side&quot;, filter.getSide().toString());
++		keys.put(&quot;classname&quot;, filter.getClassName());
++		keys.put(&quot;id&quot;, Long.toHexString(System.identityHashCode(filter)));
++		
++		this.name = new ObjectName(JmxAgent.FILTERS_DOMAIN, keys);
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.FilterMBean#getDetailMBean()
++	 */
++	public ObjectName getDetailMBean() {
++		return this.filter.getDetailMBean();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.FilterMBean#isRunning()
++	 */
++	public boolean isRunning() {
++		return this.filter.isRunning();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.FilterMBean#suspend()
++	 */
++	public void suspend() throws MBeanException {
++		this.filter.suspend();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.FilterMBean#resume()
++	 */
++	public void resume() throws MBeanException {
++		this.filter.resume();
++	}
++
++	/**
++	 * @return Returns the name.
++	 */
++	public ObjectName getName() {
++		return name;
++	}
++
++}
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/FilterMBean.java (from rev 400, trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/FilterMBean.java)
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/FilterMBean.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/FilterMBean.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,25 @@
++/**
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++import javax.management.MBeanException;
++import javax.management.ObjectName;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public interface FilterMBean {
++
++	public ObjectName getDetailMBean();
++	
++	public boolean isRunning();
++
++	/* Actions */
++
++	public void suspend() throws MBeanException;
++
++	public void resume() throws MBeanException;
++
++}
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Info.java (from rev 400, trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Info.java)
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Info.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Info.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,86 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++import java.util.Date;
++
++import rtspproxy.config.Config;
++
++public class Info implements InfoMBean
++{
++
++	public String getName()
++	{
++		return Config.getName();
++	}
++
++	public String getVersion()
++	{
++		return Config.getVersion();
++	}
++
++	public Date getStartDate()
++	{
++		return Config.getStartDate();
++	}
++
++	public String getOSInfo()
++	{
++		StringBuilder sb = new StringBuilder();
++		sb.append( System.getProperty( &quot;os.name&quot; ) );
++		sb.append( &quot; / &quot; ).append( System.getProperty( &quot;os.version&quot; ) );
++		sb.append( &quot; / &quot; ).append( System.getProperty( &quot;os.arch&quot; ) );
++		return sb.toString();
++	}
++
++	public String getJVMInfo()
++	{
++		StringBuilder sb = new StringBuilder();
++		sb.append( System.getProperty( &quot;java.vm.vendor&quot; ) );
++		sb.append( &quot; / &quot; );
++		sb.append( System.getProperty( &quot;java.vm.version&quot; ) );
++		return sb.toString();
++	}
++
++	public double getFreeMemoryMB()
++	{
++		double mb = (double) Runtime.getRuntime().freeMemory() / (1024 * 1024);
++		return mb;
++		// Formatter f = new Formatter();
++		// return f.format( &quot;%1$.2f MB&quot;, mb ).toString();
++	}
++
++	public double getTotalMemoryMB()
++	{
++		double mb = (double) Runtime.getRuntime().totalMemory() / (1024 * 1024);
++		return mb;
++		//Formatter f = new Formatter();
++		//return f.format( &quot;%1$.2f MB&quot;, mb ).toString();
++	}
++
++	public void runGarbageCollector()
++	{
++		Runtime.getRuntime().gc();
++	}
++
++	public int getActiveThreadsNumber()
++	{
++		return Thread.activeCount();
++	}
++
++}
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/InfoMBean.java (from rev 400, trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/InfoMBean.java)
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/InfoMBean.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/InfoMBean.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,50 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx.mbeans;
++
++import java.util.Date;
++
++/**
++ * MBean interface for exposing basic proxy informations.
++ * 
++ * @author Matteo Merli
++ */
++public interface InfoMBean
++{
++
++	/** 
++	 * @return the name of the application
++	 */
++	public String getName();
++	public String getVersion();
++	public Date getStartDate();
++	
++	public String getOSInfo();
++	public String getJVMInfo();
++	
++	public double getFreeMemoryMB();
++	public double getTotalMemoryMB();
++	
++	public int getActiveThreadsNumber();
++	
++	// Actions
++	
++	public void runGarbageCollector();
++	
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacade.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacade.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacade.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,60 @@
++/**
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++import java.util.Hashtable;
++
++import javax.management.MalformedObjectNameException;
++import javax.management.ObjectName;
++
++import rtspproxy.jmx.JmxAgent;
++import rtspproxy.proxy.ProxySession;
++
++/**
++ * Management implementation of proxy sessions.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class ProxySessionFacade implements ProxySessionFacadeMBean {
++
++	// reference to proxy session
++	private ProxySession session = null;
++	
++	/**
++	 * 
++	 */
++	public ProxySessionFacade(ProxySession session) {
++		this.session = session;
++	}
++
++	public boolean isClosed() {
++		return session.isClosed();
++	}
++
++	public ObjectName getClientSession() {
++		// TODO Auto-generated method stub
++		return null;
++	}
++
++	public ObjectName getServerSession() {
++		// TODO Auto-generated method stub
++		return null;
++	}
++
++	/**
++	 * build the object name
++	 * @throws NullPointerException 
++	 * @throws MalformedObjectNameException 
++	 */
++	public ObjectName buildName() throws MalformedObjectNameException, NullPointerException {
++		Hashtable&lt;String, String&gt; parts = new Hashtable&lt;String, String&gt;();
++		
++		parts.put(&quot;clientID&quot;, this.session.getClientSessionId());
++		parts.put(&quot;serverID&quot;, this.session.getServerSessionId());
++		
++		return ObjectName.getInstance(JmxAgent.PROXY_SESSION_DOMAIN, parts);
++	}
++	
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacadeMBean.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacadeMBean.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacadeMBean.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,29 @@
++/**
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++import javax.management.ObjectName;
++
++/**
++ * Management interface to proxy session.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public interface ProxySessionFacadeMBean {
++	/**
++	 * query if the session is closed
++	 */
++	public boolean isClosed();
++	
++	/**
++	 * get reference to client session
++	 */
++	public ObjectName getClientSession();
++	
++	/**
++	 * get reference to server session
++	 */
++	public ObjectName getServerSession();
++}
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Service.java (from rev 400, trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Service.java)
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/Service.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/Service.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,95 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx.mbeans;
++
++import javax.management.MBeanException;
++
++import rtspproxy.ProxyService;
++import rtspproxy.config.IntegerParameter;
++import rtspproxy.config.Parameter;
++
++/**
++ * Service MBean implementations
++ * 
++ * @author Matteo Merli
++ */
++public class Service implements ServiceMBean
++{
++
++	ProxyService proxyService;
++
++	public Service( ProxyService proxyService )
++	{
++		this.proxyService = proxyService;
++	}
++
++	public String getNetworkInterface()
++	{
++		return proxyService.getNetworkInterfaceParameter().getStringValue();
++	}
++
++	public int getPort()
++	{
++		Parameter parameter = proxyService.getPortParameter();
++		return ((IntegerParameter) parameter).getValue();
++	}
++
++	public void setPort( int port ) throws MBeanException
++	{
++		Parameter parameter = proxyService.getPortParameter();
++		try {
++			parameter.setObjectValue( new Integer( port ) );
++		} catch ( Exception e ) {
++			throw new MBeanException( e );
++		}
++	}
++
++	public boolean isRunning()
++	{
++		return proxyService.isRunning();
++	}
++
++	public void start() throws MBeanException
++	{
++		try {
++			proxyService.start();
++		} catch ( Exception e ) {
++			throw new MBeanException( e );
++		}
++	}
++
++	public void stop() throws MBeanException
++	{
++		try {
++			proxyService.stop();
++		} catch ( Exception e ) {
++			throw new MBeanException( e );
++		}
++	}
++
++	public void restart() throws MBeanException
++	{
++		try {
++			proxyService.restart();
++		} catch ( Exception e ) {
++			throw new MBeanException( e );
++		}
++	}
++
++}
+
+Copied: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ServiceMBean.java (from rev 400, trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/ServiceMBean.java)
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/ServiceMBean.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ServiceMBean.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -0,0 +1,46 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx.mbeans;
++
++import javax.management.MBeanException;
++
++/**
++ * @author Matteo Merli
++ */
++public interface ServiceMBean
++{
++	/* Attributes */
++
++	public String getNetworkInterface();
++
++	public int getPort();
++
++	public void setPort( int port ) throws MBeanException;
++
++	public boolean isRunning();
++
++	/* Actions */
++
++	public void start() throws MBeanException;
++
++	public void stop() throws MBeanException;
++
++	public void restart() throws MBeanException;
++
++}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxySession.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxySession.java	2006-01-18 18:31:04 UTC (rev 400)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxySession.java	2006-01-19 15:06:34 UTC (rev 401)
+@@ -22,9 +22,12 @@
+ import java.util.Random;
+ import java.util.concurrent.ConcurrentHashMap;
+ 
++import javax.management.ObjectName;
++
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
++import rtspproxy.jmx.JmxAgent;
+ import rtspproxy.lib.number.UnsignedLong;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.proxy.track.RtpTrack;
+@@ -93,7 +96,7 @@
+ 	private String serverSessionId = null;
+ 
+ 	/** Tells whether the proxySession has already been closed. */
+-	private boolean isClosed = false;
++	private boolean closedFlag = false;
+ 
+ 	/**
+ 	 * Collection of Track associated with this ProxySession.
+@@ -101,6 +104,25 @@
+ 	private Map&lt;String, Track&gt; trackList = new ConcurrentHashMap&lt;String, Track&gt;();
+ 
+ 	/**
++	 * object name of proxy session
++	 */
++	private ObjectName objectName;
++	
++	/**
++	 * @return Returns the objectName.
++	 */
++	public ObjectName getObjectName() {
++		return objectName;
++	}
++
++	/**
++	 * @param objectName The objectName to set.
++	 */
++	public void setObjectName(ObjectName objectName) {
++		this.objectName = objectName;
++	}
++
++	/**
+ 	 * Construct a new ProxySession. The session ID that will be used when
+ 	 * communicating with the client will be generated.
+ 	 */
+@@ -175,6 +197,7 @@
+ 	{
+ 		this.clientSessionId = clientSessionId;
+ 		clientSessionIds.put( clientSessionId, this );
++		makeManaged();
+ 	}
+ 
+ 	/**
+@@ -188,14 +211,24 @@
+ 		this.serverSessionId = serverSessionId;
+ 		if ( serverSessionId != null )
+ 			serverSessionIds.put( serverSessionId, this );
++		makeManaged();
+ 	}
+ 
+ 	/**
++	 * check if both client and server session id's are set and register proxy session 
++	 * facade MBean
++	 */
++	private void makeManaged() {
++		if(this.clientSessionId != null &amp;&amp; this.serverSessionId != null)
++			JmxAgent.getInstance().registerProxySession(this);
++	}
++	
++	/**
+ 	 * Closes the entire proxy session and frees all associated resources.
+ 	 */
+ 	public synchronized void close()
+ 	{
+-		if ( isClosed )
++		if ( closedFlag )
+ 			return;
+ 
+ 		log.debug( &quot;TrackList: &quot; + trackList );
+@@ -205,7 +238,7 @@
+ 			entry.getValue().close();
+ 		}
+ 
+-		isClosed = true;
++		closedFlag = true;
+ 		log.debug( &quot;Closed proxySession: &quot; + clientSessionId );
+ 
+ 		String s = &quot;&quot;;
+@@ -223,6 +256,9 @@
+ 			clientSessionIds.remove( clientSessionId );
+ 		if ( serverSessionId != null )
+ 			serverSessionIds.remove( serverSessionId );
++		
++		// unregister session facade in MBean server
++		JmxAgent.getInstance().unregisterProxySession(this);
+ 	}
+ 
+ 	// ///////////////////
+@@ -253,4 +289,11 @@
+ 		}
+ 	}
+ 
++	/**
++	 * @return Returns the closedFlag.
++	 */
++	public boolean isClosed() {
++		return closedFlag;
++	}
++
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000084.html">[Rtspproxy-devel] r400 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+	<LI>Next message: <A HREF="000086.html">[Rtspproxy-devel] r402 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#85">[ date ]</a>
+              <a href="thread.html#85">[ thread ]</a>
+              <a href="subject.html#85">[ subject ]</a>
+              <a href="author.html#85">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

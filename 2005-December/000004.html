@@ -1,0 +1,305 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r319 - trunk/src/main/java/rtspproxy/proxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r319%20-%20trunk/src/main/java/rtspproxy/proxy&In-Reply-To=%3C200512080822.jB88MAtZ023200%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000003.html">
+   <LINK REL="Next"  HREF="000005.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r319 - trunk/src/main/java/rtspproxy/proxy</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r319%20-%20trunk/src/main/java/rtspproxy/proxy&In-Reply-To=%3C200512080822.jB88MAtZ023200%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r319 - trunk/src/main/java/rtspproxy/proxy">merlimat at berlios.de
+       </A><BR>
+    <I>Thu Dec  8 09:22:10 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000003.html">[Rtspproxy-devel] r318 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+        <LI>Next message: <A HREF="000005.html">[Rtspproxy-devel] r320 - trunk/src/main/java/rtspproxy/filter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4">[ date ]</a>
+              <a href="thread.html#4">[ thread ]</a>
+              <a href="subject.html#4">[ subject ]</a>
+              <a href="author.html#4">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-08 09:21:59 +0100 (Thu, 08 Dec 2005)
+New Revision: 319
+
+Modified:
+   trunk/src/main/java/rtspproxy/proxy/ClientSide.java
+   trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/src/main/java/rtspproxy/proxy/ProxySession.java
+   trunk/src/main/java/rtspproxy/proxy/ServerSide.java
+Log:
+* Fixed bug #5778 (session data not deleted when the session is closed)
+* Using symbolic name to store and retrieve attribute in the IoSession
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ClientSide.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ClientSide.java	2005-12-07 22:53:57 UTC (rev 318)
++++ trunk/src/main/java/rtspproxy/proxy/ClientSide.java	2005-12-08 08:21:59 UTC (rev 319)
+@@ -57,13 +57,13 @@
+ 		// Creates a new ProxyHandler and saves it
+ 		// as a Session attribute
+ 		ProxyHandler proxyHandler = new ProxyHandler( session );
+-		session.setAttribute( &quot;proxyHandler&quot;, proxyHandler );
++		session.setAttribute( ProxyHandler.ATTR, proxyHandler );
+ 	}
+ 
+ 	@Override
+ 	public void sessionClosed( IoSession session )
+ 	{
+-		ProxyHandler proxyHandler = (ProxyHandler) ( session.getAttribute( &quot;proxyHandler&quot; ) );
++		ProxyHandler proxyHandler = (ProxyHandler) ( session.getAttribute( ProxyHandler.ATTR ) );
+ 		if ( proxyHandler != null ) {
+ 			proxyHandler.closeAll();
+ 			log.info( &quot;Client connection closed&quot; );
+@@ -75,6 +75,7 @@
+ 	{
+ 		if ( cause instanceof ProtocolDecoderException ) {
+ 			log.warn( &quot;Malformed RTSP message.&quot; );
++			Exceptions.logStackTrace( cause );
+ 			session.write( RtspResponse.errorResponse( RtspCode.BadRequest ) );
+ 			return;
+ 		}
+@@ -232,7 +233,7 @@
+ 		RtspMessage rtspMessage = (RtspMessage) message;
+ 		log.debug( &quot;Received message:\n&quot; + message );
+ 
+-		ProxyHandler proxyHandler = (ProxyHandler) ( session.getAttribute( &quot;proxyHandler&quot; ) );
++		ProxyHandler proxyHandler = (ProxyHandler) ( session.getAttribute( ProxyHandler.ATTR ) );
+ 
+ 		switch ( rtspMessage.getType() ) {
+ 			case TypeRequest:
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-07 22:53:57 UTC (rev 318)
++++ trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-08 08:21:59 UTC (rev 319)
+@@ -47,11 +47,14 @@
+ public class ProxyHandler
+ {
+ 
++	private static Logger log = Logger.getLogger( ProxyHandler.class );
++
++	/** Used to save a reference to this handler in the IoSession */
++	protected static final String ATTR = ProxyHandler.class.toString() + &quot;Attr&quot;;
++
+ 	private IoSession clientSession = null;
+ 	private IoSession serverSession = null;
+ 
+-	private static Logger log = Logger.getLogger( ProxyHandler.class );
+-
+ 	/**
+ 	 * Creates a new ProxyHandler from a client side protocol session.
+ 	 * 
+@@ -131,6 +134,7 @@
+ 
+ 					proxySession.setServerSessionId( message.getHeader( &quot;Session&quot; ) );
+ 					message.setHeader( &quot;Session&quot;, proxySession.getClientSessionId() );
++					log.debug( &quot;Created a new proxy session on-the-fly.&quot; );
+ 				} else {
+ 					// Error. The client specified a session ID but it's
+ 					// not valid
+@@ -157,19 +161,21 @@
+ 	}
+ 
+ 	/**
+-	 * A SETUP request should treated more carefully tha other RTSP request. The
+-	 * proxy will perform some hijacking on the communication between client and
+-	 * server, such as modifying RTP/RTCP port.
++	 * A SETUP request should treated more carefully tha other RTSP requests.
++	 * The proxy will perform some hijacking on the communication between client
++	 * and server, such as modifying RTP/RTCP port.
+ 	 * 
+ 	 * @param request
+ 	 *        SETUP request message
+ 	 */
+ 	public void passSetupRequestToServer( RtspRequest request )
+ 	{
++		ProxySession proxySession = null;
++
+ 		if ( request.getHeader( &quot;Session&quot; ) != null ) {
+ 			// The client already specified a session ID.
+ 			// Let's validate it
+-			ProxySession proxySession = ProxySession.getByClientSessionID( request.getHeader( &quot;Session&quot; ) );
++			proxySession = ProxySession.getByClientSessionID( request.getHeader( &quot;Session&quot; ) );
+ 			if ( proxySession != null ) {
+ 				// Session ID is ok
+ 				request.setHeader( &quot;Session&quot;, proxySession.getServerSessionId() );
+@@ -213,8 +219,10 @@
+ 			}
+ 		}
+ 
+-		ProxySession proxySession = new ProxySession();
+-		clientSession.setAttribute( &quot;proxySession&quot;, proxySession );
++		if ( proxySession == null ) {
++			proxySession = new ProxySession();
++			clientSession.setAttribute( ProxySession.ATTR, proxySession );
++		}
+ 
+ 		request.setHeader( &quot;Transport&quot;, rtspTransportList.toString() );
+ 
+@@ -234,10 +242,10 @@
+ 		// If there isn't yet a proxySession, create a new one
+ 		ProxySession proxySession = ProxySession.getByServerSessionID( response.getHeader( &quot;Session&quot; ) );
+ 		if ( proxySession == null ) {
+-			proxySession = (ProxySession) clientSession.getAttribute( &quot;proxySession&quot; );
++			proxySession = (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
+ 			if ( proxySession == null ) {
+ 				proxySession = new ProxySession();
+-				clientSession.setAttribute( &quot;proxySession&quot;, proxySession );
++				clientSession.setAttribute( ProxySession.ATTR, proxySession );
+ 			}
+ 		}
+ 
+@@ -354,7 +362,7 @@
+ 		log.debug( &quot;Connected!&quot; );
+ 
+ 		// Save current ProxyHandler into the ProtocolSession
+-		serverSession.setAttribute( &quot;proxyHandler&quot;, this );
++		serverSession.setAttribute( ProxyHandler.ATTR, this );
+ 
+ 		log.debug( &quot;Server session: &quot; + serverSession.getAttributeKeys() );
+ 	}
+@@ -371,7 +379,7 @@
+ 
+ 		// Remove ProxySession and Track instances
+ 		if ( clientSession != null ) {
+-			ProxySession proxySession = (ProxySession) clientSession.getAttribute( &quot;proxySession&quot; );
++			ProxySession proxySession = (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
+ 			if ( proxySession != null )
+ 				proxySession.close();
+ 		}
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ProxySession.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ProxySession.java	2005-12-07 22:53:57 UTC (rev 318)
++++ trunk/src/main/java/rtspproxy/proxy/ProxySession.java	2005-12-08 08:21:59 UTC (rev 319)
+@@ -36,6 +36,8 @@
+ 
+ 	private static Logger log = Logger.getLogger( ProxySession.class );
+ 
++	protected static final String ATTR = ProxySession.class.toString() + &quot;Attr&quot;;
++
+ 	/** Map IDs for RTSP session with servers to ProxySession objects. */
+ 	private static Map&lt;String, ProxySession&gt; serverSessionIds = new ConcurrentHashMap&lt;String, ProxySession&gt;();
+ 
+@@ -95,6 +97,8 @@
+ 	public ProxySession()
+ 	{
+ 		setClientSessionId( newSessionID() );
++		log.debug( &quot;\n----------\nCreated new proxy session: &quot; + clientSessionId
++				+ &quot; \n----------&quot; );
+ 	}
+ 
+ 	/**
+@@ -112,7 +116,8 @@
+ 		if ( serverSsrc != null )
+ 			track.setServerSSRC( serverSsrc );
+ 		trackList.put( url, track );
+-		log.debug( &quot;Added track. TrackList: &quot; + trackList );
++		log.debug( &quot;ProxySession: &quot; + clientSessionId + &quot; Added track. TrackList: &quot;
++				+ trackList );
+ 		return track;
+ 	}
+ 
+@@ -164,11 +169,6 @@
+ 		if ( isClosed )
+ 			return;
+ 
+-		if ( clientSessionId != null )
+-			clientSessionIds.remove( clientSessionId );
+-		if ( serverSessionId != null )
+-			serverSessionIds.remove( serverSessionId );
+-
+ 		log.debug( &quot;TrackList: &quot; + trackList );
+ 
+ 		// close all associated tracks
+@@ -177,7 +177,23 @@
+ 		}
+ 
+ 		isClosed = true;
+-		log.debug( &quot;Closed proxySession&quot; );
++		log.debug( &quot;Closed proxySession: &quot; + clientSessionId );
++
++		String s = &quot;&quot;;
++		for ( String a : clientSessionIds.keySet() ) {
++			s += a + &quot; &quot;;
++		}
++		log.debug( &quot;Clients: &quot; + s );
++		s = &quot;&quot;;
++		for ( String a : serverSessionIds.keySet() ) {
++			s += a + &quot; &quot;;
++		}
++		log.debug( &quot;Servers: &quot; + s );
++
++		if ( clientSessionId != null )
++			clientSessionIds.remove( clientSessionId );
++		if ( serverSessionId != null )
++			serverSessionIds.remove( serverSessionId );
+ 	}
+ 
+ 	// ///////////////////
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ServerSide.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ServerSide.java	2005-12-07 22:53:57 UTC (rev 318)
++++ trunk/src/main/java/rtspproxy/proxy/ServerSide.java	2005-12-08 08:21:59 UTC (rev 319)
+@@ -54,7 +54,7 @@
+ 	public void sessionClosed( IoSession session )
+ 	{
+ 		log.info( &quot;Server connection closed&quot; );
+-		ProxyHandler proxyHandler = (ProxyHandler) ( session.getAttribute( &quot;proxyHandler&quot; ) );
++		ProxyHandler proxyHandler = (ProxyHandler) ( session.getAttribute( ProxyHandler.ATTR ) );
+ 		proxyHandler.closeAll();
+ 	}
+ 
+@@ -206,7 +206,7 @@
+ 		RtspMessage rtspMessage = (RtspMessage) message;
+ 		log.debug( &quot;Received message:\n&quot; + message );
+ 
+-		ProxyHandler proxyHandler = (ProxyHandler) ( session.getAttribute( &quot;proxyHandler&quot; ) );
++		ProxyHandler proxyHandler = (ProxyHandler) ( session.getAttribute( ProxyHandler.ATTR ) );
+ 		if ( proxyHandler == null ) {
+ 			log.fatal( &quot;proxyHandler is null&quot; );
+ 			throw new NullPointerException( &quot;proxyHandler in session is null&quot; );
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000003.html">[Rtspproxy-devel] r318 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+	<LI>Next message: <A HREF="000005.html">[Rtspproxy-devel] r320 - trunk/src/main/java/rtspproxy/filter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4">[ date ]</a>
+              <a href="thread.html#4">[ thread ]</a>
+              <a href="subject.html#4">[ subject ]</a>
+              <a href="author.html#4">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

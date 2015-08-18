@@ -1,0 +1,1898 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r414 - in trunk: . RTSPProxy-App RTSPProxy-App/src/resources/conf RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/jmx RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans RTSPProxy-Core/src/main/java/rtspproxy/lib/number RTSPProxy-Core/src/main/java/rtspproxy/proxy RTSPProxy-Core/src/main/java/rtspproxy/proxy/track RTSPProxy-Core/src/main/java/rtspproxy/rtp/range RTSPProxy-OSGi
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r414%20-%20in%20trunk%3A%20.%20RTSPProxy-App%20RTSPProxy-App/src/resources/conf%20RTSPProxy-Core%20RTSPProxy-Core/src/main/java/rtspproxy%20RTSPProxy-Core/src/main/java/rtspproxy/config%20RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite%20RTSPProxy-Core/src/main/java/rtspproxy/jmx%20RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans%20RTSPProxy-Core/src/main/java/rtspproxy/lib/number%20RTSPProxy-Core/src/main/java/rtspproxy/proxy%20RTSPProxy-Core/src/main/java/rtspproxy/proxy/track%20RTSPProxy-Core/src/main/java/rtspproxy/rtp/range%20RTSPProxy-OSGi&In-Reply-To=%3C200602072342.k17Ng8aN014569%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000097.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r414 - in trunk: . RTSPProxy-App RTSPProxy-App/src/resources/conf RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/jmx RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans RTSPProxy-Core/src/main/java/rtspproxy/lib/number RTSPProxy-Core/src/main/java/rtspproxy/proxy RTSPProxy-Core/src/main/java/rtspproxy/proxy/track RTSPProxy-Core/src/main/java/rtspproxy/rtp/range RTSPProxy-OSGi</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r414%20-%20in%20trunk%3A%20.%20RTSPProxy-App%20RTSPProxy-App/src/resources/conf%20RTSPProxy-Core%20RTSPProxy-Core/src/main/java/rtspproxy%20RTSPProxy-Core/src/main/java/rtspproxy/config%20RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite%20RTSPProxy-Core/src/main/java/rtspproxy/jmx%20RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans%20RTSPProxy-Core/src/main/java/rtspproxy/lib/number%20RTSPProxy-Core/src/main/java/rtspproxy/proxy%20RTSPProxy-Core/src/main/java/rtspproxy/proxy/track%20RTSPProxy-Core/src/main/java/rtspproxy/rtp/range%20RTSPProxy-OSGi&In-Reply-To=%3C200602072342.k17Ng8aN014569%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r414 - in trunk: . RTSPProxy-App RTSPProxy-App/src/resources/conf RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/jmx RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans RTSPProxy-Core/src/main/java/rtspproxy/lib/number RTSPProxy-Core/src/main/java/rtspproxy/proxy RTSPProxy-Core/src/main/java/rtspproxy/proxy/track RTSPProxy-Core/src/main/java/rtspproxy/rtp/range RTSPProxy-OSGi">rbieniek at berlios.de
+       </A><BR>
+    <I>Wed Feb  8 00:42:08 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000097.html">[Rtspproxy-devel] r413 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config proxy proxy/track rtp rtp/range
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#98">[ date ]</a>
+              <a href="thread.html#98">[ thread ]</a>
+              <a href="subject.html#98">[ subject ]</a>
+              <a href="author.html#98">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-02-08 00:40:28 +0100 (Wed, 08 Feb 2006)
+New Revision: 414
+
+Added:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpServerFactory.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpServerFactoryMBean.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpSession.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpSessionMBean.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyConstants.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSession.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/RtpRtcpFilterChainBuilder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/RtpServerSessionFactory.java
+Modified:
+   trunk/RTSPProxy-App/pom.xml
+   trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml
+   trunk/RTSPProxy-Core/pom.xml
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/Reactor.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxAgent.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedInt.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxySession.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtcpPacketHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RtpTrack.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/Track.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSessionFactory.java
+   trunk/RTSPProxy-OSGi/pom.xml
+   trunk/pom.xml
+Log:
+- implemented an alternative connection scheme for handling upstream RTP/RTCP
+connections. This scheme allocates a seperate port-pair out of a pool per
+each connection. This helps work around bogus streaming servers which cannot
+multiplex multiple connections over a single UDP port pair.
+- RTCP messages are now passed to the remote streaming server. Due to a typo,
+they were looped back to the client.
+- Bumped version number for 3.0-ALPHA5.
+- Added some hacks for dealing with broken streaming servers.
+-- Offer the server a pre-calculated SSRC.
+-- Ignore the server generated SSRC and build the message pipe based on the
+local address/port and remote address/port information
+
+
+Modified: trunk/RTSPProxy-App/pom.xml
+===================================================================
+--- trunk/RTSPProxy-App/pom.xml	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-App/pom.xml	2006-02-07 23:40:28 UTC (rev 414)
+@@ -9,7 +9,7 @@
+         &lt;parent&gt;
+                 &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+                 &lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
+-                &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++                &lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+ 		&lt;relativePath&gt;../pom.xml&lt;/relativePath&gt;
+         &lt;/parent&gt;
+ 
+@@ -18,7 +18,7 @@
+ 	&lt;name&gt;RTSP Proxy standalone application&lt;/name&gt;
+ 	&lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+ 	&lt;artifactId&gt;RTSPProxy-App&lt;/artifactId&gt;
+-	&lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++	&lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+ 	&lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+ 	&lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+ 
+@@ -28,7 +28,7 @@
+     &lt;dependency&gt;
+       &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+       &lt;artifactId&gt;RTSPProxy-Core&lt;/artifactId&gt;
+-      &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++      &lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+     &lt;/dependency&gt;
+ 
+ 		&lt;dependency&gt;
+
+Modified: trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml	2006-02-07 23:40:28 UTC (rev 414)
+@@ -2,16 +2,21 @@
+   &lt;threadPoolSize&gt;10&lt;/threadPoolSize&gt;
+   &lt;proxy&gt;
+     &lt;rtspPort&gt;554&lt;/rtspPort&gt;
+-    &lt;server&gt;
+-      &lt;rtpPort&gt;6970&lt;/rtpPort&gt;
+-      &lt;rtcpPort&gt;6971&lt;/rtcpPort&gt;
+-      &lt;rdtPort&gt;6972&lt;/rdtPort&gt;
+-      &lt;address&gt;10.0.0.24&lt;/address&gt;
+-      &lt;!-- interface&gt;eth0&lt;/interface --&gt;
+-      &lt;rtpMinPort&gt;9000&lt;/rtpMinPort&gt;
+-      &lt;rtpMaxPort&gt;9100&lt;/rtpMaxPort&gt;
+-	  &lt;rtpUsePortrange&gt;false&lt;/rtpUsePortrange&gt;
+-    &lt;/server&gt;
++	&lt;server&gt;
++		&lt;rtpPort&gt;6970&lt;/rtpPort&gt;
++		&lt;rtcpPort&gt;6971&lt;/rtcpPort&gt;
++		&lt;rdtPort&gt;6972&lt;/rdtPort&gt;
++		&lt;address&gt;10.0.0.24&lt;/address&gt;
++		&lt;!-- interface&gt;eth0&lt;/interface --&gt;
++		&lt;rtpUsePortrange&gt;false&lt;/rtpUsePortrange&gt;
++		&lt;rtpPortrange&gt;
++			&lt;minPort&gt;9000&lt;/minPort&gt;
++			&lt;maxPort&gt;9100&lt;/maxPort&gt;
++			&lt;idleTimeout&gt;120&lt;/idleTimeout&gt;
++			&lt;idleScanInterval&gt;60&lt;/idleScanInterval&gt;
++			&lt;threadPoolSize&gt;10&lt;/threadPoolSize&gt;
++		&lt;/rtpPortrange&gt;
++	&lt;/server&gt;
+     &lt;client&gt;
+       &lt;rtpPort&gt;6970&lt;/rtpPort&gt;
+       &lt;rtcpPort&gt;6971&lt;/rtcpPort&gt;
+@@ -24,8 +29,14 @@
+ 		&lt;rdt&gt;true&lt;/rdt&gt;
+ 		&lt;hacks&gt;
+ 			&lt;lowerTransportSuppress&gt;false&lt;/lowerTransportSuppress&gt;
++			&lt;offerRemoteSsrc&gt;false&lt;/offerRemoteSsrc&gt;
+ 		&lt;/hacks&gt;
+ 	&lt;/transport&gt;
++	&lt;streaming&gt;
++		&lt;hacks&gt;
++			&lt;rtpSsrcUnreliable&gt;false&lt;/rtpSsrcUnreliable&gt;
++		&lt;/hacks&gt;
++	&lt;/streaming&gt;
+   &lt;/proxy&gt;
+   &lt;jmx&gt;
+     &lt;manageable&gt;true&lt;/manageable&gt;
+
+Modified: trunk/RTSPProxy-Core/pom.xml
+===================================================================
+--- trunk/RTSPProxy-Core/pom.xml	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/pom.xml	2006-02-07 23:40:28 UTC (rev 414)
+@@ -9,7 +9,7 @@
+         &lt;parent&gt;
+                 &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+                 &lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
+-                &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++                &lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+         &lt;/parent&gt;
+ 
+ 	&lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+@@ -17,12 +17,12 @@
+ 	&lt;name&gt;RTSP Proxy core&lt;/name&gt;
+ 	&lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+ 	&lt;artifactId&gt;RTSPProxy-Core&lt;/artifactId&gt;
+-	&lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++	&lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+ 	&lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+ 	&lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+ 
+ 	&lt;dependencies&gt;
+-
++		
+ 		&lt;dependency&gt;
+ 			&lt;groupId&gt;directory-network&lt;/groupId&gt;
+ 			&lt;artifactId&gt;mina&lt;/artifactId&gt;
+@@ -34,14 +34,20 @@
+ 			&lt;artifactId&gt;mx4j-tools&lt;/artifactId&gt;
+ 			&lt;version&gt;2.1.1&lt;/version&gt;
+ 		&lt;/dependency&gt;
+-
++		
+ 		&lt;dependency&gt;
+ 			&lt;groupId&gt;dom4j&lt;/groupId&gt;
+ 			&lt;artifactId&gt;dom4j&lt;/artifactId&gt;
+ 			&lt;version&gt;1.6.1&lt;/version&gt;
+ 		&lt;/dependency&gt;
+-
++		
+ 		&lt;dependency&gt;
++			&lt;groupId&gt;commons-pool&lt;/groupId&gt;
++			&lt;artifactId&gt;commons-pool&lt;/artifactId&gt;
++			&lt;version&gt;1.2&lt;/version&gt;
++		&lt;/dependency&gt;
++		
++		&lt;dependency&gt;
+ 			&lt;groupId&gt;junit&lt;/groupId&gt;
+ 			&lt;artifactId&gt;junit&lt;/artifactId&gt;
+ 			&lt;version&gt;3.8.1&lt;/version&gt;
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/Reactor.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/Reactor.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/Reactor.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -25,6 +25,7 @@
+ import rtspproxy.filter.FilterRegistry;
+ import rtspproxy.jmx.JmxAgent;
+ import rtspproxy.lib.Exceptions;
++import rtspproxy.rtp.range.PortrangeRtpServerSessionFactory;
+ 
+ /**
+  * Main reactor of RTSP proxy. This reactor assembles all required services.
+@@ -91,11 +92,18 @@
+ 
+ 		filterRegistry = new FilterRegistry();
+ 		filterRegistry.populateRegistry();		
++		
++		PortrangeRtpServerSessionFactory portrangeFactory = new PortrangeRtpServerSessionFactory();
++		portrangeFactory.setLocalAddress(rtpServerService.getAddress());
++		portrangeFactory.start();
++		
+ 	}
+ 
+ 	static public void stop()
+ 	{
+ 		try {
++			PortrangeRtpServerSessionFactory.getInstance().stop();
++			
+ 			if ( jmxAgent != null )
+ 				jmxAgent.stop();
+ 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -118,6 +118,14 @@
+ 			&quot;/rtspproxy/proxy/server/rtcpPort&quot; // xpathExpr
+ 			);
+ 
++	public static final BooleanParameter proxyServerRtpMultiplePorts = new BooleanParameter(
++			&quot;proxy.server.rtp.multiport.enable&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;Enables the RTP/RTCP multiport handling.&quot;,
++			&quot;/rtspproxy/proxy/server/rtpUsePortrange&quot; // xpathExpr
++			);
++
+ 	public static final IntegerParameter proxyServerRtpMinPort = new IntegerParameter(
+ 			&quot;proxy.server.rtp.port.min&quot;, // name
+ 			new Integer( 0 ), // min value
+@@ -125,7 +133,7 @@
+ 			new Integer( 9000 ), // default value
+ 			true, // mutable
+ 			&quot;Port to listen for RTP packets arriving from servers.&quot;,
+-			&quot;/rtspproxy/proxy/server/rtpMinPort&quot; // xpathExpr
++			&quot;/rtspproxy/proxy/server/rtpPortrange/minPort&quot; // xpathExpr
+ 			);
+ 
+ 	public static final IntegerParameter proxyServerRtpMaxPort = new IntegerParameter(
+@@ -135,17 +143,39 @@
+ 			new Integer( 9100 ), // default value
+ 			true, // mutable
+ 			&quot;Port to listen for RTP packets arriving from servers.&quot;,
+-			&quot;/rtspproxy/proxy/server/rtpMaxPort&quot; // xpathExpr
++			&quot;/rtspproxy/proxy/server/rtpPortrange/maxPort&quot; // xpathExpr
+ 			);
+ 	
+-	public static final BooleanParameter proxyServerRtpMultiplePorts = new BooleanParameter(
+-			&quot;proxy.server.rtp.multiport.enable&quot;, // name
+-			false, // default value
+-			false, // mutable
+-			&quot;Enables the RTP/RTCP multiport handling.&quot;,
+-			&quot;/rtspproxy/proxy/server/rtpUsePortrange&quot; // xpathExpr
++	public static final IntegerParameter proxyServerRtpIdleTimeout = new IntegerParameter(
++			&quot;proxy.server.rtp.portrange.idle.timeout&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 86400 ), // max value
++			new Integer( 3600 ), // default value
++			true, // mutable
++			&quot;Timeout an open RTP server port may linger around.&quot;,
++			&quot;/rtspproxy/proxy/server/rtpPortrange/idleTimeout&quot; // xpathExpr
++			);	
++
++	public static final IntegerParameter proxyServerRtpIdleScanInterval = new IntegerParameter(
++			&quot;proxy.server.rtp.portrange.idle.timeout&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 86400 ), // max value
++			new Integer( 1800 ), // default value
++			true, // mutable
++			&quot;Scan interval on idle RTP server ports.&quot;,
++			&quot;/rtspproxy/proxy/server/rtpPortrange/idleScanInterval&quot; // xpathExpr
+ 			);
+-	
++
++	public static final IntegerParameter proxyServerRtpThreadPoolSize = new IntegerParameter(
++			&quot;proxy.server.rtp.portrange.pool.size&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 2147483647 ), // max value
++			new Integer( 10 ), // default value
++			true, // mutable
++			&quot;Scan interval on idle RTP server ports.&quot;,
++			&quot;/rtspproxy/proxy/server/rtpPortrange/threadPoolSize&quot; // xpathExpr
++			);
++
+ 	public static final IntegerParameter proxyClientRtpPort = new IntegerParameter(
+ 			&quot;proxy.client.rtp.port&quot;, // name
+ 			new Integer( 0 ), // min value
+@@ -235,6 +265,7 @@
+ 			&quot;Enable keep-alive on RTSP connections to remote servers.&quot;,
+ 			&quot;/rtspproxy/proxy/transport/hacks/rtspKeepAlive&quot; // xpathExpr
+ 			);
++	
+ 	public static final BooleanParameter proxyRtspAllowBrokenHeaders = new BooleanParameter(
+ 			&quot;proxy.transport.rtsp.broken.headers.enable&quot;, // name
+ 			false, // default value
+@@ -243,6 +274,22 @@
+ 			&quot;/rtspproxy/proxy/transport/hacks/rtspAllowBrokenHeaders&quot; // xpathExpr
+ 			);
+ 
++	public static final BooleanParameter proxyRtspOfferSsrcToServer = new BooleanParameter(
++			&quot;proxy.transport.rtsp.offer.ssrc.enable&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;Allow certain work-arounds for clients generating non-conformant RTSP protocol traffic.&quot;,
++			&quot;/rtspproxy/proxy/transport/hacks/offerRemoteSsrc&quot; // xpathExpr
++			);
++
++	public static final BooleanParameter proxyServerRtpSsrcUnreliable = new BooleanParameter(
++			&quot;proxy.streaming.rtp.ssrc.unreliable&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;Disable the evaluation of the SSRC send by the remote streaming server.&quot;,
++			&quot;/rtspproxy/proxy/streaming/hacks/rtpSsrcUnreliable&quot; // xpathExpr
++			);	
++
+ 	// /////////////////////////////////////////////////////////
+ 
+ 	// JMX
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -22,6 +22,7 @@
+ import rtspproxy.filter.FilterBase;
+ import rtspproxy.jmx.JmxManageable;
+ import rtspproxy.jmx.JmxManageable2;
++import rtspproxy.proxy.ProxyHandler;
+ import rtspproxy.rtsp.RtspMessage;
+ import rtspproxy.rtsp.RtspRequest;
+ import rtspproxy.rtsp.RtspResponse;
+@@ -75,9 +76,22 @@
+ 		if (req.getUrl() != null) {
+ 			HashMap&lt;String, Object&gt; exposedSessionAttributes = new HashMap&lt;String, Object&gt;();
+ 			
+-			for(String attr : this.exposedAttributes)
+-				if(session.containsAttribute(attr))
+-					exposedSessionAttributes.put(attr, session.getAttribute(attr));
++			for(String attr : this.exposedAttributes) {
++				logger.debug(&quot;exposing session attribute: &quot; + attr);
++				if(session.containsAttribute(attr)) {
++					Object o = session.getAttribute(attr);
++					
++					logger.debug(&quot;attribute &quot; + attr + &quot; found in session, val=&quot; + o);
++					exposedSessionAttributes.put(attr, o);
++				}
++				
++				if(ProxyHandler.containsSharedSessionAttribute(session, attr)) {
++					Object o = ProxyHandler.getSharedSessionAttribute(session, attr);
++
++					logger.debug(&quot;attribute &quot; + attr + &quot; found in shared session map, val=&quot; + o);
++					exposedSessionAttributes.put(attr, o);
++				}
++			}
+ 			
+ 			UrlRewritingResult result = this.provider.rewriteRequestUrl(req.getUrl(), req.getVerb(), 
+ 					session.getRemoteAddress(), req.getHeaders(), exposedSessionAttributes); 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxAgent.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxAgent.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/JmxAgent.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -51,10 +51,14 @@
+ import rtspproxy.filter.FilterBase;
+ import rtspproxy.jmx.mbeans.Filter;
+ import rtspproxy.jmx.mbeans.Info;
++import rtspproxy.jmx.mbeans.PortrangeRtpServerFactory;
++import rtspproxy.jmx.mbeans.PortrangeRtpSession;
+ import rtspproxy.jmx.mbeans.ProxySessionFacade;
+ import rtspproxy.jmx.mbeans.Service;
+ import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ProxySession;
++import rtspproxy.rtp.range.PortrangeRtpServerSession;
++import rtspproxy.rtp.range.PortrangeRtpServerSessionFactory;
+ 
+ /**
+  * Entry point class for all the JMX interface.
+@@ -71,6 +75,7 @@
+ 	public static final String FILTERS_DOMAIN = &quot;RtspProxy.Filters&quot;;
+ 	public static final String RTSP_SESSION_DOMAIN = &quot;RtspProxy.Sessions.RTSP&quot;;
+ 	public static final String PROXY_SESSION_DOMAIN = &quot;RtspProxy.Sessions.Proxy&quot;;
++	public static final String RTP_DYNAMIC_SESSION_DOMAIN = &quot;RtspProxy.Sessions.RTP.dynamic&quot;;
+ 
+ 	private MBeanServer mbeanServer = null;
+ 
+@@ -319,4 +324,84 @@
+ 		}
+ 		
+ 	}
++	
++	/**
++	 * register a proxy session
++	 * 
++	 */
++	public void registerPortRangeRtpServerSessionfactory(PortrangeRtpServerSessionFactory sessionFactory) {
++		boolean enabled = Config.proxyManagementRemoteEnable.getValue();
++		if ( !enabled )
++			return;
++
++		try {
++			ObjectName objectName = ObjectName.getInstance( SERVICES_DOMAIN + &quot;:name=PortrangeRtpServerSessionFactory&quot;);
++		
++			mbeanServer.registerMBean( new PortrangeRtpServerFactory(sessionFactory), objectName );
++		} catch(Exception e) {
++			log.info(&quot;failed to register PortrangeRtpServerFactory MBean&quot;, e);
++		}
++	}
++	
++	/**
++	 * register a proxy session
++	 * 
++	 */
++	public void unregisterPortRangeRtpServerSessionfactory() {
++		boolean enabled = Config.proxyManagementRemoteEnable.getValue();
++		if ( !enabled )
++			return;
++
++		try {
++			ObjectName objectName = ObjectName.getInstance( SERVICES_DOMAIN + &quot;:name=PortrangeRtpServerSessionFactory&quot;);
++		
++			mbeanServer.unregisterMBean(  objectName );
++		} catch(InstanceNotFoundException infe) {
++			log.debug(&quot;PortrangeRtpServerFactory MBean not found&quot;, infe);
++		} catch(Exception e) {
++			log.info(&quot;failed to register PortrangeRtpServerFactory MBean&quot;, e);
++		}
++	}
++	
++	/**
++	 * register a generated RTP server session in the portrange case
++	 */
++	public void registerPortrangeRtpServerSession(PortrangeRtpServerSession session) {
++		boolean enabled = Config.proxyManagementRemoteEnable.getValue();
++		if ( !enabled )
++			return;
++		
++		try {
++			PortrangeRtpSession mbean = new PortrangeRtpSession(session);
++			ObjectName name = mbean.buildName();
++		
++			mbeanServer.registerMBean(mbean, name);
++			session.setObjectName(name);
++		} catch(Exception e) {
++			log.error( &quot;failed to register proxy session MBean: session=&quot; + session, e );
++		}
++	}
++	
++	/**
++	 * register a generated RTP server session in the portrange case
++	 */
++	public void unregisterPortrangeRtpServerSession(PortrangeRtpServerSession session) {
++		boolean enabled = Config.proxyManagementRemoteEnable.getValue();
++		if ( !enabled )
++			return;
++		
++		try {
++			ObjectName name = session.getObjectName();
++		
++			if(name != null) {
++				mbeanServer.unregisterMBean(name);
++				session.setObjectName(null);
++			}
++		} catch(InstanceNotFoundException infe) {
++			log.debug(&quot;internal problem: MBean not found, name=&quot; + session.getObjectName(), infe);
++		} catch(Exception e) {
++			log.error( &quot;failed to register proxy session MBean: session=&quot; + session, e );
++		}		
++	}
++
+ }
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpServerFactory.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpServerFactory.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpServerFactory.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -0,0 +1,48 @@
++/**
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++import rtspproxy.rtp.range.PortrangeRtpServerSessionFactory;
++
++/**
++ * Management implementation to the PortrangeRtpServerSessionFactory instance
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ * @see rtspproxy.rtp.range.PortrangeRtpServerSessionFactory
++ */
++public class PortrangeRtpServerFactory implements
++		PortrangeRtpServerFactoryMBean {
++
++	private PortrangeRtpServerSessionFactory sessionFactory;
++	
++	/**
++	 * constrcutor
++	 * 
++	 */
++	public PortrangeRtpServerFactory(PortrangeRtpServerSessionFactory sessionFactory) {
++		this.sessionFactory = sessionFactory;
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.mbeans.PortrangeRtpServerFactoryMBean#getMaxConnections()
++	 */
++	public int getMaxConnections() {
++		return this.sessionFactory.getMaxConnections();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.mbeans.PortrangeRtpServerFactoryMBean#getCurrentIdleConnections()
++	 */
++	public int getCurrentIdleConnections() {
++		return this.sessionFactory.getCurrentIdleConnections();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.mbeans.PortrangeRtpServerFactoryMBean#getCurrentActiveConnections()
++	 */
++	public int getCurrentActiveConnections() {
++		return this.sessionFactory.getCurrentActiveConnections();
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpServerFactoryMBean.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpServerFactoryMBean.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpServerFactoryMBean.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -0,0 +1,27 @@
++/**
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++/**
++ * Management interface to the PortrangeRtpServerSessionFactory instance
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ * @see rtspproxy.rtp.range.PortrangeRtpServerSessionFactory
++ */
++public interface PortrangeRtpServerFactoryMBean {
++	/**
++	 * get the maximum number of connections 
++	 */
++	public int getMaxConnections();
++	
++	/**
++	 * get the current number of idle connections
++	 */
++	public int getCurrentIdleConnections();
++	
++	/**
++	 * get the current number of active connections
++	 */
++	public int getCurrentActiveConnections();
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpSession.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpSession.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpSession.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -0,0 +1,81 @@
++/**
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++import java.util.Hashtable;
++
++import javax.management.MalformedObjectNameException;
++import javax.management.ObjectName;
++
++import rtspproxy.jmx.JmxAgent;
++import rtspproxy.rtp.range.PortrangeRtpServerSession;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ * @see rtspproxy.rtp.range.PortrangeRtpServerSessionFactory
++ */
++public class PortrangeRtpSession implements PortrangeRtpSessionMBean {
++
++	private PortrangeRtpServerSession session;
++	
++	public PortrangeRtpSession(PortrangeRtpServerSession session) {
++		this.session = session;
++	}
++	
++	/**
++	 * build the object name
++	 * @throws NullPointerException 
++	 * @throws MalformedObjectNameException 
++	 */
++	public ObjectName buildName() throws MalformedObjectNameException, NullPointerException {
++		Hashtable&lt;String, String&gt; parts = new Hashtable&lt;String, String&gt;();
++		
++		parts.put(&quot;type&quot;, &quot;server&quot;);
++		parts.put(&quot;connection&quot;, String.valueOf(this.session.getConnectionNumber()));
++		
++		return ObjectName.getInstance(JmxAgent.RTP_DYNAMIC_SESSION_DOMAIN, parts);
++	}
++	
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.mbeans.PortrangeRtpSessionMBean#getRtpPort()
++	 */
++	public int getRtpPort() {
++		return this.session.getRtpPort();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.mbeans.PortrangeRtpSessionMBean#getRtcpPort()
++	 */
++	public int getRtcpPort() {
++		return this.session.getRtcpPort();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.mbeans.PortrangeRtpSessionMBean#isActive()
++	 */
++	public boolean isActive() {
++		return this.session.isActive();
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.mbeans.PortrangeRtpSessionMBean#idleTime()
++	 */
++	public long getIdleTime() {
++		long idleTime = 0;
++		
++		if(!this.session.isActive())
++			idleTime = (System.currentTimeMillis() - this.session.getLastPassiveCheckpoint()) / 1000;
++
++		return idleTime;
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.jmx.mbeans.PortrangeRtpSessionMBean#getNumOpenSessions()
++	 */
++	public int getNumOpenSessions() {
++		return this.session.getNumOpenSessions();
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpSessionMBean.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpSessionMBean.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/PortrangeRtpSessionMBean.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -0,0 +1,37 @@
++/**
++ * 
++ */
++package rtspproxy.jmx.mbeans;
++
++/**
++ * management interface to PortrangeRtpServerSession instances
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ * @see rtspproxy.rtp.range.PortrangeRtpServerSession
++ */
++public interface PortrangeRtpSessionMBean {
++	/**
++	 * query RTP bind port
++	 */
++	public int getRtpPort();
++	
++	/**
++	 * query RTCP bind port
++	 */
++	public int getRtcpPort();
++	
++	/**
++	 * get the state
++	 */
++	public boolean isActive();
++	
++	/**
++	 * query idle time
++	 */
++	public long getIdleTime();
++	
++	/**
++	 * 	query the number of IoSession open
++	 */
++	public int getNumOpenSessions();
++}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedInt.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedInt.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedInt.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -17,6 +17,8 @@
+  */
+ package rtspproxy.lib.number;
+ 
++import java.util.Random;
++
+ /**
+  * The UnsignedInt class wraps a value of an unsigned 32 bits number.
+  * 
+@@ -46,6 +48,10 @@
+ 	private UnsignedInt() {
+ 		value = 0;
+ 	}
++	
++	public UnsignedInt( Random random ) {
++		value = random.nextLong();
++	}
+ 
+ 	public static UnsignedInt fromBytes(byte[] c) {
+ 		return fromBytes(c, 0);
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyConstants.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyConstants.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyConstants.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -0,0 +1,20 @@
++/**
++ * 
++ */
++package rtspproxy.proxy;
++
++/**
++ * Shared constants
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public interface ProxyConstants {
++
++	/**
++	 * Session attribute of a map shared between client and server RTSP session
++	 */
++	public static final String RSTP_SHARED_SESSION_ATTRIBUTE = 
++		ProxyHandler.class.getName() + &quot;.SharedSessionArttributes&quot;;
++
++}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -42,8 +42,12 @@
+ import rtspproxy.RtpServerService;
+ import rtspproxy.config.Config;
+ import rtspproxy.filter.RtspServerFilters;
++import rtspproxy.lib.number.UnsignedInt;
++import rtspproxy.lib.number.UnsignedLong;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.proxy.track.RtpTrack;
++import rtspproxy.rtp.range.PortrangeRtpServerSession;
++import rtspproxy.rtp.range.PortrangeRtpServerSessionFactory;
+ import rtspproxy.rtsp.RtspCode;
+ import rtspproxy.rtsp.RtspMessage;
+ import rtspproxy.rtsp.RtspRequest;
+@@ -79,8 +83,6 @@
+ 
+ 	private HashMap&lt;String, Object&gt; sharedSessionObjects = new HashMap&lt;String, Object&gt;();
+ 	
+-	private static final String sharedSessionAttribute = &quot;__SharedSessionArttributes&quot;;
+-	
+ 	/**
+ 	 * Creates a new ProxyHandler from a client side protocol session.
+ 	 * 
+@@ -89,7 +91,7 @@
+ 	public ProxyHandler( IoSession clientSession )
+ 	{
+ 		this.clientSession = clientSession;
+-		this.clientSession.setAttribute(sharedSessionAttribute, sharedSessionObjects);
++		this.clientSession.setAttribute(ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE, sharedSessionObjects);
+ 	}
+ 
+ 	public void passToServer( RtspMessage message )
+@@ -200,6 +202,7 @@
+ 	public void passSetupRequestToServer( RtspRequest request )
+ 	{
+ 		ProxySession proxySession = null;
++		PortrangeRtpServerSession portrangeRtpSession = null;
+ 
+ 		if ( request.getHeader( &quot;Session&quot; ) != null ) {
+ 			// The client already specified a session ID.
+@@ -278,9 +281,31 @@
+ 					if(Config.proxyServerRtpMultiplePorts.getValue()) {
+ 						log.debug(&quot;using RTP port range&quot;);
+ 						
++						try {
++							portrangeRtpSession = PortrangeRtpServerSessionFactory.getInstance().getSession();
++							
++							proxyRtpPort = portrangeRtpSession.getRtpPort();
++							proxyRtcpPort = portrangeRtpSession.getRtcpPort();
++							
++							log.debug(&quot;setting local server RTP/RTCP ports to &quot;	+ proxyRtpPort + &quot;/&quot; + proxyRtcpPort);
++						} catch(IOException ioe) {
++							log.info(&quot;failed to allocate local RTP/RTCP ports&quot;, ioe);
++							
++							sendResponse( clientSession, RtspResponse
++									.errorResponse( RtspCode.InternalServerError ) );
++							return;
++						}
+ 					}
+ 					transport.setClientPort( new int[] { proxyRtpPort, proxyRtcpPort } );
+ 
++					// offer a distinguished SSRC to the remote server
++					if(Config.proxyRtspOfferSsrcToServer.getValue()) {
++						String ssrc = ProxySession.newServerSessionID().toHexString();
++						log.debug(&quot;offering generated SSRC to remote server, ssrc=&quot; + ssrc);
++						
++						transport.setSSRC(ssrc);
++					}
++					
+ 				} else if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
+ 					clientSession.setAttribute( clientRdtPortATTR, new Integer( transport
+ 							.getClientPort()[0] ) );
+@@ -296,6 +321,8 @@
+ 			proxySession = new ProxySession();
+ 			clientSession.setAttribute( ProxySession.ATTR, proxySession );
+ 		}
++		if(portrangeRtpSession != null)
++			proxySession.setPortrangeRtpServerSession(portrangeRtpSession);
+ 
+ 		request.setHeader( &quot;Transport&quot;, rtspTransportList.toString() );
+ 
+@@ -491,7 +518,7 @@
+ 		// Save current ProxyHandler into the ProtocolSession
+ 		serverSession.setAttribute( ProxyHandler.ATTR, this );
+ 
+-		serverSession.setAttribute(sharedSessionAttribute, sharedSessionObjects);
++		serverSession.setAttribute(ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE, sharedSessionObjects);
+ 		
+ 		log.debug( &quot;Server session: &quot; + serverSession.getAttributeKeys() );
+ 	}
+@@ -500,7 +527,7 @@
+ 	 * set an object in the shared objects map
+ 	 */
+ 	public static void setSharedSessionAttribute(IoSession session, String name, Object value) {
+-		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(sharedSessionAttribute);
++		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE);
+ 		
+ 		synchronized (map) {
+ 			map.put(name, value);
+@@ -509,7 +536,7 @@
+ 	
+ 	public static Object getSharedSessionAttribute(IoSession session, String name) {
+ 		Object v = null;
+-		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(sharedSessionAttribute);
++		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE);
+ 		
+ 		synchronized (map) {
+ 			v = map.get(name);
+@@ -520,7 +547,7 @@
+ 	
+ 	public static final boolean containsSharedSessionAttribute(IoSession session, String name) {
+ 		boolean v = false;
+-		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(sharedSessionAttribute);
++		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE);
+ 		
+ 		synchronized (map) {
+ 			v = map.containsKey(name);
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxySession.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxySession.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxySession.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -28,10 +28,13 @@
+ import org.slf4j.LoggerFactory;
+ 
+ import rtspproxy.jmx.JmxAgent;
++import rtspproxy.lib.number.UnsignedInt;
+ import rtspproxy.lib.number.UnsignedLong;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.proxy.track.RtpTrack;
+ import rtspproxy.proxy.track.Track;
++import rtspproxy.rtp.range.PortrangeRtpServerSession;
++import rtspproxy.rtp.range.PortrangeRtpServerSessionFactory;
+ 
+ /**
+  * Manages RTSP sessions with both client and server.
+@@ -107,8 +110,13 @@
+ 	 * object name of proxy session
+ 	 */
+ 	private ObjectName objectName;
+-	
++
+ 	/**
++	 * the special server-side session which handles RTP sessions with different local source ports
++	 */
++	private PortrangeRtpServerSession portrangeRtpServerSession;
++
++	/**
+ 	 * @return Returns the objectName.
+ 	 */
+ 	public ObjectName getObjectName() {
+@@ -147,6 +155,9 @@
+ 		RtpTrack track = new RtpTrack( url );
+ 		if ( serverSsrc != null )
+ 			track.setServerSSRC( serverSsrc );
++		if(portrangeRtpServerSession != null)
++			track.setPortrangeRtpServerSession(this.portrangeRtpServerSession);
++		
+ 		trackList.put( url, track );
+ 		log.debug( &quot;ProxySession: &quot; + clientSessionId + &quot; Added track. TrackList: &quot;
+ 				+ trackList );
+@@ -257,6 +268,9 @@
+ 		if ( serverSessionId != null )
+ 			serverSessionIds.remove( serverSessionId );
+ 		
++		if(this.portrangeRtpServerSession != null)
++			PortrangeRtpServerSessionFactory.getInstance().releaseSession(this.portrangeRtpServerSession);
++		
+ 		// unregister session facade in MBean server
+ 		JmxAgent.getInstance().unregisterProxySession(this);
+ 	}
+@@ -290,10 +304,36 @@
+ 	}
+ 
+ 	/**
++	 * Creates a unique session ID that is a 64 bit number.
++	 * 
++	 * @return the session ID string.
++	 */
++	public static UnsignedInt newServerSessionID()
++	{
++		UnsignedInt id;
++		while ( true ) {
++			// Create a 64 bit random number
++			synchronized ( random ) {
++				id = new UnsignedInt( random );
++			}
++
++			if ( serverSessionIds.get( id.toString() ) == null ) {
++				// Ok, the id is unique
++				return id;
++			}
++			// try with another id
++		}
++	}
++
++	/**
+ 	 * @return Returns the closedFlag.
+ 	 */
+ 	public boolean isClosed() {
+ 		return closedFlag;
+ 	}
+ 
++	public void setPortrangeRtpServerSession(PortrangeRtpServerSession portrangeRtpSession) {
++		this.portrangeRtpServerSession = portrangeRtpSession;
++	}
++
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtcpPacketHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtcpPacketHandler.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtcpPacketHandler.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -26,6 +26,7 @@
+ import org.apache.mina.common.IoHandlerAdapter;
+ import org.apache.mina.common.IoSession;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.lib.Exceptions;
+ import rtspproxy.proxy.track.RtpTrack;
+ import rtspproxy.proxy.track.Track;
+@@ -44,10 +45,17 @@
+ 	{
+ 		RtcpPacket packet = new RtcpPacket( (ByteBuffer) buffer );
+ 		// log.debug( &quot;Receive RTCP packet: &quot; + packet.getType() );
+-		RtpTrack track = RtpTrack.getByServerSSRC( packet.getSsrc() );
++		RtpTrack track = null;
++		
++		if(!Config.proxyServerRtpSsrcUnreliable.getValue())
++			track = RtpTrack.getByServerSSRC( packet.getSsrc() );
+ 
+ 		if ( track == null ) {
+-			track = (RtpTrack)Track.getByServerAddress( (InetSocketAddress) session.getRemoteAddress() );
++			if(Config.proxyServerRtpMultiplePorts.getValue())
++				track = (RtpTrack)Track.getByLocalRemoteServerAddress((InetSocketAddress)session.getLocalAddress(),
++						(InetSocketAddress)session.getRemoteAddress());
++			else
++				track = (RtpTrack)Track.getByServerAddress( (InetSocketAddress) session.getRemoteAddress() );
+ 
+ 			if ( track == null ) {
+ 				// drop packet
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -26,6 +26,7 @@
+ import org.apache.mina.common.IoHandlerAdapter;
+ import org.apache.mina.common.IoSession;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.lib.Exceptions;
+ import rtspproxy.proxy.track.RtpTrack;
+ import rtspproxy.proxy.track.Track;
+@@ -48,12 +49,20 @@
+ 	{
+ 		// log.debug( &quot;Received RTP packet&quot; );
+ 		RtpPacket packet = new RtpPacket( (ByteBuffer) buffer );
+-		RtpTrack track = RtpTrack.getByServerSSRC( packet.getSsrc() );
++		RtpTrack track = null;
+ 
++		if(!Config.proxyServerRtpSsrcUnreliable.getValue())
++			track = RtpTrack.getByServerSSRC( packet.getSsrc() );
++		
+ 		log.debug(&quot;recevied server RTP packet, SSRC=&quot; + packet.getSsrc() + &quot;, CSRC=&quot; + packet.getCsrc()
+-				+ &quot;, server=&quot; + session.getRemoteAddress(), &quot;, local=&quot; + session.getLocalAddress());
++				+ &quot;, server=&quot; + session.getRemoteAddress() + &quot;, local=&quot; + session.getLocalAddress());
++		
+ 		if ( track == null ) {
+-			track = (RtpTrack)Track.getByServerAddress( (InetSocketAddress) session.getRemoteAddress() );
++			if(Config.proxyServerRtpMultiplePorts.getValue())
++				track = (RtpTrack)Track.getByLocalRemoteServerAddress((InetSocketAddress)session.getLocalAddress(),
++						(InetSocketAddress)session.getRemoteAddress());
++			else
++				track = (RtpTrack)Track.getByServerAddress( (InetSocketAddress) session.getRemoteAddress() );
+ 
+ 			if ( track == null ) {
+ 				// drop packet
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RtpTrack.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RtpTrack.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RtpTrack.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -19,6 +19,7 @@
+ import rtspproxy.RtpServerService;
+ import rtspproxy.lib.number.UnsignedInt;
+ import rtspproxy.rtp.RtpPacket;
++import rtspproxy.rtp.range.PortrangeRtpServerSession;
+ import rtspproxy.rtp.rtcp.RtcpPacket;
+ 
+ public class RtpTrack extends Track
+@@ -68,6 +69,8 @@
+ 	private int serverRtpPort;
+ 
+ 	private int serverRtcpPort;
++	
++	private PortrangeRtpServerSession portrangeRtpServerSession;
+ 
+ 	/**
+ 	 * Construct a new Track.
+@@ -168,9 +171,15 @@
+ 		// modify the SSRC for the server
+ 		packet.setSsrc( proxySSRC );
+ 
+-		if ( rtpServerSession == null )
+-			rtpServerSession = RtpServerService.getInstance().newSession(
+-					new InetSocketAddress( serverAddress, serverRtpPort ) );
++		if ( rtpServerSession == null ) {
++			if(this.portrangeRtpServerSession != null) {
++				rtpServerSession = this.portrangeRtpServerSession.newRtpSession(new InetSocketAddress( serverAddress, 
++						serverRtpPort ));
++			} else {
++				rtpServerSession = RtpServerService.getInstance().newSession(
++						new InetSocketAddress( serverAddress, serverRtpPort ) );
++			}
++		}
+ 
+ 		rtpServerSession.write( packet.toByteBuffer() );
+ 	}
+@@ -187,10 +196,15 @@
+ 		// modify the SSRC for the server
+ 		packet.setSsrc( proxySSRC );
+ 
+-		if ( rtcpServerSession == null )
+-			rtcpServerSession = RtcpServerService.getInstance().newSession(
+-					new InetSocketAddress( clientAddress, clientRtcpPort ) );
+-
++		if ( rtcpServerSession == null ) {
++			if(this.portrangeRtpServerSession != null) {
++				rtcpServerSession = this.portrangeRtpServerSession.newRtcpSession(new InetSocketAddress( serverAddress, 
++						serverRtcpPort ));
++			} else {
++				rtcpServerSession = RtcpServerService.getInstance().newSession(
++						new InetSocketAddress( serverAddress, serverRtcpPort ) );
++			}
++		}
+ 		rtcpServerSession.write( packet.toByteBuffer() );
+ 	}
+ 
+@@ -283,17 +297,39 @@
+ 		this.serverRtpPort = rtpPort;
+ 		this.serverRtcpPort = rtcpPort;
+ 
+-		serverAddressMap.put( new InetSocketAddress( serverAddress, rtpPort ), this );
+-		serverAddressMap.put( new InetSocketAddress( serverAddress, rtcpPort ), this );
++		InetSocketAddress rtpSockAddr = new InetSocketAddress( serverAddress, rtpPort );
++		InetSocketAddress rtcpSockAddr = new InetSocketAddress( serverAddress, rtcpPort ); 
++		
++		serverAddressMap.put( rtpSockAddr, this );
++		serverAddressMap.put( rtcpSockAddr, this );
++		
++		if(this.portrangeRtpServerSession != null) {
++			localRemoteServerAddressMap.put(
++					new LocalRemoteAddressPair(this.portrangeRtpServerSession.getRtpSocketAddress(), rtpSockAddr), 
++					this);
++			localRemoteServerAddressMap.put(
++					new LocalRemoteAddressPair(this.portrangeRtpServerSession.getRtcpSocketAddress(), rtcpSockAddr), 
++					this);
++		}
+ 	}
+ 
+ 	public synchronized void close()
+ 	{
+ 		if ( serverSSRC != null )
+ 			serverSsrcMap.remove( serverSSRC );
+-		serverAddressMap.remove( new InetSocketAddress( serverAddress, serverRtpPort ) );
+-		serverAddressMap.remove( new InetSocketAddress( serverAddress, serverRtcpPort ) );
+-
++		
++		InetSocketAddress rtpSockAddr = new InetSocketAddress(serverAddress, serverRtpPort);
++		InetSocketAddress rtcpSockAddr = new InetSocketAddress(serverAddress, serverRtcpPort);
++		
++		serverAddressMap.remove( rtpSockAddr );
++		serverAddressMap.remove( rtcpSockAddr );
++		if(this.portrangeRtpServerSession != null) {
++			localRemoteServerAddressMap.remove(
++					new LocalRemoteAddressPair(this.portrangeRtpServerSession.getRtpSocketAddress(), rtpSockAddr));
++			localRemoteServerAddressMap.remove(
++					new LocalRemoteAddressPair(this.portrangeRtpServerSession.getRtcpSocketAddress(), rtcpSockAddr));
++		}		
++		
+ 		clientAddressMap.remove( new InetSocketAddress( clientAddress, clientRtpPort ) );
+ 		clientAddressMap.remove( new InetSocketAddress( clientAddress, clientRtcpPort ) );
+ 
+@@ -326,4 +362,8 @@
+ 			// try with another id
+ 		}
+ 	}
++
++	public void setPortrangeRtpServerSession(PortrangeRtpServerSession session) {
++		this.portrangeRtpServerSession = session;
++	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/Track.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/Track.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/Track.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -36,6 +36,41 @@
+ public abstract class Track
+ {
+ 
++	protected static class LocalRemoteAddressPair {
++		private InetSocketAddress local;
++		private InetSocketAddress remote;
++		
++		public LocalRemoteAddressPair(InetSocketAddress local, InetSocketAddress remote) {
++			this.local = local;
++			this.remote = remote;
++		}
++
++		/* (non-Javadoc)
++		 * @see java.lang.Object#equals(java.lang.Object)
++		 */
++		@Override
++		public boolean equals(Object obj) {
++			boolean equal = false;
++			
++			if(obj instanceof LocalRemoteAddressPair) {
++				LocalRemoteAddressPair o = (LocalRemoteAddressPair)obj;
++				
++				equal = (this.local.equals(o.local) &amp;&amp; this.remote.equals(o.remote));
++			}
++			return equal;
++		}
++
++		/* (non-Javadoc)
++		 * @see java.lang.Object#hashCode()
++		 */
++		@Override
++		public int hashCode() {
++			return (this.local.hashCode() ^ this.remote.hashCode());
++		}
++		
++		
++	}
++	
+ 	protected static final String ATTR = Track.class.toString() + &quot;Attr&quot;;
+ 
+ 	/** Maps a client address to a Track */
+@@ -44,6 +79,10 @@
+ 	/** Maps a server address to a Track */
+ 	protected static Map&lt;InetSocketAddress, Track&gt; serverAddressMap = new ConcurrentHashMap&lt;InetSocketAddress, Track&gt;();
+ 
++	/** Maps a local server address/port and a remote address/port to a Track */
++	protected static Map&lt;LocalRemoteAddressPair, Track&gt; localRemoteServerAddressMap = 
++		new ConcurrentHashMap&lt;LocalRemoteAddressPair, Track&gt;();
++	
+ 	/**
+ 	 * Control Url of the track. This is the url handle given by the server to
+ 	 * control different tracks in a RTSP session.
+@@ -95,6 +134,22 @@
+ 		return serverAddressMap.get( serverAddress );
+ 	}
+ 
++	/**
++	 * Get the track by looking at server socket address.
++	 * &lt;p&gt;
++	 * Used as a workaround for streaming servers which do not hand out a ssrc
++	 * in the setup handshake.
++	 * 
++	 * @return a Track instance if a matching pair is found or null
++	 */
++	public static Track getByLocalRemoteServerAddress( InetSocketAddress localServerAddress,
++			InetSocketAddress remoteServerAddress)
++	{
++		LocalRemoteAddressPair pair = new LocalRemoteAddressPair(localServerAddress, remoteServerAddress);
++		
++		return localRemoteServerAddressMap.get( pair );
++	}
++
+ 	// /// Member methods
+ 
+ 	public String getUrl()
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSession.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSession.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSession.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -0,0 +1,173 @@
++/**
++ * 
++ */
++package rtspproxy.rtp.range;
++
++import java.net.InetSocketAddress;
++import java.util.LinkedList;
++
++import javax.management.ObjectName;
++
++import org.apache.mina.common.IoSession;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import rtspproxy.transport.socket.nio.DatagramAcceptor;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class PortrangeRtpServerSession {
++	/**
++	 * Logger for this class
++	 */
++	private static final Logger logger = LoggerFactory
++			.getLogger(PortrangeRtpServerSession.class);
++		
++	// session attribute name
++	public static final String ATTR = PortrangeRtpServerSession.class.getName() + &quot;.ATTR&quot;;
++	
++	// connection number
++	private int connectionNumber;
++	
++	// flag if session is passive
++	private boolean activeIfTrue;
++	
++	// time when object was passivated
++	private long lastPassiveCheckpoint; 
++	
++	// RTP acceptor
++	private DatagramAcceptor rtpAcceptor;
++	
++	// RTP socket address
++	private InetSocketAddress rtpSockAddr;
++	
++	// RCTP acceptor
++	private DatagramAcceptor rtcpAcceptor;
++	
++	// RTCP socket address
++	private InetSocketAddress rtcpSockAddr;
++	
++	// opened sessions
++	private LinkedList&lt;IoSession&gt; openSessions = new LinkedList&lt;IoSession&gt;();
++	
++	// MBean name
++	private ObjectName objectName;
++	
++	/**
++	 * create a sever session
++	 */
++	PortrangeRtpServerSession(int conNum) {
++		this.connectionNumber = conNum;
++	}
++
++	public void setLocalBinding(DatagramAcceptor rtpAcceptor, InetSocketAddress rtpSockAddr, 
++			DatagramAcceptor rtcpAcceptor, InetSocketAddress rtcpSockAddr) {
++		this.rtpAcceptor = rtpAcceptor;
++		this.rtpSockAddr = rtpSockAddr;
++		this.rtcpAcceptor = rtcpAcceptor;
++		this.rtcpSockAddr = rtcpSockAddr;
++	}
++	
++	/**
++	 * get the RTP port number
++	 */
++	public int getRtpPort() {
++		return this.rtpSockAddr.getPort();
++	}
++
++	/**
++	 * get the RTP port number
++	 */
++	public int getRtcpPort() {
++		return this.rtcpSockAddr.getPort();
++	}
++
++	/**
++	 * get the connection number
++	 */
++	public int getConnectionNumber() {
++		return this.connectionNumber;
++	}
++
++	void unbind() {
++		this.rtpAcceptor.unbind(this.rtpSockAddr);
++		this.rtcpAcceptor.unbind(this.rtcpSockAddr);
++	}
++
++	void closeOpenSessions() {
++			for (IoSession session : this.openSessions)
++			session.close();
++		this.openSessions.clear();
++	}
++	
++	public IoSession newRtpSession(InetSocketAddress remote) {
++		IoSession session = this.rtpAcceptor.newSession(remote, this.rtpSockAddr);
++		
++		logger.debug(&quot;opened new RTP session to &quot; + remote);
++		this.openSessions.add(session);
++		
++		return session;
++	}
++
++	public IoSession newRtcpSession(InetSocketAddress remote) {
++		IoSession session = this.rtcpAcceptor.newSession(remote, this.rtcpSockAddr);
++
++		logger.debug(&quot;opened new RTCP session to &quot; + remote);
++		this.openSessions.add(session);
++		
++		return session;
++	}
++
++	void setActive(boolean state) {
++		this.activeIfTrue = state;
++		
++		if(!this.activeIfTrue)
++			this.lastPassiveCheckpoint = System.currentTimeMillis();
++	}
++
++	/**
++	 * @return Returns the lastPassiveCheckpoint.
++	 */
++	public long getLastPassiveCheckpoint() {
++		return lastPassiveCheckpoint;
++	}
++
++	public boolean isActive() {
++		return this.activeIfTrue;
++	}
++
++	/**
++	 * @return Returns the rtpSockAddr.
++	 */
++	public InetSocketAddress getRtpSocketAddress() {
++		return rtpSockAddr;
++	}
++
++	/**
++	 * @return Returns the rtpSockAddr.
++	 */
++	public InetSocketAddress getRtcpSocketAddress() {
++		return rtcpSockAddr;
++	}
++
++	/**
++	 * @return Returns the objectName.
++	 */
++	public ObjectName getObjectName() {
++		return objectName;
++	}
++
++	/**
++	 * @param objectName The objectName to set.
++	 */
++	public void setObjectName(ObjectName objectName) {
++		this.objectName = objectName;
++	}
++
++	public int getNumOpenSessions() {
++		return this.openSessions.size();
++	}
++
++}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSessionFactory.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSessionFactory.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSessionFactory.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -3,10 +3,162 @@
+  */
+ package rtspproxy.rtp.range;
+ 
++import java.io.IOException;
++import java.net.InetAddress;
++import java.util.NoSuchElementException;
++import java.util.Observable;
++import java.util.Observer;
++
++import org.apache.commons.pool.PoolableObjectFactory;
++import org.apache.commons.pool.impl.GenericObjectPool;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.jmx.JmxAgent;
++import rtspproxy.lib.Singleton;
++
+ /**
+  * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
+  *
+  */
+-public class PortrangeRtpServerSessionFactory {
++public class PortrangeRtpServerSessionFactory extends Singleton implements Observer {
++	/**
++	 * Logger for this class
++	 */
++	private static final Logger logger = LoggerFactory
++			.getLogger(PortrangeRtpServerSessionFactory.class);
++	
++	// connection pool
++	private GenericObjectPool pool;
++	
++	// local addr
++	private InetAddress localAddress;
++	
++	/**
++	 * constructor 
++	 */
++	public PortrangeRtpServerSessionFactory() {
++		
++	}
++	
++	/**
++	 * get the singleton instance
++	 */
++	public static PortrangeRtpServerSessionFactory getInstance() {
++		return (PortrangeRtpServerSessionFactory)Singleton.getInstance(PortrangeRtpServerSessionFactory.class);
++	}
++	
++	/**
++	 * get a RTP server session
++	 */
++	public PortrangeRtpServerSession getSession() throws IOException {
++		try {
++			return (PortrangeRtpServerSession)this.pool.borrowObject();
++		} catch(Exception e) {
++			logger.info(&quot;failed to obtain RTP server session&quot;, e);
++			
++			throw new IOException(&quot;cant obtain RTP server session&quot;);
++		}
++	}
++	
++	/**
++	 * release a server session
++	 */
++	public void releaseSession(PortrangeRtpServerSession session) {
++		try {
++			session.closeOpenSessions();
++			this.pool.returnObject(session);
++		} catch(Exception e) {
++			logger.info(&quot;failed to release session&quot;, e);
++		}
++	}
++	
++	/**
++	 * initialise the factory
++	 */
++	public void start() throws Exception {
++		if(Config.proxyServerRtpMultiplePorts.getValue()) {
++			int minPort = Config.proxyServerRtpMinPort.getValue();
++			int maxPort = Config.proxyServerRtpMaxPort.getValue();
++			int rtpSessionIdleTimeout = Config.proxyServerRtpIdleTimeout.getValue();
++			int poolSize = Config.proxyServerRtpThreadPoolSize.getValue();
++			int idleScanInterval = Config.proxyServerRtpIdleScanInterval.getValue() * 1000;
++			
++			if(minPort &lt;= 0 || minPort &gt;= 65536)
++				throw new IllegalArgumentException(&quot;RTP min port out of range: &quot; + minPort);
++			if(maxPort &lt;= 0 || maxPort &gt;= 65536)
++				throw new IllegalArgumentException(&quot;RTP max port out of range: &quot; + maxPort);
++			
++			minPort = minPort + (minPort % 2);
++			maxPort = maxPort - (maxPort % 2);
++			logger.debug(&quot;RTP min port=&quot; + minPort + &quot;, max port=&quot; + maxPort);
++			
++			if(minPort &gt;= maxPort)
++				throw new IllegalArgumentException(&quot;RTP min port too high, min=&quot; + minPort + &quot;, max=&quot; + maxPort);
++			int maxConn = (maxPort -minPort) / 2;
++			
++			GenericObjectPool.Config config = new GenericObjectPool.Config();
++			
++			config.maxActive = maxConn;
++			config.maxIdle = maxConn / 2;
++			config.whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_FAIL;
++			config.testOnBorrow = false;
++			config.testOnReturn = false;
++			config.testWhileIdle = true;
++			config.minEvictableIdleTimeMillis = rtpSessionIdleTimeout*1000;
++			config.timeBetweenEvictionRunsMillis = idleScanInterval;
++			
++			this.pool = new GenericObjectPool(new RtpServerSessionFactory(this.localAddress, minPort, maxConn,
++					rtpSessionIdleTimeout, poolSize), config);
++			
++			Config.proxyServerRtpIdleScanInterval.addObserver(this);
++			Config.proxyServerRtpIdleTimeout.addObserver(this);
++			
++			JmxAgent.getInstance().registerPortRangeRtpServerSessionfactory(this);
++		}
++	}
++	
++	/**
++	 * shutdown the session factory
++	 */
++	public void stop() {
++		if(Config.proxyServerRtpMultiplePorts.getValue()) {
++			try {
++				this.pool.close();
++			} catch(Exception e) {
++				logger.info(&quot;exception while closing RTP port pool&quot;, e);
++			}
++			
++			JmxAgent.getInstance().unregisterPortRangeRtpServerSessionfactory();
++		}		
++	}
+ 
++	public void setLocalAddress(InetAddress address) {
++		this.localAddress = address;
++	}
++
++	public void update(Observable o, Object arg) {
++		if(o instanceof Parameter) {
++			Parameter p = (Parameter)o;
++			
++			if(p.equals(Config.proxyServerRtpIdleScanInterval))
++				this.pool.setTimeBetweenEvictionRunsMillis(Config.proxyServerRtpIdleScanInterval.getValue());
++			else if(p.equals(Config.proxyServerRtpIdleTimeout))
++				this.pool.setMinEvictableIdleTimeMillis(Config.proxyServerRtpIdleTimeout.getValue() * 1000);
++		}
++	}
++
++	public int getMaxConnections() {
++		return this.pool.getMaxActive();
++	}
++
++	public int getCurrentIdleConnections() {
++		return this.pool.getNumIdle();
++	}
++
++	public int getCurrentActiveConnections() {
++		return this.pool.getNumActive();
++	}
+ }
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/RtpRtcpFilterChainBuilder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/RtpRtcpFilterChainBuilder.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/RtpRtcpFilterChainBuilder.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -0,0 +1,29 @@
++/**
++ * 
++ */
++package rtspproxy.rtp.range;
++
++import org.apache.mina.common.IoFilterChain;
++import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.filter.ThreadPoolFilter;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RtpRtcpFilterChainBuilder implements IoFilterChainBuilder {
++
++	private ThreadPoolFilter filter = new ThreadPoolFilter(&quot;RtpRtcpPortRangeThreadPool&quot;);
++	
++	RtpRtcpFilterChainBuilder() {}
++	
++	/* (non-Javadoc)
++	 * @see org.apache.mina.common.IoFilterChainBuilder#buildFilterChain(org.apache.mina.common.IoFilterChain)
++	 */
++	public void buildFilterChain(IoFilterChain arg0) throws Exception {
++	}
++
++	void setPoolSize(int size) {
++		this.filter.setMaximumPoolSize(size);
++	}
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/RtpServerSessionFactory.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/RtpServerSessionFactory.java	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/RtpServerSessionFactory.java	2006-02-07 23:40:28 UTC (rev 414)
+@@ -0,0 +1,186 @@
++/**
++ * 
++ */
++package rtspproxy.rtp.range;
++
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import java.io.IOException;
++import java.net.InetAddress;
++import java.net.InetSocketAddress;
++import java.util.BitSet;
++import java.util.Observable;
++import java.util.Observer;
++
++import org.apache.commons.pool.PoolableObjectFactory;
++
++import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++import rtspproxy.jmx.JmxAgent;
++import rtspproxy.proxy.ServerRtcpPacketHandler;
++import rtspproxy.proxy.ServerRtpPacketHandler;
++import rtspproxy.transport.socket.nio.DatagramAcceptor;
++import sun.security.krb5.internal.s;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ */
++class RtpServerSessionFactory implements PoolableObjectFactory, Observer {
++	/**
++	 * Logger for this class
++	 */
++	private static final Logger logger = LoggerFactory
++			.getLogger(RtpServerSessionFactory.class);
++
++	// local bind address
++	private InetAddress localAddress;
++	
++	// mark used connections
++	private BitSet usedConnections;
++	
++	// base port (RTP)
++	private int basePort;
++	
++	// max connections
++	private int maxConnections;
++	
++	// RTP acceptor
++	private DatagramAcceptor rtpAcceptor = new DatagramAcceptor();
++	
++	// RTCP acceptor
++	private DatagramAcceptor rtcpAcceptor = new DatagramAcceptor();
++
++	// Filter chain builder
++	private RtpRtcpFilterChainBuilder chainBuilder = new RtpRtcpFilterChainBuilder();
++	
++	private long idleTimeout;
++
++	/**
++	 * constructor
++	 * @param address 
++	 * @param maxConn 
++	 */
++	RtpServerSessionFactory(InetAddress address, int basePort, int maxConn, long idleTimeout, int threadPoolSize) {
++		this.localAddress = address;
++		this.usedConnections = new BitSet(maxConn);
++		this.maxConnections = maxConn;
++		this.basePort = basePort;
++		this.idleTimeout = idleTimeout;
++
++		this.chainBuilder.setPoolSize(threadPoolSize);
++		this.rtpAcceptor.setFilterChainBuilder(this.chainBuilder);
++		this.rtcpAcceptor.setFilterChainBuilder(this.chainBuilder);
++		
++		Config.proxyServerRtpThreadPoolSize.addObserver(this);
++		Config.proxyServerRtpIdleTimeout.addObserver(this);
++	}
++
++	public Object makeObject() throws Exception {
++		PortrangeRtpServerSession serverSession = null;
++		int nextCon = 0;
++
++		do {
++			nextCon = this.usedConnections.nextClearBit(0);
++			logger.debug(&quot;found next free slot at &quot; + nextCon);
++			
++			if(nextCon &gt;= this.maxConnections) {
++				logger.debug(&quot;failed to allocate a free slot&quot;);
++				throw new IOException(&quot;no local ports available&quot;);
++			}
++			int rtpPort = this.basePort + 2*nextCon;
++			
++			this.usedConnections.set(nextCon);
++			serverSession = new PortrangeRtpServerSession(nextCon);
++			
++			// try to bind local ports
++			InetSocketAddress rtpSockAddr = new InetSocketAddress(this.localAddress, rtpPort);
++			InetSocketAddress rtcpSockAddr = new InetSocketAddress(this.localAddress, rtpPort+1);
++			
++			boolean rtpBound = false;
++			boolean rtcpBound = false;
++			
++			try {
++				this.rtpAcceptor.bind(rtpSockAddr, new ServerRtpPacketHandler());
++				rtpBound = true;
++			} catch(IOException ie) {
++				logger.info(&quot;failed to bind RTP socket &quot; + rtpSockAddr, ie);
++			}
++			try {
++				this.rtcpAcceptor.bind(rtcpSockAddr, new ServerRtcpPacketHandler());
++				rtcpBound = true;
++			} catch(IOException ie) {
++				logger.info(&quot;failed to bind RTCP socket &quot; + rtpSockAddr, ie);
++			}
++			if(rtpBound == false || rtcpBound == false) {
++				logger.debug(&quot;failed to allocate RTP/RTCP port port&quot;);
++				
++				serverSession = null;
++				if(rtpBound) {
++					this.rtpAcceptor.unbind(rtpSockAddr);
++				}
++				if(rtcpBound) {
++					this.rtcpAcceptor.unbind(rtcpSockAddr);
++				}
++			} else {
++				logger.debug(&quot;allocated local port pair&quot;);
++				
++				serverSession.setLocalBinding(this.rtpAcceptor, rtpSockAddr, this.rtcpAcceptor, rtcpSockAddr);
++			}
++			
++		} while(serverSession == null);
++		
++		JmxAgent.getInstance().registerPortrangeRtpServerSession(serverSession);
++		
++		return serverSession;
++	}
++
++	public void destroyObject(Object arg0) throws Exception {
++		PortrangeRtpServerSession serverSession = (PortrangeRtpServerSession)arg0;
++		int conNumber = serverSession.getConnectionNumber();
++		
++		logger.debug(&quot;destroying connection &quot; + conNumber);
++		serverSession.unbind();
++		JmxAgent.getInstance().unregisterPortrangeRtpServerSession(serverSession);
++		this.usedConnections.clear(conNumber);
++	}
++
++	public boolean validateObject(Object arg0) {
++		boolean valid = true;
++		PortrangeRtpServerSession serverSession = (PortrangeRtpServerSession)arg0;
++		long checkPoint = System.currentTimeMillis();
++		
++		logger.debug(&quot;checking validity for connection &quot; + serverSession.getConnectionNumber());
++		if(!serverSession.isActive() 
++				&amp;&amp; (checkPoint - serverSession.getLastPassiveCheckpoint()) &gt; (1000*this.idleTimeout)) {
++			logger.debug(&quot;connection &quot; + serverSession.getConnectionNumber() + &quot; timed out&quot;);
++			valid = false;
++		}
++		
++		return valid;
++	}
++
++	public void activateObject(Object arg0) throws Exception {
++		PortrangeRtpServerSession serverSession = (PortrangeRtpServerSession)arg0;
++		
++		serverSession.setActive(true);
++	}
++
++	public void passivateObject(Object arg0) throws Exception {
++		PortrangeRtpServerSession serverSession = (PortrangeRtpServerSession)arg0;
++		
++		serverSession.closeOpenSessions();
++		serverSession.setActive(false);
++	}
++
++	public void update(Observable o, Object arg) {
++		if(o instanceof Parameter) {
++			Parameter p = (Parameter)o;
++			
++			if(p.equals(Config.proxyServerRtpThreadPoolSize))
++				this.chainBuilder.setPoolSize(Config.proxyServerRtpThreadPoolSize.getValue());
++			else if(p.equals(Config.proxyServerRtpIdleTimeout))
++				this.idleTimeout = Config.proxyServerRtpIdleTimeout.getValue();
++		}
++	}
++}
+
+Modified: trunk/RTSPProxy-OSGi/pom.xml
+===================================================================
+--- trunk/RTSPProxy-OSGi/pom.xml	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/RTSPProxy-OSGi/pom.xml	2006-02-07 23:40:28 UTC (rev 414)
+@@ -3,14 +3,14 @@
+   &lt;parent&gt;
+     &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+     &lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
+-    &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++    &lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+   &lt;/parent&gt;
+   
+   &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+   &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+   &lt;artifactId&gt;RTSPProxy-OSGi&lt;/artifactId&gt;
+   &lt;packaging&gt;osgi-bundle&lt;/packaging&gt;
+-  &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++  &lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+   &lt;name&gt;RTSP Proxy OSGi bundle&lt;/name&gt;
+   &lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+   &lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+@@ -20,7 +20,7 @@
+     &lt;dependency&gt;
+       &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+       &lt;artifactId&gt;RTSPProxy-Core&lt;/artifactId&gt;
+-      &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++      &lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+     &lt;/dependency&gt;
+ 
+     &lt;dependency&gt;
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2006-02-06 19:54:31 UTC (rev 413)
++++ trunk/pom.xml	2006-02-07 23:40:28 UTC (rev 414)
+@@ -12,7 +12,7 @@
+   &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+   &lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
+   &lt;packaging&gt;pom&lt;/packaging&gt;
+-  &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++  &lt;version&gt;3.0-ALPHA5-SNAPSHOT&lt;/version&gt;
+   &lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+   &lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+   
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000097.html">[Rtspproxy-devel] r413 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config proxy proxy/track rtp rtp/range
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#98">[ date ]</a>
+              <a href="thread.html#98">[ thread ]</a>
+              <a href="subject.html#98">[ subject ]</a>
+              <a href="author.html#98">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,283 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r337 - in trunk: . src/main/java/rtspproxy/rtsp src/site/xdoc
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r337%20-%20in%20trunk%3A%20.%20src/main/java/rtspproxy/rtsp%20src/site/xdoc&In-Reply-To=%3C200512082106.jB8L6psL027824%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000021.html">
+   <LINK REL="Next"  HREF="000023.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r337 - in trunk: . src/main/java/rtspproxy/rtsp src/site/xdoc</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r337%20-%20in%20trunk%3A%20.%20src/main/java/rtspproxy/rtsp%20src/site/xdoc&In-Reply-To=%3C200512082106.jB8L6psL027824%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r337 - in trunk: . src/main/java/rtspproxy/rtsp src/site/xdoc">merlimat at berlios.de
+       </A><BR>
+    <I>Thu Dec  8 22:06:51 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000021.html">[Rtspproxy-devel] r336 - in trunk/src/main/java/rtspproxy/filter: . authentication ipaddress
+</A></li>
+        <LI>Next message: <A HREF="000023.html">[Rtspproxy-devel] r338 - /
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#22">[ date ]</a>
+              <a href="thread.html#22">[ thread ]</a>
+              <a href="subject.html#22">[ subject ]</a>
+              <a href="author.html#22">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-08 22:06:48 +0100 (Thu, 08 Dec 2005)
+New Revision: 337
+
+Modified:
+   trunk/pom.xml
+   trunk/src/main/java/rtspproxy/rtsp/RtspDecoder.java
+   trunk/src/main/java/rtspproxy/rtsp/RtspSession.java
+   trunk/src/site/xdoc/download.xml
+Log:
+Preparing to tag ALPHA2
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2005-12-08 20:48:05 UTC (rev 336)
++++ trunk/pom.xml	2005-12-08 21:06:48 UTC (rev 337)
+@@ -131,7 +131,7 @@
+ 					&lt;showWarnings&gt;true&lt;/showWarnings&gt;
+ 				&lt;/configuration&gt;
+ 			&lt;/plugin&gt;
+-
++&lt;!-- 
+ 			&lt;plugin&gt;
+ 				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+ 				&lt;artifactId&gt;maven-assembly-plugin&lt;/artifactId&gt;
+@@ -140,7 +140,7 @@
+ 						src/resources/release/default.xml
+ 					&lt;/descriptor&gt;
+ 				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
++			&lt;/plugin&gt; --&gt;
+ 			&lt;plugin&gt;
+ 				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+ 				&lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
+
+Modified: trunk/src/main/java/rtspproxy/rtsp/RtspDecoder.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/rtsp/RtspDecoder.java	2005-12-08 20:48:05 UTC (rev 336)
++++ trunk/src/main/java/rtspproxy/rtsp/RtspDecoder.java	2005-12-08 21:06:48 UTC (rev 337)
+@@ -29,7 +29,6 @@
+ import org.apache.mina.filter.codec.ProtocolDecoderOutput;
+ 
+ import rtspproxy.lib.Exceptions;
+-import sun.tools.tree.FinallyStatement;
+ 
+ /**
+  * 
+
+Modified: trunk/src/main/java/rtspproxy/rtsp/RtspSession.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/rtsp/RtspSession.java	2005-12-08 20:48:05 UTC (rev 336)
++++ trunk/src/main/java/rtspproxy/rtsp/RtspSession.java	2005-12-08 21:06:48 UTC (rev 337)
+@@ -18,11 +18,14 @@
+ 
+ package rtspproxy.rtsp;
+ 
+-import java.util.HashMap;
++import java.util.Map;
+ import java.util.Random;
++import java.util.concurrent.ConcurrentHashMap;
+ 
+ import org.apache.log4j.Logger;
+ 
++import rtspproxy.lib.number.UnsignedLong;
++
+ /**
+  * RTSP is primarly a connection-less protocol, that means that RTSP request can
+  * be made over multiples TCP connections. To identify such a &quot;session&quot;, a
+@@ -31,16 +34,16 @@
+ public class RtspSession
+ {
+ 
++	private static Logger log = Logger.getLogger( RtspSession.class );
++
++	private static Map&lt;String, RtspSession&gt; sessions = new ConcurrentHashMap&lt;String, RtspSession&gt;();
++
+ 	// Members
+ 	/** Session ID */
+-	private long id;
++	private String sessionId;
+ 	/** Session associated tracks */
+-	private HashMap&lt;String, Track&gt; tracks = new HashMap&lt;String, Track&gt;();
++	private Map&lt;String, Track&gt; tracks = new ConcurrentHashMap&lt;String, Track&gt;();
+ 
+-	// Static access
+-	private static Logger log = Logger.getLogger( RtspSession.class );
+-	private static HashMap&lt;Long, RtspSession&gt; sessions = new HashMap&lt;Long, RtspSession&gt;();
+-
+ 	/**
+ 	 * Creates a new empty RtspSession and stores it.
+ 	 * 
+@@ -48,17 +51,16 @@
+ 	 *        Session identifier
+ 	 * @return The newly created session
+ 	 */
+-	static public RtspSession create( String id )
++	static public RtspSession create( String sessionId )
+ 	{
+-		long key = Long.valueOf( id );
+ 
+-		if ( sessions.get( key ) != null ) {
++		if ( sessions.get( sessionId ) != null ) {
+ 			log.error( &quot;Session key conflit!!&quot; );
+ 			return null;
+ 		}
+-		RtspSession session = new RtspSession( key );
+-		sessions.put( key, session );
+-		log.debug( &quot;New session created - id=&quot; + key );
++		RtspSession session = new RtspSession( sessionId );
++		sessions.put( sessionId, session );
++		log.debug( &quot;New session created - id=&quot; + sessionId );
+ 		return session;
+ 	}
+ 
+@@ -67,7 +69,7 @@
+ 	 */
+ 	static public RtspSession create()
+ 	{
+-		return create( Long.toString( newSessionID() ) );
++		return create( newSessionID() );
+ 	}
+ 
+ 	/**
+@@ -100,28 +102,31 @@
+ 
+ 	/**
+ 	 * Close the session and removes it.
+-	 * @param id the session ID
++	 * 
++	 * @param id
++	 *        the session ID
+ 	 */
+ 	static public void close( long id )
+ 	{
+ 		sessions.remove( id );
+ 	}
+ 
+-	private RtspSession( long id )
++	protected RtspSession( String sessionId )
+ 	{
+-		this.id = id;
++		this.sessionId = sessionId;
+ 	}
+ 
+ 	/**
+ 	 * @return the session ID
+ 	 */
+-	public long getId()
++	public String getId()
+ 	{
+-		return id;
++		return sessionId;
+ 	}
+ 
+-	/** 
+-	 * @param control the key to access the track
++	/**
++	 * @param control
++	 *        the key to access the track
+ 	 * @return the track
+ 	 */
+ 	public Track getTrack( String control )
+@@ -139,7 +144,9 @@
+ 
+ 	/**
+ 	 * Adds a new track to the session
+-	 * @param track a Track object
++	 * 
++	 * @param track
++	 *        a Track object
+ 	 */
+ 	public void addTrack( Track track )
+ 	{
+@@ -156,14 +163,17 @@
+ 	 * 
+ 	 * @return the session ID
+ 	 */
+-	private static long newSessionID()
++	private static String newSessionID()
+ 	{
+-		long id;
+-		while ( true ) {
+-			id = random.nextLong();
+-			if ( sessions.get( id ) == null ) {
+-				// Ok, the id is unique
+-				return id;
++		String id;
++		synchronized ( random ) {
++			while ( true ) {
++
++				id = new UnsignedLong( random ).toString();
++				if ( sessions.get( id ) == null ) {
++					// Ok, the id is unique
++					return id;
++				}
+ 			}
+ 			// try with another id
+ 		}
+
+Modified: trunk/src/site/xdoc/download.xml
+===================================================================
+--- trunk/src/site/xdoc/download.xml	2005-12-08 20:48:05 UTC (rev 336)
++++ trunk/src/site/xdoc/download.xml	2005-12-08 21:06:48 UTC (rev 337)
+@@ -42,7 +42,7 @@
+ 								&lt;/a&gt;
+ 							&lt;/td&gt;
+ 							&lt;td&gt;Sources&lt;/td&gt;
+-							&lt;td&gt;336 KB&lt;/td&gt;
++							&lt;td&gt;536 KB&lt;/td&gt;
+ 						&lt;/tr&gt;
+ 						&lt;tr&gt;
+ 							&lt;td&gt;
+@@ -52,7 +52,7 @@
+ 								&lt;/a&gt;
+ 							&lt;/td&gt;
+ 							&lt;td&gt;Binaries&lt;/td&gt;
+-							&lt;td&gt;975 KB&lt;/td&gt;
++							&lt;td&gt;1903 KB&lt;/td&gt;
+ 						&lt;/tr&gt;
+ 					&lt;/tbody&gt;
+ 				&lt;/table&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000021.html">[Rtspproxy-devel] r336 - in trunk/src/main/java/rtspproxy/filter: . authentication ipaddress
+</A></li>
+	<LI>Next message: <A HREF="000023.html">[Rtspproxy-devel] r338 - /
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#22">[ date ]</a>
+              <a href="thread.html#22">[ thread ]</a>
+              <a href="subject.html#22">[ subject ]</a>
+              <a href="author.html#22">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

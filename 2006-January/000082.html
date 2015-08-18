@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r398 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r398%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20filter/rewrite%20rtsp&In-Reply-To=%3C200601181024.k0IAOZG6004103%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000081.html">
+   <LINK REL="Next"  HREF="000083.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r398 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r398%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20filter/rewrite%20rtsp&In-Reply-To=%3C200601181024.k0IAOZG6004103%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r398 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp">rbieniek at berlios.de
+       </A><BR>
+    <I>Wed Jan 18 11:24:35 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000081.html">[Rtspproxy-devel] r397 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+        <LI>Next message: <A HREF="000083.html">[Rtspproxy-devel] r399 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#82">[ date ]</a>
+              <a href="thread.html#82">[ thread ]</a>
+              <a href="subject.html#82">[ subject ]</a>
+              <a href="author.html#82">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-18 11:24:32 +0100 (Wed, 18 Jan 2006)
+New Revision: 398
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/ClientUrlRewritingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+Log:
+- setSequenceNumber in RTSPResponse now sets the &quot;CSeq&quot; header as a
+by-product.
+- Made logging behaviour in ClientUrlRewritingFilter more 
+understandable. Only log the outgoing message if there is a message
+being passed onto the next filter
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/ClientUrlRewritingFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/ClientUrlRewritingFilter.java	2006-01-17 00:13:17 UTC (rev 397)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/ClientUrlRewritingFilter.java	2006-01-18 10:24:32 UTC (rev 398)
+@@ -53,11 +53,13 @@
+ 					logger.error(&quot;Expecting a RtspMessage. Received a &quot;
+ 						+ message.getClass().getName());
+ 			}
++
++		}
++		if(passOn) {
+ 			logger.debug(&quot;Sent (post-rewriting) message:\n&quot; + message);
+ 
++			nextFilter.messageReceived(session, message);
+ 		}
+-		if(passOn)
+-			nextFilter.messageReceived(session, message);
+ 	}
+ 
+ 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-01-17 00:13:17 UTC (rev 397)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-01-18 10:24:32 UTC (rev 398)
+@@ -73,10 +73,11 @@
+ 					req.setUrl(rewritten);
+ 				} else if(result.getResponse() != null) {
+ 					RtspResponse resp = result.getResponse();
+-					logger.debug(&quot;dropped  request, return response: &quot; + resp);
+ 
+ 					resp.setCommonHeaders();
+ 					resp.setSequenceNumber(req.getSequenceNumber());
++					logger.debug(&quot;dropped  request, return response: &quot; + resp);
++
+ 					session.write(resp);
+ 					passOn = false;
+ 				}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-01-17 00:13:17 UTC (rev 397)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-01-18 10:24:32 UTC (rev 398)
+@@ -231,11 +231,15 @@
+ 	}
+ 
+ 	/**
++	 * Set the sequence number. As a by-product it also sets the CSeq header field to this
++	 * value.
++	 * 
+ 	 * @param sequenceNumber
+ 	 *            The sequenceNumber to set.
+ 	 */
+ 	public void setSequenceNumber( int sequenceNumber )
+ 	{
+ 		this.sequenceNumber = sequenceNumber;
++		this.headers.put(&quot;CSeq&quot;, String.valueOf(this.sequenceNumber));
+ 	}
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000081.html">[Rtspproxy-devel] r397 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+	<LI>Next message: <A HREF="000083.html">[Rtspproxy-devel] r399 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#82">[ date ]</a>
+              <a href="thread.html#82">[ thread ]</a>
+              <a href="subject.html#82">[ subject ]</a>
+              <a href="author.html#82">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

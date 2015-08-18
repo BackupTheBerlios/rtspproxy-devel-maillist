@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r393 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy/rdt test/resources/rtspproxy/rdt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r393%20-%20in%20trunk/RTSPProxy-Core/src%3A%20main/java/rtspproxy/rdt%20test/resources/rtspproxy/rdt&In-Reply-To=%3C200601160025.k0G0PIMI024373%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000076.html">
+   <LINK REL="Next"  HREF="000078.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r393 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy/rdt test/resources/rtspproxy/rdt</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r393%20-%20in%20trunk/RTSPProxy-Core/src%3A%20main/java/rtspproxy/rdt%20test/resources/rtspproxy/rdt&In-Reply-To=%3C200601160025.k0G0PIMI024373%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r393 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy/rdt test/resources/rtspproxy/rdt">rbieniek at berlios.de
+       </A><BR>
+    <I>Mon Jan 16 01:25:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000076.html">[Rtspproxy-devel] r392 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp
+</A></li>
+        <LI>Next message: <A HREF="000078.html">[Rtspproxy-devel] r394 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/rdt test/java/rtspproxy/rdt test/resources/rtspproxy/rdt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#77">[ date ]</a>
+              <a href="thread.html#77">[ thread ]</a>
+              <a href="subject.html#77">[ subject ]</a>
+              <a href="author.html#77">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-16 01:25:09 +0100 (Mon, 16 Jan 2006)
+New Revision: 393
+
+Added:
+   trunk/RTSPProxy-Core/src/test/resources/rtspproxy/rdt/RdtDataPacketDataPacket.txt
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+Log:
+- continued work on RDT transport. RDT packet encoding seems to be 
+broken in cases were multiple RDT packets need to be packed together,
+the packet length calculation does not work correctly.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-15 01:20:04 UTC (rev 392)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-16 00:25:09 UTC (rev 393)
+@@ -35,14 +35,14 @@
+ 		buffer.rewind();
+ 		buffer.get(data);
+ 
+-		return decode(data, 0, 0);
++		return decode(data, 0);
+ 	}
+ 
+ 	/**
+ 	 * decode packet
+ 	 * @param buffer the byte buffer to decode packet from
+ 	 */
+-	public static RdtPacket decode(byte[] data, int ind, int depth) {
++	public static RdtPacket decode(byte[] data, int ind) {
+ 		RdtPacket packet = null;
+ 		byte markerByte;
+ 		byte seqLo, seqHi;
+@@ -51,11 +51,8 @@
+ 		short packetLength = -1;
+ 		int payloadSize = -1;
+ 
+-		if(depth &gt; 1) {
+-			logger.error(&quot;detected packet-decoding recursion overrun, aborting&quot;);
+-			
+-			return null;
+-		}
++		if(logger.isDebugEnabled()) 
++			logger.debug(&quot;decoding packet data: &quot; + formatByteArray(data));
+ 		
+ 		// process marker byte
+ 		markerByte = data[ind++];
+@@ -67,7 +64,7 @@
+ 		sequence = decodeShort(seqHi, seqLo);
+ 		logger.debug(&quot;decoded sequence: &quot; + Integer.toHexString(sequence));
+ 		
+-		if(seqHi &lt; 0 ) {
++		if((seqHi &amp; 0xff) == 0xff ) {
+ 			logger.debug(&quot;decoding control packet&quot;);
+ 
+ 			// extract streamid from marker byte
+@@ -80,7 +77,7 @@
+ 			case RttRequest:
+ 				// process packet length (if included)
+ 				if(lengthIncluded) {
+-					packetLength = decodeShort(data, ind);
++					packetLength = (short)(decodeShort(data, ind) - 5);
+ 					ind += 2;
+ 				}
+ 				
+@@ -89,7 +86,7 @@
+ 			case RttResponse:
+ 				// process packet length (if included)
+ 				if(lengthIncluded) {
+-					packetLength = decodeShort(data, ind);
++					packetLength = (short)(decodeShort(data, ind) - 5);
+ 					ind += 2;
+ 				}
+ 				
+@@ -108,19 +105,20 @@
+ 			case LatencyReport:
+ 				// process packet length (if included)
+ 				if(lengthIncluded) {
+-					packetLength = decodeShort(data, ind);
++					packetLength = (short)(decodeShort(data, ind) - 5);
+ 					ind += 2;
+ 				}
+ 				
+ 				int serverTimeout = decodeInt(data, ind);
+-				
+ 				ind += 4;
++				if(lengthIncluded)
++					packetLength -= 4;
+ 				packet = new RdtLatencyReportPacket(serverTimeout);
+ 				break;
+ 			case Ack:
+ 				// process packet length (if included)
+ 				if(lengthIncluded) {
+-					packetLength = decodeShort(data, ind);
++					packetLength = (short)(decodeShort(data, ind) -  5);
+ 					ind += 2;
+ 				}
+ 				
+@@ -160,7 +158,7 @@
+ 			// data packet
+ 			// process packet length (if included)
+ 			if(lengthIncluded) {
+-				packetLength = decodeShort(data, ind);
++				packetLength = (short)(decodeShort(data, ind) - 5);
+ 				ind += 2;
+ 			}
+ 			
+@@ -184,18 +182,19 @@
+ 			ind += 4;
+ 			
+ 			// process total reliable count
++			/*
+ 			if(lengthIncluded)
+ 				packetLength -= 2;
+-
++				*/
+ 			packet = new RdtDataPacket(needReliable, isReliable, streamId,
+ 					sequence, backToBack, slowData, asmRule, timestamp);
+ 			if(needReliable) {
+ 				short totalReliable = decodeShort(data, ind);
+ 
+ 				ind += 2;
+-				((RdtDataPacket)packet).setTotalReliable(totalReliable);
+ 				if(lengthIncluded)
+ 					packetLength -= 2;
++				((RdtDataPacket)packet).setTotalReliable(totalReliable);
+ 			}
+ 
+ 			payloadSize = (lengthIncluded ? packetLength : (data.length - ind));
+@@ -207,7 +206,7 @@
+ 			// handle attached subpacket
+ 			logger.debug(&quot;handling attached sub-packet&quot;);
+ 			
+-			packet.setSubPacket(decode(data, ind, depth+1));
++			packet.setSubPacket(decode(data, ind));
+ 		}
+ 		
+ 		if(logger.isDebugEnabled())
+
+Added: trunk/RTSPProxy-Core/src/test/resources/rtspproxy/rdt/RdtDataPacketDataPacket.txt
+===================================================================
+--- trunk/RTSPProxy-Core/src/test/resources/rtspproxy/rdt/RdtDataPacketDataPacket.txt	2006-01-15 01:20:04 UTC (rev 392)
++++ trunk/RTSPProxy-Core/src/test/resources/rtspproxy/rdt/RdtDataPacketDataPacket.txt	2006-01-16 00:25:09 UTC (rev 393)
+@@ -0,0 +1,19 @@
++c0 00 01 00 9d 40 00 00 00 00 00 00 81 02 40 d4 
++40 70 00 1a 20 00 1b 46 46 db fd de 10 84 42 10 
++84 21 08 42 10 84 21 08 42 10 84 22 30 84 21 08 
++42 10 84 21 08 42 10 86 21 11 e4 31 8c 63 1c c6 
++31 8c 42 10 84 22 31 08 63 18 c4 21 08 42 23 0c 
++42 10 84 31 08 42 10 84 21 08 43 1c c4 21 08 42 
++10 84 21 08 42 11 08 42 10 84 21 08 42 10 84 21 
++08 42 10 84 21 08 42 10 84 21 08 42 10 84 21 8c 
++63 98 c1 c0 40 07 40 85 01 59 20 21 60 00 45 19 
++c0 40 07 40 86 02 7c 20 10 a0 00 45 19 c0 00 02 
++00 8b 40 00 00 01 0a 00 00 01 01 40 fe 40 00 03 
++18 20 42 9b 00 46 db fd de 11 9a 8a fc 9f 26 84 
++59 42 21 08 42 23 08 42 10 84 22 14 86 57 63 11 
++18 42 10 85 22 14 84 56 e2 91 08 84 22 34 84 21 
++08 42 10 e6 21 10 ca 21 08 8c 4d 8e 8e 21 11 c9 
++b9 11 c9 ba 78 ae c8 44 79 88 65 74 22 30 84 21 
++8c 43 10 c4 31 08 42 21 08 42 23 8c 42 10 84 22 
++11 0c 42 10 84 21 08 84 22 10 84 21 08 42 10 85 
++21 10 84 22 19 5b 8c 00
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000076.html">[Rtspproxy-devel] r392 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp
+</A></li>
+	<LI>Next message: <A HREF="000078.html">[Rtspproxy-devel] r394 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/rdt test/java/rtspproxy/rdt test/resources/rtspproxy/rdt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#77">[ date ]</a>
+              <a href="thread.html#77">[ thread ]</a>
+              <a href="subject.html#77">[ subject ]</a>
+              <a href="author.html#77">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

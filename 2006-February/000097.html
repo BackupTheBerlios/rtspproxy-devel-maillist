@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r413 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config proxy proxy/track rtp rtp/range
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r413%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20config%20proxy%20proxy/track%20rtp%20rtp/range&In-Reply-To=%3C200602061954.k16JsfUE003242%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000096.html">
+   <LINK REL="Next"  HREF="000098.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r413 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config proxy proxy/track rtp rtp/range</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r413%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20config%20proxy%20proxy/track%20rtp%20rtp/range&In-Reply-To=%3C200602061954.k16JsfUE003242%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r413 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config proxy proxy/track rtp rtp/range">rbieniek at berlios.de
+       </A><BR>
+    <I>Mon Feb  6 20:54:41 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000096.html">[Rtspproxy-devel] r412 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+        <LI>Next message: <A HREF="000098.html">[Rtspproxy-devel] r414 - in trunk: . RTSPProxy-App RTSPProxy-App/src/resources/conf RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/jmx RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans RTSPProxy-Core/src/main/java/rtspproxy/lib/number RTSPProxy-Core/src/main/java/rtspproxy/proxy RTSPProxy-Core/src/main/java/rtspproxy/proxy/track RTSPProxy-Core/src/main/java/rtspproxy/rtp/range RTSPProxy-OSGi
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#97">[ date ]</a>
+              <a href="thread.html#97">[ thread ]</a>
+              <a href="subject.html#97">[ subject ]</a>
+              <a href="author.html#97">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-02-06 20:54:31 +0100 (Mon, 06 Feb 2006)
+New Revision: 413
+
+Added:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSessionFactory.java
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RtpTrack.java
+Log:
+- Preparation for server RTP port range handling (used for
+compatibility with broken server applications)
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-02-06 19:54:09 UTC (rev 412)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-02-06 19:54:31 UTC (rev 413)
+@@ -118,6 +118,34 @@
+ 			&quot;/rtspproxy/proxy/server/rtcpPort&quot; // xpathExpr
+ 			);
+ 
++	public static final IntegerParameter proxyServerRtpMinPort = new IntegerParameter(
++			&quot;proxy.server.rtp.port.min&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( 9000 ), // default value
++			true, // mutable
++			&quot;Port to listen for RTP packets arriving from servers.&quot;,
++			&quot;/rtspproxy/proxy/server/rtpMinPort&quot; // xpathExpr
++			);
++
++	public static final IntegerParameter proxyServerRtpMaxPort = new IntegerParameter(
++			&quot;proxy.server.rtp.port.max&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( 9100 ), // default value
++			true, // mutable
++			&quot;Port to listen for RTP packets arriving from servers.&quot;,
++			&quot;/rtspproxy/proxy/server/rtpMaxPort&quot; // xpathExpr
++			);
++	
++	public static final BooleanParameter proxyServerRtpMultiplePorts = new BooleanParameter(
++			&quot;proxy.server.rtp.multiport.enable&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;Enables the RTP/RTCP multiport handling.&quot;,
++			&quot;/rtspproxy/proxy/server/rtpUsePortrange&quot; // xpathExpr
++			);
++	
+ 	public static final IntegerParameter proxyClientRtpPort = new IntegerParameter(
+ 			&quot;proxy.client.rtp.port&quot;, // name
+ 			new Integer( 0 ), // min value
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-02-06 19:54:09 UTC (rev 412)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-02-06 19:54:31 UTC (rev 413)
+@@ -274,6 +274,11 @@
+ 					
+ 					int proxyRtpPort = RtpServerService.getInstance().getPort();
+ 					int proxyRtcpPort = RtcpServerService.getInstance().getPort();
++					
++					if(Config.proxyServerRtpMultiplePorts.getValue()) {
++						log.debug(&quot;using RTP port range&quot;);
++						
++					}
+ 					transport.setClientPort( new int[] { proxyRtpPort, proxyRtcpPort } );
+ 
+ 				} else if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java	2006-02-06 19:54:09 UTC (rev 412)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java	2006-02-06 19:54:31 UTC (rev 413)
+@@ -50,6 +50,8 @@
+ 		RtpPacket packet = new RtpPacket( (ByteBuffer) buffer );
+ 		RtpTrack track = RtpTrack.getByServerSSRC( packet.getSsrc() );
+ 
++		log.debug(&quot;recevied server RTP packet, SSRC=&quot; + packet.getSsrc() + &quot;, CSRC=&quot; + packet.getCsrc()
++				+ &quot;, server=&quot; + session.getRemoteAddress(), &quot;, local=&quot; + session.getLocalAddress());
+ 		if ( track == null ) {
+ 			track = (RtpTrack)Track.getByServerAddress( (InetSocketAddress) session.getRemoteAddress() );
+ 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RtpTrack.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RtpTrack.java	2006-02-06 19:54:09 UTC (rev 412)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RtpTrack.java	2006-02-06 19:54:31 UTC (rev 413)
+@@ -214,6 +214,8 @@
+ 					new InetSocketAddress( clientAddress, clientRtpPort ) );
+ 		}
+ 
++		log.debug(&quot;forwarding RTP packet, SSRC=&quot; + packet.getSsrc() + &quot;, CSRC=&quot; + packet.getCsrc()
++				+ &quot;, client=&quot; + rtpClientSession.getRemoteAddress());
+ 		rtpClientSession.write( packet.toByteBuffer() );
+ 	}
+ 
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSessionFactory.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSessionFactory.java	2006-02-06 19:54:09 UTC (rev 412)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtp/range/PortrangeRtpServerSessionFactory.java	2006-02-06 19:54:31 UTC (rev 413)
+@@ -0,0 +1,12 @@
++/**
++ * 
++ */
++package rtspproxy.rtp.range;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class PortrangeRtpServerSessionFactory {
++
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000096.html">[Rtspproxy-devel] r412 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+	<LI>Next message: <A HREF="000098.html">[Rtspproxy-devel] r414 - in trunk: . RTSPProxy-App RTSPProxy-App/src/resources/conf RTSPProxy-Core RTSPProxy-Core/src/main/java/rtspproxy RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/jmx RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans RTSPProxy-Core/src/main/java/rtspproxy/lib/number RTSPProxy-Core/src/main/java/rtspproxy/proxy RTSPProxy-Core/src/main/java/rtspproxy/proxy/track RTSPProxy-Core/src/main/java/rtspproxy/rtp/range RTSPProxy-OSGi
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#97">[ date ]</a>
+              <a href="thread.html#97">[ thread ]</a>
+              <a href="subject.html#97">[ subject ]</a>
+              <a href="author.html#97">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

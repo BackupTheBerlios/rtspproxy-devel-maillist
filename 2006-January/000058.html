@@ -1,0 +1,458 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r373 - in trunk: . RTSPProxy-Core RTSPProxy-OSGi RTSPProxy-OSGi/src RTSPProxy-OSGi/src/changes RTSPProxy-OSGi/src/main RTSPProxy-OSGi/src/test src/changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r373%20-%20in%20trunk%3A%20.%20RTSPProxy-Core%20RTSPProxy-OSGi%20RTSPProxy-OSGi/src%20RTSPProxy-OSGi/src/changes%20RTSPProxy-OSGi/src/main%20RTSPProxy-OSGi/src/test%20src/changes&In-Reply-To=%3C200601041650.k04Go8Ir015935%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000057.html">
+   <LINK REL="Next"  HREF="000060.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r373 - in trunk: . RTSPProxy-Core RTSPProxy-OSGi RTSPProxy-OSGi/src RTSPProxy-OSGi/src/changes RTSPProxy-OSGi/src/main RTSPProxy-OSGi/src/test src/changes</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r373%20-%20in%20trunk%3A%20.%20RTSPProxy-Core%20RTSPProxy-OSGi%20RTSPProxy-OSGi/src%20RTSPProxy-OSGi/src/changes%20RTSPProxy-OSGi/src/main%20RTSPProxy-OSGi/src/test%20src/changes&In-Reply-To=%3C200601041650.k04Go8Ir015935%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r373 - in trunk: . RTSPProxy-Core RTSPProxy-OSGi RTSPProxy-OSGi/src RTSPProxy-OSGi/src/changes RTSPProxy-OSGi/src/main RTSPProxy-OSGi/src/test src/changes">rbieniek at berlios.de
+       </A><BR>
+    <I>Wed Jan  4 17:50:08 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000057.html">[Rtspproxy-devel] r372 - in trunk: . RTSPProxy-Core RTSPProxy-Core/src/changes src src/changes
+</A></li>
+        <LI>Next message: <A HREF="000060.html">[Rtspproxy-devel] r374 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/config main/java/rtspproxy/filter/accounting main/java/rtspproxy/filter/authentication main/java/rtspproxy/filter/authentication/scheme main/java/rtspproxy/filter/ipaddress main/java/rtspproxy/filter/rewrite main/java/rtspproxy/jmx main/java/rtspproxy/lib main/java/rtspproxy/proxy main/java/rtspproxy/proxy/track main/java/rtspproxy/rtp main/java/rtspproxy/rtp/rtcp main/java/rtspproxy/rtsp resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#58">[ date ]</a>
+              <a href="thread.html#58">[ thread ]</a>
+              <a href="subject.html#58">[ subject ]</a>
+              <a href="author.html#58">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-04 17:50:02 +0100 (Wed, 04 Jan 2006)
+New Revision: 373
+
+Added:
+   trunk/RTSPProxy-OSGi/
+   trunk/RTSPProxy-OSGi/pom.xml
+   trunk/RTSPProxy-OSGi/src/
+   trunk/RTSPProxy-OSGi/src/changes/
+   trunk/RTSPProxy-OSGi/src/changes/changes.xml
+   trunk/RTSPProxy-OSGi/src/main/
+   trunk/RTSPProxy-OSGi/src/main/java/
+   trunk/RTSPProxy-OSGi/src/test/
+   trunk/RTSPProxy-OSGi/src/test/java/
+Modified:
+   trunk/RTSPProxy-Core/pom.xml
+   trunk/pom.xml
+   trunk/src/changes/changes.xml
+Log:
+- added OSGi bundle skeleton
+
+
+Modified: trunk/RTSPProxy-Core/pom.xml
+===================================================================
+--- trunk/RTSPProxy-Core/pom.xml	2006-01-04 01:06:01 UTC (rev 372)
++++ trunk/RTSPProxy-Core/pom.xml	2006-01-04 16:50:02 UTC (rev 373)
+@@ -6,12 +6,17 @@
+ 		$Id$
+ 		$URL$
+ 	--&gt;
++        &lt;parent&gt;
++                &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
++                &lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
++                &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++        &lt;/parent&gt;
+ 
+ 	&lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+ 
+ 	&lt;name&gt;RTSP Proxy&lt;/name&gt;
+ 	&lt;groupId&gt;net.merlimat&lt;/groupId&gt;
+-	&lt;artifactId&gt;rtspproxy-core&lt;/artifactId&gt;
++	&lt;artifactId&gt;RTSPProxy-Core&lt;/artifactId&gt;
+ 	&lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
+ 	&lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+ 	&lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+@@ -97,7 +102,7 @@
+ 		&lt;/dependency&gt;
+ 
+ 		&lt;dependency&gt;
+-			&lt;groupId&gt;org.apache.directory.network&lt;/groupId&gt;
++			&lt;groupId&gt;directory-network&lt;/groupId&gt;
+ 			&lt;artifactId&gt;mina&lt;/artifactId&gt;
+ 			&lt;version&gt;0.9.0&lt;/version&gt;
+ 		&lt;/dependency&gt;
+
+Added: trunk/RTSPProxy-OSGi/pom.xml
+===================================================================
+--- trunk/RTSPProxy-OSGi/pom.xml	2006-01-04 01:06:01 UTC (rev 372)
++++ trunk/RTSPProxy-OSGi/pom.xml	2006-01-04 16:50:02 UTC (rev 373)
+@@ -0,0 +1,274 @@
++&lt;project xmlns=&quot;<A HREF="http://maven.apache.org/POM/4.0.0">http://maven.apache.org/POM/4.0.0</A>&quot; xmlns:xsi=&quot;<A HREF="http://www.w3.org/2001/XMLSchema-instance">http://www.w3.org/2001/XMLSchema-instance</A>&quot;
++  xsi:schemaLocation=&quot;<A HREF="http://maven.apache.org/POM/4.0.0">http://maven.apache.org/POM/4.0.0</A> <A HREF="http://maven.apache.org/maven-v4_0_0.xsd">http://maven.apache.org/maven-v4_0_0.xsd</A>&quot;&gt;
++  &lt;parent&gt;
++    &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
++    &lt;artifactId&gt;rtspproxy&lt;/artifactId&gt;
++    &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++  &lt;/parent&gt;
++  
++  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
++  &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
++  &lt;artifactId&gt;RTSPProxy-OSGi&lt;/artifactId&gt;
++  &lt;packaging&gt;osgi-bundle&lt;/packaging&gt;
++  &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++  &lt;name&gt;RTSP Proxy OSGi bundle&lt;/name&gt;
++  &lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
++  &lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
++
++  &lt;organization&gt;
++    &lt;name&gt;Matteo Merli&lt;/name&gt;
++    &lt;url&gt;<A HREF="http://merlimat.net&lt;/url">http://merlimat.net&lt;/url</A>&gt;
++  &lt;/organization&gt;
++  
++  &lt;issueManagement&gt;
++    &lt;system&gt;Berlios&lt;/system&gt;
++    &lt;url&gt;<A HREF="http://developer.berlios.de/bugs/?group_id=4526&lt;/url">http://developer.berlios.de/bugs/?group_id=4526&lt;/url</A>&gt;
++  &lt;/issueManagement&gt;
++  
++  &lt;licenses&gt;
++    &lt;license&gt;
++      &lt;name&gt;GNU General Public License&lt;/name&gt;
++      &lt;url&gt;LICENSE.txt&lt;/url&gt;
++    &lt;/license&gt;
++  &lt;/licenses&gt;
++  &lt;developers&gt;
++    &lt;developer&gt;
++      &lt;id&gt;merlimat&lt;/id&gt;
++      &lt;name&gt;Matteo Merli&lt;/name&gt;
++      &lt;email&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>&lt;/email&gt;
++      &lt;!-- &lt;timezone&gt;+1&lt;/timezone&gt; --&gt;
++      &lt;url&gt;<A HREF="http://merlimat.net/about&lt;/url">http://merlimat.net/about&lt;/url</A>&gt;
++    &lt;/developer&gt;
++    &lt;developer&gt;
++      &lt;id&gt;rbieniek&lt;/id&gt;
++      &lt;name&gt;Rainer Bieniek&lt;/name&gt;
++      &lt;email&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>&lt;/email&gt;
++      &lt;!-- &lt;timezone&gt;+1&lt;/timezone&gt; --&gt;
++      &lt;!-- &lt;url&gt;<A HREF="http://merlimat.net/about&lt;/url">http://merlimat.net/about&lt;/url</A>&gt; --&gt;
++    &lt;/developer&gt;
++  &lt;/developers&gt;
++  
++  &lt;scm&gt;
++    &lt;connection&gt;
++      scm:svn:<A HREF="http://svn.berlios.de/svnroot/repos/rtspproxy/trunk">http://svn.berlios.de/svnroot/repos/rtspproxy/trunk</A>
++    &lt;/connection&gt;
++    &lt;developerConnection&gt;
++      scm:svn:<A HREF="https://svn.berlios.de/svnroot/repos/rtspproxy/trunk">https://svn.berlios.de/svnroot/repos/rtspproxy/trunk</A>
++    &lt;/developerConnection&gt;
++    &lt;url&gt;<A HREF="http://svn.berlios.de/wsvn/rtspproxy/&lt;/url">http://svn.berlios.de/wsvn/rtspproxy/&lt;/url</A>&gt;
++  &lt;/scm&gt;
++  
++  &lt;mailingLists&gt;
++    &lt;mailingList&gt;
++      &lt;name&gt;Development list&lt;/name&gt;
++      &lt;post&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">rtspproxy-devel at lists.berlios.de</A>&lt;/post&gt;
++      
++      &lt;archive&gt;
++	<A HREF="http://www.nabble.com/RtspProxy-Devel-f6753.html">http://www.nabble.com/RtspProxy-Devel-f6753.html</A>
++      &lt;/archive&gt;
++      &lt;subscribe&gt;
++	<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">https://lists.berlios.de/mailman/listinfo/rtspproxy-devel</A>
++      &lt;/subscribe&gt;
++      &lt;unsubscribe&gt;
++	<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">https://lists.berlios.de/mailman/listinfo/rtspproxy-devel</A>
++      &lt;/unsubscribe&gt;
++    &lt;/mailingList&gt;
++  &lt;/mailingLists&gt;
++  
++  &lt;distributionManagement&gt;
++    &lt;downloadUrl&gt;
++      <A HREF="http://rtspproxy.berlios.de/download.html">http://rtspproxy.berlios.de/download.html</A>
++    &lt;/downloadUrl&gt;
++    &lt;site&gt;
++      &lt;id&gt;rtspproxy.website&lt;/id&gt;
++      &lt;name&gt;Default Site&lt;/name&gt;
++      &lt;url&gt;
++	<A HREF="scp://shell.berlios.de/home/groups/rtspproxy/htdocs">scp://shell.berlios.de/home/groups/rtspproxy/htdocs</A>
++      &lt;/url&gt;
++    &lt;/site&gt;
++  &lt;/distributionManagement&gt;
++    
++  &lt;dependencies&gt;
++
++    &lt;dependency&gt;
++      &lt;groupId&gt;net.merlimat&lt;/groupId&gt;
++      &lt;artifactId&gt;RTSPProxy-Core&lt;/artifactId&gt;
++      &lt;version&gt;3.0-ALPHA4-SNAPSHOT&lt;/version&gt;
++    &lt;/dependency&gt;
++
++    &lt;dependency&gt;
++      &lt;groupId&gt;org.osgi&lt;/groupId&gt;
++      &lt;artifactId&gt;org.osgi&lt;/artifactId&gt;
++      &lt;version&gt;3.0&lt;/version&gt;
++      &lt;scope&gt;provided&lt;/scope&gt;
++    &lt;/dependency&gt;
++
++    &lt;dependency&gt;
++      &lt;groupId&gt;junit&lt;/groupId&gt;
++      &lt;artifactId&gt;junit&lt;/artifactId&gt;
++      &lt;version&gt;3.8.1&lt;/version&gt;
++      &lt;scope&gt;test&lt;/scope&gt;
++    &lt;/dependency&gt;
++
++  &lt;/dependencies&gt;
++
++  &lt;build&gt;
++    &lt;defaultGoal&gt;assembly:directory&lt;/defaultGoal&gt;
++    
++    &lt;resources&gt;
++      &lt;resource&gt;
++	&lt;directory&gt;src/main/resources&lt;/directory&gt;
++	&lt;filtering&gt;true&lt;/filtering&gt;
++      &lt;/resource&gt;
++    &lt;/resources&gt;
++    
++    &lt;plugins&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
++	&lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
++	&lt;configuration&gt;
++	  &lt;source&gt;1.5&lt;/source&gt;
++	  &lt;target&gt;1.5&lt;/target&gt;
++	  &lt;showWarnings&gt;true&lt;/showWarnings&gt;
++	&lt;/configuration&gt;
++      &lt;/plugin&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
++	&lt;artifactId&gt;maven-assembly-plugin&lt;/artifactId&gt;
++	&lt;configuration&gt;
++	  &lt;descriptor&gt;
++	    src/resources/release/default.xml
++	  &lt;/descriptor&gt;
++	&lt;/configuration&gt;
++      &lt;/plugin&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
++	&lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
++	&lt;configuration&gt;
++	  &lt;outputEncoding&gt;UTF-8&lt;/outputEncoding&gt;
++	&lt;/configuration&gt;
++	&lt;!--  &lt;version&gt;2.0-beta-2&lt;/version&gt; --&gt;
++      &lt;/plugin&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
++	&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
++	&lt;executions&gt;
++	  &lt;execution&gt;
++	    &lt;goals&gt;
++	      &lt;goal&gt;announcement-generate&lt;/goal&gt;
++	    &lt;/goals&gt;
++	    &lt;id&gt;announcement-generate&lt;/id&gt;
++	  &lt;/execution&gt;
++	  &lt;execution&gt;
++	    &lt;goals&gt;
++	      &lt;goal&gt;announcement-mail&lt;/goal&gt;
++	    &lt;/goals&gt;
++	    &lt;id&gt;announcement-mail&lt;/id&gt;
++	  &lt;/execution&gt;
++	&lt;/executions&gt;
++	&lt;configuration&gt;
++	  &lt;xmlPath&gt;src/changes&lt;/xmlPath&gt;
++	  
++	  &lt;smtpHost&gt;mail.yourhost.com&lt;/smtpHost&gt;
++	  &lt;smtpPort implementation=&quot;java.lang.Integer&quot;&gt;
++	    25
++	  &lt;/smtpPort&gt;
++	  &lt;toAddresses&gt;
++	    &lt;toAddress implementation=&quot;java.lang.String&quot;&gt;
++	      <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">someones at email.com</A>
++	    &lt;/toAddress&gt;
++	    &lt;toAddress implementation=&quot;java.lang.String&quot;&gt;
++	      <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">anothersomeone at email.com</A>
++	    &lt;/toAddress&gt;
++	  &lt;/toAddresses&gt;
++	&lt;/configuration&gt;
++      &lt;/plugin&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
++	&lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
++	&lt;configuration&gt;
++	  &lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;
++	    1.5
++	  &lt;/targetJdk&gt;
++	&lt;/configuration&gt;
++      &lt;/plugin&gt;
++
++      &lt;!-- see <A HREF="http://docs.safehaus.org/display/OSGI/OSGi+Plugin+for+Maven+2.0">http://docs.safehaus.org/display/OSGI/OSGi+Plugin+for+Maven+2.0</A> for further instructions --&gt;
++      &lt;plugin&gt;
++        &lt;groupId&gt;org.apache.felix.plugins&lt;/groupId&gt;
++        &lt;artifactId&gt;maven-osgi-plugin&lt;/artifactId&gt;
++        &lt;extensions&gt;true&lt;/extensions&gt;
++        &lt;version&gt;0.3.0&lt;/version&gt;
++        &lt;configuration&gt;
++          &lt;osgiManifest&gt;
++            &lt;bundleActivator&gt;rtspproxy.bundle.Activator&lt;/bundleActivator&gt;
++            &lt;bundleName&gt;RTSP Proxy bundle&lt;/bundleName&gt;
++            &lt;bundleDescription&gt;RTSP Proxy bundle&lt;/bundleDescription&gt;
++            &lt;bundleVendor&gt;rbieniek&lt;/bundleVendor&gt;
++	    &lt;importPackage&gt;org.osgi.service.log&lt;/importPackage&gt;
++          &lt;/osgiManifest&gt;
++        &lt;/configuration&gt;
++      &lt;/plugin&gt;
++    &lt;/plugins&gt;
++  &lt;/build&gt;
++
++  &lt;repositories&gt;
++    &lt;repository&gt;
++      &lt;id&gt;safehaus-repository&lt;/id&gt;
++      &lt;name&gt;Safehaus Repository&lt;/name&gt;
++      &lt;url&gt;<A HREF="http://m2.safehaus.org&lt;/url">http://m2.safehaus.org&lt;/url</A>&gt;
++    &lt;/repository&gt;
++  &lt;/repositories&gt;
++   
++  &lt;reporting&gt;
++    &lt;plugins&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
++	&lt;artifactId&gt;
++	  maven-project-info-reports-plugin
++	&lt;/artifactId&gt;
++      &lt;/plugin&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
++	&lt;artifactId&gt;changelog-maven-plugin&lt;/artifactId&gt;
++      &lt;/plugin&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
++	&lt;artifactId&gt;surefire-report-maven-plugin&lt;/artifactId&gt;
++      &lt;/plugin&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
++	&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
++      &lt;/plugin&gt;
++      &lt;plugin&gt;
++	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
++	&lt;artifactId&gt;taglist-maven-plugin&lt;/artifactId&gt;
++      &lt;/plugin&gt;
++      &lt;!-- 
++      &lt;plugin&gt;
++      &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
++      &lt;artifactId&gt;maven-javadoc-plugin&lt;/artifactId&gt;
++      &lt;configuration&gt;
++      &lt;charset&gt;UTF-8&lt;/charset&gt;
++      &lt;docencoding&gt;UTF-8&lt;/docencoding&gt;
++      &lt;link&gt;
++      <A HREF="http://java.sun.com/j2se/1.5.0/docs/api/,">http://java.sun.com/j2se/1.5.0/docs/api/,</A>
++      <A HREF="http://www.junit.org/junit/javadoc/3.8.1/,">http://www.junit.org/junit/javadoc/3.8.1/,</A>
++      <A HREF="http://directory.apache.org/subprojects/network/apidocs/">http://directory.apache.org/subprojects/network/apidocs/</A>
++    &lt;/link&gt;
++    &lt;/configuration&gt;
++    &lt;/plugin&gt;
++      --&gt;
++      &lt;!-- 
++      &lt;plugin&gt;
++      &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
++      &lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
++      &lt;configuration&gt;
++      &lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;1.5&lt;/targetJdk&gt;
++    &lt;/configuration&gt;
++    &lt;/plugin&gt;
++      --&gt;
++    &lt;/plugins&gt;
++  &lt;/reporting&gt;
++  
++&lt;/project&gt;
+
+Copied: trunk/RTSPProxy-OSGi/src/changes/changes.xml (from rev 372, trunk/src/changes/changes.xml)
+===================================================================
+--- trunk/src/changes/changes.xml	2006-01-04 01:06:01 UTC (rev 372)
++++ trunk/RTSPProxy-OSGi/src/changes/changes.xml	2006-01-04 16:50:02 UTC (rev 373)
+@@ -0,0 +1,19 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
++&lt;document&gt;
++  &lt;properties&gt;
++    &lt;title&gt;Changes History&lt;/title&gt;
++    &lt;author email=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>&quot;&gt;Rainer Bieniek&lt;/author&gt;
++  &lt;/properties&gt;
++  &lt;body&gt;
++    
++    &lt;release version=&quot;3.0-ALPHA4-SNAPSHOT&quot; date=&quot;in SVN&quot;&gt;
++      &lt;action dev=&quot;rbieniek&quot; type=&quot;change&quot;&gt;
++	Restructured project for multi-module project.
++      &lt;/action&gt;
++
++      &lt;action dev=&quot;rbieniek&quot; type=&quot;add&quot;&gt;
++	Added OSGi bundle skeleton.
++      &lt;/action&gt;
++    &lt;/release&gt;
++  &lt;/body&gt;
++&lt;/document&gt;
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2006-01-04 01:06:01 UTC (rev 372)
++++ trunk/pom.xml	2006-01-04 16:50:02 UTC (rev 373)
+@@ -92,10 +92,11 @@
+ 
+   &lt;modules&gt;
+     &lt;module&gt;RTSPProxy-Core&lt;/module&gt;
++    &lt;module&gt;RTSPProxy-OSGi&lt;/module&gt;
+   &lt;/modules&gt;
+     
+   &lt;build&gt;
+-    &lt;defaultGoal&gt;assembly:directory&lt;/defaultGoal&gt;
++    &lt;defaultGoal&gt;package&lt;/defaultGoal&gt;
+     
+     &lt;resources&gt;
+       &lt;resource&gt;
+
+Modified: trunk/src/changes/changes.xml
+===================================================================
+--- trunk/src/changes/changes.xml	2006-01-04 01:06:01 UTC (rev 372)
++++ trunk/src/changes/changes.xml	2006-01-04 16:50:02 UTC (rev 373)
+@@ -8,8 +8,12 @@
+     
+     &lt;release version=&quot;3.0-ALPHA4-SNAPSHOT&quot; date=&quot;in SVN&quot;&gt;
+       &lt;action dev=&quot;rbieniek&quot; type=&quot;change&quot;&gt;
+-	Restructured project for multi-module project
++	Restructured project for multi-module project.
+       &lt;/action&gt;
++
++      &lt;action dev=&quot;rbieniek&quot; type=&quot;add&quot;&gt;
++	Added OSGi bundle skeleton.
++      &lt;/action&gt;
+     &lt;/release&gt;
+   &lt;/body&gt;
+ &lt;/document&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000057.html">[Rtspproxy-devel] r372 - in trunk: . RTSPProxy-Core RTSPProxy-Core/src/changes src src/changes
+</A></li>
+	<LI>Next message: <A HREF="000060.html">[Rtspproxy-devel] r374 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/config main/java/rtspproxy/filter/accounting main/java/rtspproxy/filter/authentication main/java/rtspproxy/filter/authentication/scheme main/java/rtspproxy/filter/ipaddress main/java/rtspproxy/filter/rewrite main/java/rtspproxy/jmx main/java/rtspproxy/lib main/java/rtspproxy/proxy main/java/rtspproxy/proxy/track main/java/rtspproxy/rtp main/java/rtspproxy/rtp/rtcp main/java/rtspproxy/rtsp resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#58">[ date ]</a>
+              <a href="thread.html#58">[ thread ]</a>
+              <a href="subject.html#58">[ subject ]</a>
+              <a href="author.html#58">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

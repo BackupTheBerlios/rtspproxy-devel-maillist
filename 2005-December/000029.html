@@ -1,0 +1,663 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r344 - in trunk/src: main/java/rtspproxy/rtsp test/java/rtspproxy/rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r344%20-%20in%20trunk/src%3A%20main/java/rtspproxy/rtsp%20test/java/rtspproxy/rtsp&In-Reply-To=%3C200512132146.jBDLkr7x003477%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000028.html">
+   <LINK REL="Next"  HREF="000030.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r344 - in trunk/src: main/java/rtspproxy/rtsp test/java/rtspproxy/rtsp</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r344%20-%20in%20trunk/src%3A%20main/java/rtspproxy/rtsp%20test/java/rtspproxy/rtsp&In-Reply-To=%3C200512132146.jBDLkr7x003477%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r344 - in trunk/src: main/java/rtspproxy/rtsp test/java/rtspproxy/rtsp">merlimat at berlios.de
+       </A><BR>
+    <I>Tue Dec 13 22:46:53 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000028.html">[Rtspproxy-devel] r343 - in trunk/src/main/java/rtspproxy: proxy rtsp
+</A></li>
+        <LI>Next message: <A HREF="000030.html">[Rtspproxy-devel] r345 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-13 22:46:39 +0100 (Tue, 13 Dec 2005)
+New Revision: 344
+
+Added:
+   trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java
+   trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java
+Modified:
+   trunk/src/main/java/rtspproxy/rtsp/RtspTransport.java
+   trunk/src/main/java/rtspproxy/rtsp/RtspTransportList.java
+Log:
+Fixed problems with RTSP Transport header (bug #5850)
+
+Modified: trunk/src/main/java/rtspproxy/rtsp/RtspTransport.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/rtsp/RtspTransport.java	2005-12-13 21:42:36 UTC (rev 343)
++++ trunk/src/main/java/rtspproxy/rtsp/RtspTransport.java	2005-12-13 21:46:39 UTC (rev 344)
+@@ -18,65 +18,75 @@
+ 
+ package rtspproxy.rtsp;
+ 
+-import org.apache.log4j.Logger;
+ 
+ /**
+  * Parse the RTSP Transport header field. Reference Grammar:
+  * 
+  * &lt;pre&gt;
+- *         Transport           =    &quot;Transport&quot; &quot;:&quot;
+- *                                  1\#transport-spec
+- *         transport-spec      =    transport-protocol/profile[/lower-transport]
+- *                                  *parameter
+- *         transport-protocol  =    &quot;RTP&quot;
+- *         profile             =    &quot;AVP&quot;
+- *         lower-transport     =    &quot;TCP&quot; | &quot;UDP&quot;
+- *         parameter           =    ( &quot;unicast&quot; | &quot;multicast&quot; )
+- *                             |    &quot;;&quot; &quot;destination&quot; [ &quot;=&quot; address ]
+- *                             |    &quot;;&quot; &quot;interleaved&quot; &quot;=&quot; channel [ &quot;-&quot; channel ]
+- *                             |    &quot;;&quot; &quot;append&quot;
+- *                             |    &quot;;&quot; &quot;ttl&quot; &quot;=&quot; ttl
+- *                             |    &quot;;&quot; &quot;layers&quot; &quot;=&quot; 1*DIGIT
+- *                             |    &quot;;&quot; &quot;port&quot; &quot;=&quot; port [ &quot;-&quot; port ]
+- *                             |    &quot;;&quot; &quot;client_port&quot; &quot;=&quot; port [ &quot;-&quot; port ]
+- *                             |    &quot;;&quot; &quot;server_port&quot; &quot;=&quot; port [ &quot;-&quot; port ]
+- *                             |    &quot;;&quot; &quot;ssrc&quot; &quot;=&quot; ssrc
+- *                             |    &quot;;&quot; &quot;mode&quot; = &lt;&quot;&gt; 1\#mode &lt;&quot;&gt;
+- *         ttl                 =    1*3(DIGIT)
+- *         port                =    1*5(DIGIT)
+- *         ssrc                =    8*8(HEX)
+- *         channel             =    1*3(DIGIT)
+- *         address             =    host
+- *         mode                =    &lt;&quot;&gt; *Method &lt;&quot;&gt; | Method
+- *      
+- *      
+- *         Example:
+- *           Transport: RTP/AVP;multicast;ttl=127;mode=&quot;PLAY&quot;,
+- *                      RTP/AVP;unicast;client_port=3456-3457;mode=&quot;PLAY&quot;
++ *                     Transport           =    &quot;Transport&quot; &quot;:&quot;
++ *                                              1\#transport-spec
++ *                     transport-spec      =    transport-protocol/profile[/lower-transport]
++ *                                              *parameter
++ *                     transport-protocol  =    &quot;RTP&quot;
++ *                     profile             =    &quot;AVP&quot;
++ *                     lower-transport     =    &quot;TCP&quot; | &quot;UDP&quot;
++ *                     parameter           =    ( &quot;unicast&quot; | &quot;multicast&quot; )
++ *                                         |    &quot;;&quot; &quot;destination&quot; [ &quot;=&quot; address ]
++ *                                         |    &quot;;&quot; &quot;interleaved&quot; &quot;=&quot; channel [ &quot;-&quot; channel ]
++ *                                         |    &quot;;&quot; &quot;append&quot;
++ *                                         |    &quot;;&quot; &quot;ttl&quot; &quot;=&quot; ttl
++ *                                         |    &quot;;&quot; &quot;layers&quot; &quot;=&quot; 1*DIGIT
++ *                                         |    &quot;;&quot; &quot;port&quot; &quot;=&quot; port [ &quot;-&quot; port ]
++ *                                         |    &quot;;&quot; &quot;client_port&quot; &quot;=&quot; port [ &quot;-&quot; port ]
++ *                                         |    &quot;;&quot; &quot;server_port&quot; &quot;=&quot; port [ &quot;-&quot; port ]
++ *                                         |    &quot;;&quot; &quot;ssrc&quot; &quot;=&quot; ssrc
++ *                                         |    &quot;;&quot; &quot;mode&quot; = &lt;&quot;&gt; 1\#mode &lt;&quot;&gt;
++ *                     ttl                 =    1*3(DIGIT)
++ *                     port                =    1*5(DIGIT)
++ *                     ssrc                =    8*8(HEX)
++ *                     channel             =    1*3(DIGIT)
++ *                     address             =    host
++ *                     mode                =    &lt;&quot;&gt; *Method &lt;&quot;&gt; | Method
++ *                  
++ *                  
++ *                     Example:
++ *                       Transport: RTP/AVP;multicast;ttl=127;mode=&quot;PLAY&quot;,
++ *                                  RTP/AVP;unicast;client_port=3456-3457;mode=&quot;PLAY&quot;
+  * &lt;/pre&gt;
+  */
+ public class RtspTransport
+ {
+ 
+-	private static Logger log = Logger.getLogger( RtspTransport.class );
+-
++	/** Transport Protocol */
+ 	public enum TransportProtocol {
+-		None, RTP, RDT, RAW
++		None,
++		/** Real Time Protocol */
++		RTP,
++		/** RDT: RealNetworks transport protocol */
++		RDT, RAW
+ 	}
++
++	/** Profile of the streamed data */
+ 	public enum Profile {
+-		None, AVP
++		None,
++		/** Audio-Video Profile */
++		AVP
+ 	}
++
++	/** Underlying transport protocol */
+ 	public enum LowerTransport {
+ 		None, TCP, UDP
+ 	}
++
++	/** Delivery method */
+ 	public enum DeliveryType {
+ 		None, unicast, multicast
+ 	}
+ 
+-	TransportProtocol transportProtocol;
+-	Profile profile;
+-	LowerTransport lowerTransport;
+-	DeliveryType deliveryType;
++	TransportProtocol transportProtocol = null;
++	Profile profile = null;
++	LowerTransport lowerTransport = null;
++	DeliveryType deliveryType = null;
+ 
+ 	String destination;
+ 	String interleaved;
+@@ -116,9 +126,6 @@
+ 		source = null;
+ 
+ 		parseTransport( transport );
+-		if ( transport.compareToIgnoreCase( this.toString() ) != 0 ) {
+-			log.warn( &quot;Transport header incorrectly parsed.&quot; );
+-		}
+ 	}
+ 
+ 	private void parseTransport( String transport )
+@@ -175,6 +182,17 @@
+ 															if ( tok.startsWith( &quot;source&quot; ) )
+ 																setSource( _getStrValue( tok ) );
+ 		}
++
++		if ( transportProtocol == TransportProtocol.RTP
++				&amp;&amp; lowerTransport == LowerTransport.None )
++			// If it's not specified, let's assume UDP
++			setLowerTransport( LowerTransport.UDP );
++
++		if ( transportProtocol == TransportProtocol.RTP
++				&amp;&amp; deliveryType == DeliveryType.None )
++			// If it's not specified, let's assume unicast
++			setDeliveryType( DeliveryType.unicast );
++
+ 	}
+ 
+ 	public String toString()
+@@ -216,6 +234,25 @@
+ 	}
+ 
+ 	/**
++	 * Test if the specified transport can be used by the proxy.
++	 * 
++	 * @return
++	 */
++	public boolean isSupportedByProxy()
++	{
++		/*
++		 * At now, the only transport supported by the server is
++		 * &quot;RTP/AVP/UDP;unicast&quot;
++		 */
++		if ( transportProtocol == TransportProtocol.RTP &amp;&amp; profile == Profile.AVP
++				&amp;&amp; lowerTransport == LowerTransport.UDP
++				&amp;&amp; deliveryType == DeliveryType.unicast )
++			return true;
++		else
++			return false;
++	}
++
++	/**
+ 	 * @return Returns the append.
+ 	 */
+ 	public boolean isAppend()
+
+Modified: trunk/src/main/java/rtspproxy/rtsp/RtspTransportList.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/rtsp/RtspTransportList.java	2005-12-13 21:42:36 UTC (rev 343)
++++ trunk/src/main/java/rtspproxy/rtsp/RtspTransportList.java	2005-12-13 21:46:39 UTC (rev 344)
+@@ -36,8 +36,11 @@
+ 	{
+ 		transportList = new ArrayList&lt;RtspTransport&gt;();
+ 
+-		for ( String transport : transportHeader.split( &quot;,&quot; ) ) {
+-			transportList.add( new RtspTransport( transport ) );
++		RtspTransport transport;
++		for ( String transportString : transportHeader.split( &quot;,&quot; ) ) {
++			transport = new RtspTransport( transportString );
++			if ( transport.isSupportedByProxy() )
++				transportList.add( transport );
+ 		}
+ 	}
+ 
+
+Added: trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java
+===================================================================
+--- trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java	2005-12-13 21:42:36 UTC (rev 343)
++++ trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java	2005-12-13 21:46:39 UTC (rev 344)
+@@ -0,0 +1,61 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.rtsp;
++
++import junit.framework.TestCase;
++
++/**
++ * @author Matteo Merli
++ */
++public class RtspTransportListTest extends TestCase
++{
++
++	public static void main( String[] args )
++	{
++		junit.textui.TestRunner.run( RtspTransportListTest.class );
++	}
++
++	RtspTransportList transportList;
++	String transportTest;
++
++	@Override
++	protected void setUp() throws Exception
++	{
++		transportTest = &quot;x-real-rdt/mcast;client_port=6972;mode=play,&quot;
++				+ &quot;x-real-rdt/udp;client_port=6972;mode=play,&quot;
++				+ &quot;x-pn-tng/udp;client_port=6972;mode=play,&quot;
++				+ &quot;RTP/AVP;unicast;client_port=6972-6973;mode=play,&quot;
++				+ &quot;x-pn-tng/tcp;mode=play,&quot; + &quot;x-real-rdt/tcp;mode=play,&quot;
++				+ &quot;RTP/AVP/TCP;unicast;mode=play&quot;;
++		transportList = new RtspTransportList( transportTest );
++	}
++
++	public void testToString()
++	{
++		String expected = &quot;RTP/AVP/UDP;unicast;client_port=6972-6973;mode=play&quot;;
++		assertEquals( expected, transportList.toString() );
++	}
++
++	public void testCount()
++	{
++		// only a transport type is valid in this test
++		assertEquals( 1, transportList.count() );
++	}
++
++}
+
+
+Property changes on: trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java
+===================================================================
+--- trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java	2005-12-13 21:42:36 UTC (rev 343)
++++ trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java	2005-12-13 21:46:39 UTC (rev 344)
+@@ -0,0 +1,312 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.rtsp;
++
++import java.util.Arrays;
++
++import junit.framework.TestCase;
++import rtspproxy.rtsp.RtspTransport.DeliveryType;
++
++/**
++ * @author Matteo Merli
++ */
++public class RtspTransportTest extends TestCase
++{
++
++	public static void main( String[] args )
++	{
++		junit.textui.TestRunner.run( RtspTransportTest.class );
++	}
++
++	String test1 = &quot;x-real-rdt/mcast;client_port=6972;mode=play&quot;;
++	String test2 = &quot;x-real-rdt/udp;client_port=6972;mode=play&quot;;
++	String test3 = &quot;x-pn-tng/udp;client_port=6972;mode=play&quot;;
++	String test4 = &quot;RTP/AVP;unicast;client_port=6972-6973;mode=play&quot;;
++	String test5 = &quot;x-pn-tng/tcp;mode=play&quot;;
++	String test6 = &quot;x-real-rdt/tcp;mode=play&quot;;
++	String test7 = &quot;RTP/AVP/TCP;unicast;mode=play&quot;;
++
++	RtspTransport transport1;
++	RtspTransport transport2;
++	RtspTransport transport3;
++	RtspTransport transport4;
++	RtspTransport transport5;
++	RtspTransport transport6;
++	RtspTransport transport7;
++
++	@Override
++	protected void setUp() throws Exception
++	{
++		transport1 = new RtspTransport( test1 );
++		transport2 = new RtspTransport( test2 );
++		transport3 = new RtspTransport( test3 );
++		transport4 = new RtspTransport( test4 );
++		transport5 = new RtspTransport( test5 );
++		transport6 = new RtspTransport( test6 );
++		transport7 = new RtspTransport( test7 );
++	}
++
++	public void testIsSupportedByProxy()
++	{
++		assertEquals( false, transport1.isSupportedByProxy() );
++		assertEquals( false, transport2.isSupportedByProxy() );
++		assertEquals( false, transport3.isSupportedByProxy() );
++		assertEquals( true, transport4.isSupportedByProxy() );
++		assertEquals( false, transport5.isSupportedByProxy() );
++		assertEquals( false, transport6.isSupportedByProxy() );
++		assertEquals( false, transport7.isSupportedByProxy() );
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.toString()'
++	 */
++	public void testToString()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.isAppend()'
++	 */
++	public void testIsAppend()
++	{
++		assertEquals( false, transport1.isAppend() );
++		assertEquals( false, transport2.isAppend() );
++		assertEquals( false, transport3.isAppend() );
++		assertEquals( false, transport4.isAppend() );
++		assertEquals( false, transport5.isAppend() );
++		assertEquals( false, transport6.isAppend() );
++		assertEquals( false, transport7.isAppend() );
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getClientPort()'
++	 */
++	public void testGetClientPort()
++	{
++		assertTrue( Arrays.equals( new int[] { 6972, 0 }, transport1.getClientPort() ) );
++		assertTrue( Arrays.equals( new int[] { 6972, 0 }, transport2.getClientPort() ) );
++		assertTrue( Arrays.equals( new int[] { 6972, 0 }, transport3.getClientPort() ) );
++		assertTrue( Arrays.equals( new int[] { 6972, 6973 }, transport4.getClientPort() ) );
++		assertTrue( Arrays.equals( new int[] { 0, 0 }, transport5.getClientPort() ) );
++		assertTrue( Arrays.equals( new int[] { 0, 0 }, transport6.getClientPort() ) );
++		assertTrue( Arrays.equals( new int[] { 0, 0 }, transport7.getClientPort() ) );
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getDeliveryType()'
++	 */
++	public void testGetDeliveryType()
++	{
++		assertEquals( DeliveryType.None, transport1.getDeliveryType() );
++		assertEquals( DeliveryType.None, transport2.getDeliveryType() );
++		assertEquals( DeliveryType.None, transport3.getDeliveryType() );
++		assertEquals( DeliveryType.unicast, transport4.getDeliveryType() );
++		assertEquals( DeliveryType.None, transport5.getDeliveryType() );
++		assertEquals( DeliveryType.None, transport6.getDeliveryType() );
++		assertEquals( DeliveryType.unicast, transport7.getDeliveryType() );
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getInterleaved()'
++	 */
++	public void testGetInterleaved()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setInterleaved(String)'
++	 */
++	public void testSetInterleaved()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getLayers()'
++	 */
++	public void testGetLayers()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setLayers(int)'
++	 */
++	public void testSetLayers()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getLowerTransport()'
++	 */
++	public void testGetLowerTransport()
++	{
++
++	}
++
++	/*
++	 * Test method for
++	 * 'rtspproxy.rtsp.RtspTransport.setLowerTransport(LowerTransport)'
++	 */
++	public void testSetLowerTransport()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getMode()'
++	 */
++	public void testGetMode()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setMode(String)'
++	 */
++	public void testSetMode()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getPort()'
++	 */
++	public void testGetPort()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setPort(int[])'
++	 */
++	public void testSetPort()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getProfile()'
++	 */
++	public void testGetProfile()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setProfile(Profile)'
++	 */
++	public void testSetProfile()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getServerPort()'
++	 */
++	public void testGetServerPort()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setServerPort(int[])'
++	 */
++	public void testSetServerPort()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getSSRC()'
++	 */
++	public void testGetSSRC()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setSSRC(String)'
++	 */
++	public void testSetSSRCString()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setSSRC(long)'
++	 */
++	public void testSetSSRCLong()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getTransportProtocol()'
++	 */
++	public void testGetTransportProtocol()
++	{
++
++	}
++
++	/*
++	 * Test method for
++	 * 'rtspproxy.rtsp.RtspTransport.setTransportProtocol(TransportProtocol)'
++	 */
++	public void testSetTransportProtocol()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getTTL()'
++	 */
++	public void testGetTTL()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setTTL(int)'
++	 */
++	public void testSetTTL()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.setSource(String)'
++	 */
++	public void testSetSource()
++	{
++
++	}
++
++	/*
++	 * Test method for 'rtspproxy.rtsp.RtspTransport.getSource()'
++	 */
++	public void testGetSource()
++	{
++
++	}
++
++}
+
+
+Property changes on: trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000028.html">[Rtspproxy-devel] r343 - in trunk/src/main/java/rtspproxy: proxy rtsp
+</A></li>
+	<LI>Next message: <A HREF="000030.html">[Rtspproxy-devel] r345 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

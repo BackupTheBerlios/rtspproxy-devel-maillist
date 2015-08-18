@@ -1,0 +1,35 @@
+From rakesh.sehgal at tcs.com  Mon Jun  2 12:50:21 2008
+From: rakesh.sehgal at tcs.com (Rakesh Sehgal)
+Date: Mon, 2 Jun 2008 16:20:21 +0530
+Subject: [Rtspproxy-devel] Creating RTSP messages
+Message-ID: <OF825FA96C.2B8C3300-ON6525745C.003B195C-6525745C.003B8529@tcs.com>
+
+Hi All!
+I am new to using Berlios RTSPProxy.
+I don't know if this can be done but, I am trying to use the underlying 
+stack in Berlios RTSPProxy to create a simple program 
+using which I would be able to send RTSP messages to Darwin streaming 
+server using the .
+
+I would really appreciate, if somebody could help me with this.
+
+Thanks and Regards,
+Rakesh Sehgal
+=====-----=====-----=====
+Notice: The information contained in this e-mail
+message and/or attachments to it may contain 
+confidential or privileged information. If you are 
+not the intended recipient, any dissemination, use, 
+review, distribution, printing or copying of the 
+information contained in this e-mail message 
+and/or attachments to it are strictly prohibited. If 
+you have received this communication in error, 
+please notify us by reply e-mail or telephone and 
+immediately and permanently delete the message 
+and any attachments. Thank you
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <https://lists.berlios.de/pipermail/rtspproxy-devel/attachments/20080602/5be2f4dc/attachment.html>
+

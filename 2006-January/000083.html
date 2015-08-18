@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r399 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r399%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20filter/rewrite%20rtsp&In-Reply-To=%3C200601181831.k0IIV2Uj001857%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000082.html">
+   <LINK REL="Next"  HREF="000084.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r399 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r399%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20filter/rewrite%20rtsp&In-Reply-To=%3C200601181831.k0IIV2Uj001857%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r399 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp">rbieniek at berlios.de
+       </A><BR>
+    <I>Wed Jan 18 19:31:02 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000082.html">[Rtspproxy-devel] r398 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp
+</A></li>
+        <LI>Next message: <A HREF="000084.html">[Rtspproxy-devel] r400 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#83">[ date ]</a>
+              <a href="thread.html#83">[ thread ]</a>
+              <a href="subject.html#83">[ subject ]</a>
+              <a href="author.html#83">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-18 19:30:56 +0100 (Wed, 18 Jan 2006)
+New Revision: 399
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingProvider.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+Log:
+- changed URL rewriting interface by adding request headers to it. 
+  This is needed by special filter which need to connect to other
+  servers to obtain an OPTIONS response.
+- exposed header map in RTSPmessage
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-01-18 10:24:32 UTC (rev 398)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingFilter.java	2006-01-18 18:30:56 UTC (rev 399)
+@@ -61,7 +61,7 @@
+ 		
+ 		if (req.getUrl() != null) {
+ 			UrlRewritingResult result = this.provider.rewriteRequestUrl(req.getUrl(), req.getVerb(), 
+-					session.getRemoteAddress()); 
++					session.getRemoteAddress(), req.getHeaders()); 
+ 			
+ 			if(result != null) {
+ 				URL rewritten = result.getRewrittenUrl();
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingProvider.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingProvider.java	2006-01-18 10:24:32 UTC (rev 398)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite/UrlRewritingProvider.java	2006-01-18 18:30:56 UTC (rev 399)
+@@ -19,6 +19,7 @@
+ 
+ import java.net.SocketAddress;
+ import java.net.URL;
++import java.util.Map;
+ 
+ import rtspproxy.filter.GenericProvider;
+ import rtspproxy.rtsp.RtspRequest;
+@@ -35,7 +36,8 @@
+ 	 * @return a result object which can contain a modified result URL or a response message
+ 	 * sent back to the client. If null is returned, the URL is passed on without modification.
+ 	 */
+-	public UrlRewritingResult rewriteRequestUrl(URL request, RtspRequest.Verb verb, SocketAddress client);
++	public UrlRewritingResult rewriteRequestUrl(URL request, RtspRequest.Verb verb, SocketAddress client,
++			Map&lt;String, String&gt; requestHeaders);
+ 
+ 	/**
+ 	 * rewrite an URL in a response header.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-01-18 10:24:32 UTC (rev 398)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-01-18 18:30:56 UTC (rev 399)
+@@ -19,6 +19,8 @@
+ package rtspproxy.rtsp;
+ 
+ import java.nio.CharBuffer;
++import java.util.Collections;
++import java.util.HashMap;
+ import java.util.LinkedHashMap;
+ import java.util.Map;
+ 
+@@ -148,6 +150,17 @@
+ 	}
+ 
+ 	/**
++	 * get a map of all headers set in the request
++	 * @return an unmodifiable map of all header fields in this request. 
++	 */
++	public Map&lt;String, String&gt; getHeaders() {
++		if(this.headers != null)
++			return Collections.unmodifiableMap(this.headers);
++		else
++			return Collections.unmodifiableMap(new HashMap&lt;String, String&gt;());
++	}
++	
++	/**
+ 	 * @return the number of headers owned by the message
+ 	 */
+ 	public int getHeadersCount()
+@@ -223,10 +236,22 @@
+ 	public static final String CRLF = &quot;\r\n&quot;;
+ 
+ 	/**
+-	 * @return Returns the sequenceNumber.
++	 * get the sequence number. If the sequence has not been set, the value from the 
++	 * &lt;b&gt;CSeq&lt;/b&gt; header is scaned (if the header is set)
++	 * @return Returns the sequenceNumber. Returns 0 if the sequence number has not been set and the
++	 * &lt;b&gt;CSeq&lt;/b&gt; header is not available.
+ 	 */
+ 	public int getSequenceNumber()
+ 	{
++		if(this.sequenceNumber == 0) {
++			try {
++				if(this.headers.containsKey(&quot;CSeq&quot;))
++					this.sequenceNumber = Integer.parseInt(this.headers.get(&quot;CSeq&quot;));
++			} catch(Exception e) {
++				
++			}
++		}
++			
+ 		return sequenceNumber;
+ 	}
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000082.html">[Rtspproxy-devel] r398 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: filter/rewrite rtsp
+</A></li>
+	<LI>Next message: <A HREF="000084.html">[Rtspproxy-devel] r400 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#83">[ date ]</a>
+              <a href="thread.html#83">[ thread ]</a>
+              <a href="subject.html#83">[ subject ]</a>
+              <a href="author.html#83">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

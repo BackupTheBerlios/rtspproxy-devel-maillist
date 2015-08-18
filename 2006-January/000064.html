@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r380 - in trunk: . RTSPProxy-Core/src RTSPProxy-Core/src/resources RTSPProxy-OSGi src src/resources src/site
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r380%20-%20in%20trunk%3A%20.%20RTSPProxy-Core/src%20RTSPProxy-Core/src/resources%20RTSPProxy-OSGi%20src%20src/resources%20src/site&In-Reply-To=%3C200601070131.k071Vxq8026156%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000063.html">
+   <LINK REL="Next"  HREF="000065.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r380 - in trunk: . RTSPProxy-Core/src RTSPProxy-Core/src/resources RTSPProxy-OSGi src src/resources src/site</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r380%20-%20in%20trunk%3A%20.%20RTSPProxy-Core/src%20RTSPProxy-Core/src/resources%20RTSPProxy-OSGi%20src%20src/resources%20src/site&In-Reply-To=%3C200601070131.k071Vxq8026156%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r380 - in trunk: . RTSPProxy-Core/src RTSPProxy-Core/src/resources RTSPProxy-OSGi src src/resources src/site">rbieniek at berlios.de
+       </A><BR>
+    <I>Sat Jan  7 02:31:59 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000063.html">[Rtspproxy-devel] r379 - trunk/RTSPProxy-OSGi
+</A></li>
+        <LI>Next message: <A HREF="000065.html">[Rtspproxy-devel] r381 - in trunk: RTSPProxy-App RTSPProxy-Core RTSPProxy-OSGi src/site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#64">[ date ]</a>
+              <a href="thread.html#64">[ thread ]</a>
+              <a href="subject.html#64">[ subject ]</a>
+              <a href="author.html#64">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-07 02:30:53 +0100 (Sat, 07 Jan 2006)
+New Revision: 380
+
+Added:
+   trunk/src/resources/
+   trunk/src/resources/images/
+   trunk/src/site/
+Removed:
+   trunk/RTSPProxy-Core/src/resources/conf/
+   trunk/RTSPProxy-Core/src/resources/images/
+   trunk/RTSPProxy-Core/src/site/
+Modified:
+   trunk/RTSPProxy-OSGi/pom.xml
+   trunk/pom.xml
+   trunk/src/site/site.xml
+Log:
+- Started documentation refactoring
+
+
+Modified: trunk/RTSPProxy-OSGi/pom.xml
+===================================================================
+--- trunk/RTSPProxy-OSGi/pom.xml	2006-01-06 23:46:38 UTC (rev 379)
++++ trunk/RTSPProxy-OSGi/pom.xml	2006-01-07 01:30:53 UTC (rev 380)
+@@ -192,7 +192,6 @@
+ 	  &lt;/targetJdk&gt;
+ 	&lt;/configuration&gt;
+       &lt;/plugin&gt;
+-
+       &lt;!-- see <A HREF="http://docs.safehaus.org/display/OSGI/OSGi+Plugin+for+Maven+2.0">http://docs.safehaus.org/display/OSGI/OSGi+Plugin+for+Maven+2.0</A> for further instructions --&gt;
+       &lt;plugin&gt;
+         &lt;groupId&gt;org.apache.felix.plugins&lt;/groupId&gt;
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2006-01-06 23:46:38 UTC (rev 379)
++++ trunk/pom.xml	2006-01-07 01:30:53 UTC (rev 380)
+@@ -122,6 +122,7 @@
+ 	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+ 	&lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
+ 	&lt;configuration&gt;
++          &lt;addModules&gt;true&lt;/addModules&gt;
+ 	  &lt;outputEncoding&gt;UTF-8&lt;/outputEncoding&gt;
+ 	&lt;/configuration&gt;
+ 	&lt;!--  &lt;version&gt;2.0-beta-2&lt;/version&gt; --&gt;
+
+Copied: trunk/src/resources/images (from rev 378, trunk/RTSPProxy-Core/src/resources/images)
+
+Copied: trunk/src/site (from rev 378, trunk/RTSPProxy-Core/src/site)
+
+Modified: trunk/src/site/site.xml
+===================================================================
+--- trunk/RTSPProxy-Core/src/site/site.xml	2006-01-06 20:36:11 UTC (rev 378)
++++ trunk/src/site/site.xml	2006-01-07 01:30:53 UTC (rev 380)
+@@ -90,5 +90,8 @@
+ 			--&gt;
+ 		&lt;/menu&gt;
+ 
++               ${modules}
++
++               ${reports}
+ 	&lt;/body&gt;
+ &lt;/project&gt;
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000063.html">[Rtspproxy-devel] r379 - trunk/RTSPProxy-OSGi
+</A></li>
+	<LI>Next message: <A HREF="000065.html">[Rtspproxy-devel] r381 - in trunk: RTSPProxy-App RTSPProxy-Core RTSPProxy-OSGi src/site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#64">[ date ]</a>
+              <a href="thread.html#64">[ thread ]</a>
+              <a href="subject.html#64">[ subject ]</a>
+              <a href="author.html#64">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

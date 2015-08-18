@@ -1,0 +1,479 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r333 - in trunk/src/main/java/rtspproxy: . lib
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r333%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20lib&In-Reply-To=%3C200512081649.jB8Gnjej007849%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000017.html">
+   <LINK REL="Next"  HREF="000019.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r333 - in trunk/src/main/java/rtspproxy: . lib</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r333%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20lib&In-Reply-To=%3C200512081649.jB8Gnjej007849%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r333 - in trunk/src/main/java/rtspproxy: . lib">merlimat at berlios.de
+       </A><BR>
+    <I>Thu Dec  8 17:49:45 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000017.html">[Rtspproxy-devel] r332 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+        <LI>Next message: <A HREF="000019.html">[Rtspproxy-devel] r334 - trunk/src/main/java/rtspproxy/filter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#18">[ date ]</a>
+              <a href="thread.html#18">[ thread ]</a>
+              <a href="subject.html#18">[ subject ]</a>
+              <a href="author.html#18">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-08 17:49:37 +0100 (Thu, 08 Dec 2005)
+New Revision: 333
+
+Added:
+   trunk/src/main/java/rtspproxy/ShutdownHandler.java
+Removed:
+   trunk/src/main/java/rtspproxy/lib/SignalInterceptor.java
+   trunk/src/main/java/rtspproxy/lib/SignalInterceptorException.java
+   trunk/src/main/java/rtspproxy/lib/SignalInterceptorHelper.java
+Modified:
+   trunk/src/main/java/rtspproxy/Main.java
+   trunk/src/main/java/rtspproxy/Reactor.java
+Log:
+Getting rid of woodoo Signal interceptor. Using shutdown hook to handle 
+shutdown.
+
+Modified: trunk/src/main/java/rtspproxy/Main.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/Main.java	2005-12-08 14:43:34 UTC (rev 332)
++++ trunk/src/main/java/rtspproxy/Main.java	2005-12-08 16:49:37 UTC (rev 333)
+@@ -20,13 +20,11 @@
+ import org.apache.log4j.Logger;
+ 
+ import rtspproxy.lib.Exceptions;
+-import rtspproxy.lib.SignalInterceptor;
+-import rtspproxy.lib.SignalInterceptorException;
+ 
+ /**
+  * 
+  */
+-public class Main extends SignalInterceptor
++public class Main
+ {
+ 
+ 	static Logger log = Logger.getLogger( &quot;rtspproxy&quot; );
+@@ -46,16 +44,8 @@
+ 		new Config();
+ 
+ 		// Register the signal handler
+-		try {
+-			Main main = new Main();
+-			main.register( &quot;TERM&quot; );
+-			main.register( &quot;INT&quot; );
+-			log.debug( &quot;Signal handlig enabled.&quot; );
++		Runtime.getRuntime().addShutdownHook( new ShutdownHandler() );
+ 
+-		} catch ( SignalInterceptorException sie ) {
+-			log.warn( &quot;Unable to register signal handling.&quot; );
+-		}
+-
+ 		try {
+ 			log.info( &quot;Starting &quot; + Config.getName() + &quot; &quot; + Config.getVersion() );
+ 			Reactor.setStandalone( true );
+@@ -68,25 +58,4 @@
+ 		}
+ 	}
+ 
+-	/*
+-	 * (non-Javadoc)
+-	 * 
+-	 * @see rtspproxy.lib.SignalInterceptor#handle(java.lang.String)
+-	 */
+-	@Override
+-	protected boolean handle( String signalName )
+-	{
+-		log.info( &quot;Received signal: &quot; + signalName );
+-		try {
+-			log.info( &quot;Stopping &quot; + Config.getName() + &quot; &quot; + Config.getVersion() );
+-			Reactor.stop();
+-
+-		} catch ( Exception e ) {
+-			log.fatal( &quot;Exception in the reactor: &quot; + e );
+-			Exceptions.logStackTrace( e );
+-		}
+-
+-		return true;
+-	}
+-
+ }
+
+Modified: trunk/src/main/java/rtspproxy/Reactor.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/Reactor.java	2005-12-08 14:43:34 UTC (rev 332)
++++ trunk/src/main/java/rtspproxy/Reactor.java	2005-12-08 16:49:37 UTC (rev 333)
+@@ -69,11 +69,13 @@
+ 			if ( rtpServerService != null )
+ 				rtpServerService.stop();
+ 		} catch ( Exception e ) {
+-			log.debug( &quot;Error shutting down: &quot; + e  );
++			log.debug( &quot;Error shutting down: &quot; + e );
+ 		}
++		
++		log.info( &quot;Shutdown completed&quot; );
+ 
+ 		if ( isStandalone )
+-			System.exit( 0 );
++			Runtime.getRuntime().halt( 0 );
+ 	}
+ 
+ 	protected static synchronized ServiceRegistry getRegistry()
+
+Added: trunk/src/main/java/rtspproxy/ShutdownHandler.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/ShutdownHandler.java	2005-12-08 14:43:34 UTC (rev 332)
++++ trunk/src/main/java/rtspproxy/ShutdownHandler.java	2005-12-08 16:49:37 UTC (rev 333)
+@@ -0,0 +1,48 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy;
++
++import org.apache.log4j.Logger;
++
++import rtspproxy.lib.Exceptions;
++
++/**
++ * The thread holded by this class is started in the shutdown phase.
++ * 
++ * @author Matteo Merli
++ */
++public class ShutdownHandler extends Thread
++{
++
++	private static Logger log = Logger.getLogger( ShutdownHandler.class );
++
++	public void run()
++	{
++		log.info( &quot;Shutting down&quot; );
++		try {
++			log.info( &quot;Stopping &quot; + Config.getName() + &quot; &quot; + Config.getVersion() );
++			Reactor.stop();
++
++		} catch ( Exception e ) {
++			log.fatal( &quot;Exception in the reactor: &quot; + e );
++			Exceptions.logStackTrace( e );
++		}
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/ShutdownHandler.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Deleted: trunk/src/main/java/rtspproxy/lib/SignalInterceptor.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/lib/SignalInterceptor.java	2005-12-08 14:43:34 UTC (rev 332)
++++ trunk/src/main/java/rtspproxy/lib/SignalInterceptor.java	2005-12-08 16:49:37 UTC (rev 333)
+@@ -1,130 +0,0 @@
+-/*
+- * SignalInterceptor.java
+- * Copyright (C) 2005 David Clausen
+- *
+- * This library is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU Lesser General Public 
+- * License as published by the Free Software Foundation; either 
+- * version 2.1 of the License, or (at your option) any later 
+- * version.
+- *
+- * This library is distributed in the hope that it will be useful, 
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+- * GNU Lesser General Public License for more details.
+- *
+- * You should have received a copy of the GNU Lesser General Public 
+- * License along with this library; if not, write to the 
+- * Free Software Foundation, Inc., 
+- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+- */
+-
+-/*
+- * $Id$
+- * 
+- * $URL$
+- * 
+- */
+-
+-package rtspproxy.lib;
+-
+-/**
+- * &lt;p&gt;
+- * A simple wrapper around the undocumented and unsupported
+- * &lt;code&gt;sun.misc.Signal*&lt;/code&gt; classes which are present in most JVM
+- * implementations. It can be used to trap OS signals such as SIGINT, SIGTERM,
+- * and SIGHUP on these JVMs.
+- * &lt;/p&gt;
+- * &lt;p&gt;
+- * &lt;code&gt;SignalInterceptor&lt;/code&gt; provides a level of indirection between your
+- * code and &lt;code&gt;sun.misc.SignalHandler&lt;/code&gt; which can be useful for the
+- * following reasons:
+- * &lt;/p&gt;
+- * &lt;ol&gt;
+- * &lt;li&gt;It gracefully handles the situation when the
+- * &lt;code&gt;sun.misc.Signal*&lt;/code&gt; classes are not available, throwing a checked
+- * exception out of the &lt;code&gt;register&lt;/code&gt; method, rather than awkward
+- * &lt;code&gt;LinkageErrors&lt;/code&gt; durring class initialization.&lt;/li&gt;
+- * &lt;li&gt;It has a simple technique for chaining signal handlers.&lt;/li&gt;
+- * &lt;li&gt;It is documented and has gone through some testing.&lt;/li&gt;
+- * &lt;/ol&gt;
+- * &lt;p&gt;
+- * Some possible uses of this class are:
+- * &lt;/p&gt;
+- * &lt;ul&gt;
+- * &lt;li&gt;Change the behavior of SIGHUP so that instead of exiting the JVM, your
+- * application reloads its configuration file.&lt;/li&gt;
+- * &lt;li&gt;Log the fatal signals SIGHUP, SIGINT, and SIGTERM before passing them
+- * onto the JVM's native handlers, so that you have a record of when and why
+- * your application exited.&lt;/li&gt;
+- * &lt;li&gt;Implement your own version of ShutdownHooks which run prior to the
+- * standard ones. This can be useful because many other packages have their own
+- * ShutdownHooks which close resources which you might like to use. For example
+- * the &lt;code&gt;java.util.logging&lt;/code&gt; package closes all of its files in its
+- * ShutdownHook, which means your ShutdownHook might not be able to log
+- * anything. Note that you would still need to deal with
+- * &lt;code&gt;System.exit()&lt;/code&gt;, but there is a different hack available for
+- * that &lt;code&gt;;)&lt;/code&gt;.&lt;/li&gt;
+- * &lt;/ul&gt;
+- */
+-public abstract class SignalInterceptor
+-{
+-
+-	protected SignalInterceptor()
+-	{
+-	}
+-
+-	/**
+-	 * &lt;p&gt;
+-	 * Register for the given signal. Note that the signal name should &lt;b&gt;not&lt;/b&gt;
+-	 * begin with &lt;b&gt;SIG&lt;/b&gt;. For example, if you are interested in &lt;b&gt;SIGTERM&lt;/b&gt;,
+-	 * you should call &lt;code&gt;register(&quot;TERM&quot;)&lt;/code&gt;.
+-	 * &lt;/p&gt;
+-	 * &lt;p&gt;
+-	 * If the registration fails for any reason, a
+-	 * &lt;code&gt;SignalInterceptorException&lt;/code&gt; will be thrown. This is usually
+-	 * caused by one of the following conditions:
+-	 * &lt;/p&gt;
+-	 * &lt;ul&gt;
+-	 * &lt;li&gt;The &lt;code&gt;sun.misc.Signal*&lt;/code&gt; classes are not available (e.g.
+-	 * you are not using Sun's JVM).&lt;/li&gt;
+-	 * &lt;li&gt;&lt;code&gt;signame&lt;/code&gt; is not a valid trappable signal name on this
+-	 * OS (e.g. &lt;b&gt;KILL&lt;/b&gt; can't be trapped, &lt;b&gt;HUP&lt;/b&gt; does not exist on
+-	 * Windows)&lt;/li&gt;
+-	 * &lt;li&gt;The JVM refuses to let you trap &lt;code&gt;signame&lt;/code&gt; because it is
+-	 * already being used for some other important purpose (e.g. &lt;b&gt;QUIT&lt;/b&gt;
+-	 * and/or &lt;b&gt;BREAK&lt;/b&gt; cause the JVM to print diagnostic output).&lt;/li&gt;
+-	 * &lt;/ul&gt;
+-	 */
+-	protected void register( String signame ) throws SignalInterceptorException
+-	{
+-		try {
+-			new SignalInterceptorHelper( signame, this );
+-		} catch ( Throwable e ) {
+-			throw new SignalInterceptorException( signame, e );
+-		}
+-	}
+-
+-	/**
+-	 * A wrapper around &lt;code&gt;register(String)&lt;/code&gt; which never throws an
+-	 * exception. Instead, it returns &lt;code&gt;true&lt;/code&gt; if registration
+-	 * succeeded, and &lt;code&gt;false&lt;/code&gt; if it failed.
+-	 */
+-	protected boolean registerQuietly( String signame )
+-	{
+-		try {
+-			register( signame );
+-		} catch ( Throwable e ) {
+-			return false;
+-		}
+-		return true;
+-	}
+-
+-	/**
+-	 * Handle the given signal (which you had previously registered for). If
+-	 * this method return false, or throws an exception, subsequent handlers in
+-	 * the chain will &lt;b&gt;not&lt;/b&gt; be called.
+-	 */
+-	protected abstract boolean handle( String signame );
+-
+-}
+
+Deleted: trunk/src/main/java/rtspproxy/lib/SignalInterceptorException.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/lib/SignalInterceptorException.java	2005-12-08 14:43:34 UTC (rev 332)
++++ trunk/src/main/java/rtspproxy/lib/SignalInterceptorException.java	2005-12-08 16:49:37 UTC (rev 333)
+@@ -1,44 +0,0 @@
+-// $Id$
+-/*
+- * SignalInterceptorException.java
+- * Copyright (C) 2005 David Clausen
+- *
+- * This library is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU Lesser General Public 
+- * License as published by the Free Software Foundation; either 
+- * version 2.1 of the License, or (at your option) any later 
+- * version.
+- *
+- * This library is distributed in the hope that it will be useful, 
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+- * GNU Lesser General Public License for more details.
+- *
+- * You should have received a copy of the GNU Lesser General Public 
+- * License along with this library; if not, write to the 
+- * Free Software Foundation, Inc., 
+- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+- */
+-
+-/*
+- * $Id$
+- * 
+- * $URL$
+- * 
+- */
+-
+-package rtspproxy.lib;
+-
+-/**
+- * @see SignalInterceptor#register
+- */
+<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">- at SuppressWarnings</A>(&quot;serial&quot;)
+-public class SignalInterceptorException extends Exception
+-{
+-
+-	SignalInterceptorException( String signal, Throwable cause )
+-	{
+-		super( &quot;Unable to register for SIG&quot; + signal, cause );
+-	}
+-
+-}
+
+Deleted: trunk/src/main/java/rtspproxy/lib/SignalInterceptorHelper.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/lib/SignalInterceptorHelper.java	2005-12-08 14:43:34 UTC (rev 332)
++++ trunk/src/main/java/rtspproxy/lib/SignalInterceptorHelper.java	2005-12-08 16:49:37 UTC (rev 333)
+@@ -1,63 +0,0 @@
+-/*
+- * SignalInterceptorHelper.java
+- * Copyright (C) 2005 David Clausen
+- *
+- * This library is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU Lesser General Public 
+- * License as published by the Free Software Foundation; either 
+- * version 2.1 of the License, or (at your option) any later 
+- * version.
+- *
+- * This library is distributed in the hope that it will be useful, 
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+- * GNU Lesser General Public License for more details.
+- *
+- * You should have received a copy of the GNU Lesser General Public 
+- * License along with this library; if not, write to the 
+- * Free Software Foundation, Inc., 
+- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+- */
+-
+-/*
+- * $Id$
+- * 
+- * $URL$
+- * 
+- */
+-
+-package rtspproxy.lib;
+-
+-import sun.misc.Signal;
+-import sun.misc.SignalHandler;
+-
+-/**
+- * &lt;p&gt;
+- * Private helper class for &lt;code&gt;SignalInterceptor&lt;/code&gt;.
+- * &lt;/p&gt;
+- * 
+- * &lt;p&gt;
+- * This class exists separately from &lt;code&gt;SignalInterceptor&lt;/code&gt; to permit
+- * graceful handling of LinkageErrors when the &lt;code&gt;sun.misc.Signal*&lt;/code&gt;
+- * classes don't exist.
+- * &lt;/p&gt;
+- */
+-final class SignalInterceptorHelper implements SignalHandler {
+-
+-    private final SignalHandler oldHandler;
+-
+-    private final SignalInterceptor interceptor;
+-
+-    SignalInterceptorHelper(String signame, SignalInterceptor interceptor) {
+-        this.interceptor = interceptor;
+-        Signal signal = new Signal(signame);
+-        oldHandler = Signal.handle(signal, this);
+-    }
+-
+-    public void handle(Signal sig) {
+-        if (interceptor.handle(sig.getName()) &amp;&amp; (oldHandler != null)) {
+-            oldHandler.handle(sig);
+-        }
+-    }
+-
+-}
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000017.html">[Rtspproxy-devel] r332 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+	<LI>Next message: <A HREF="000019.html">[Rtspproxy-devel] r334 - trunk/src/main/java/rtspproxy/filter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#18">[ date ]</a>
+              <a href="thread.html#18">[ thread ]</a>
+              <a href="subject.html#18">[ subject ]</a>
+              <a href="author.html#18">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

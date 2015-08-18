@@ -1,0 +1,1469 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r354 - in trunk/src/main/java/rtspproxy: . config proxy rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r354%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20config%20proxy%20rtsp&In-Reply-To=%3C200512202021.jBKKL2Y0000019%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000038.html">
+   <LINK REL="Next"  HREF="000039.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r354 - in trunk/src/main/java/rtspproxy: . config proxy rtsp</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r354%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20config%20proxy%20rtsp&In-Reply-To=%3C200512202021.jBKKL2Y0000019%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r354 - in trunk/src/main/java/rtspproxy: . config proxy rtsp">merlimat at berlios.de
+       </A><BR>
+    <I>Tue Dec 20 21:21:02 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000038.html">[Rtspproxy-devel] r353 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+        <LI>Next message: <A HREF="000039.html">[Rtspproxy-devel] r355 - in trunk/src/main/java/rtspproxy: filter filter/authentication filter/authentication/scheme filter/ipaddress lib
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#40">[ date ]</a>
+              <a href="thread.html#40">[ thread ]</a>
+              <a href="subject.html#40">[ subject ]</a>
+              <a href="author.html#40">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-20 21:20:43 +0100 (Tue, 20 Dec 2005)
+New Revision: 354
+
+Added:
+   trunk/src/main/java/rtspproxy/config/
+   trunk/src/main/java/rtspproxy/config/BooleanParameter.java
+   trunk/src/main/java/rtspproxy/config/Config.java
+   trunk/src/main/java/rtspproxy/config/ConfigReader.java
+   trunk/src/main/java/rtspproxy/config/IntegerListParameter.java
+   trunk/src/main/java/rtspproxy/config/IntegerParameter.java
+   trunk/src/main/java/rtspproxy/config/Parameter.java
+   trunk/src/main/java/rtspproxy/config/StringListParameter.java
+   trunk/src/main/java/rtspproxy/config/StringParameter.java
+Modified:
+   trunk/src/main/java/rtspproxy/Main.java
+   trunk/src/main/java/rtspproxy/RdtClientService.java
+   trunk/src/main/java/rtspproxy/RdtServerService.java
+   trunk/src/main/java/rtspproxy/Reactor.java
+   trunk/src/main/java/rtspproxy/RtcpClientService.java
+   trunk/src/main/java/rtspproxy/RtcpServerService.java
+   trunk/src/main/java/rtspproxy/RtpClientService.java
+   trunk/src/main/java/rtspproxy/RtpServerService.java
+   trunk/src/main/java/rtspproxy/RtspService.java
+   trunk/src/main/java/rtspproxy/ShutdownHandler.java
+   trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java
+   trunk/src/main/java/rtspproxy/rtsp/RtspMessage.java
+Log:
+Switched to new config system.
+
+Modified: trunk/src/main/java/rtspproxy/Main.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/Main.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/Main.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -17,6 +17,7 @@
+  */
+ package rtspproxy;
+ 
++import org.apache.log4j.BasicConfigurator;
+ import org.apache.log4j.Logger;
+ 
+ import rtspproxy.lib.Exceptions;
+@@ -31,23 +32,14 @@
+ 
+ 	public static void main( String[] args )
+ 	{
+-		// TODO: remove this temp stuffs
+-		/*
+-		 * for ( Object key : System.getProperties().keySet() ) { String value =
+-		 * System.getProperty( (String)key ); System.out.println( key + &quot; : &quot; +
+-		 * value ); }
+-		 */
++		// Configure the logger with default settings
++		// useful to track pre-config file errors
++		BasicConfigurator.configure();
+ 
+-		// Register the &quot;<A HREF="rtsp://">rtsp://</A>&quot; protocol scheme
+-		System.setProperty( &quot;java.protocol.handler.pkgs&quot;, &quot;rtspproxy&quot; );
+-
+-		new Config();
+-
+ 		// Register the signal handler
+ 		Runtime.getRuntime().addShutdownHook( new ShutdownHandler() );
+ 
+ 		try {
+-			log.info( &quot;Starting &quot; + Config.getName() + &quot; &quot; + Config.getVersion() );
+ 			Reactor.setStandalone( true );
+ 			Reactor.start();
+ 
+
+Modified: trunk/src/main/java/rtspproxy/RdtClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RdtClientService.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/RdtClientService.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -21,6 +21,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.proxy.ClientRdtPacketHandler;
+ 
+ /**
+@@ -62,13 +63,13 @@
+ 	@Override
+ 	public String getNetworkInterface()
+ 	{
+-		return Config.get( &quot;proxy.client.interface&quot;, null );
++		return Config.proxyClientInterface.getValue();
+ 	}
+ 
+ 	@Override
+ 	public int[] getBindPorts()
+ 	{
+-		int port = Config.getInt( &quot;proxy.client.rdt.port&quot;, 8018 );
++		int port = Config.proxyClientRdtPort.getValue();
+ 		return new int[] { port };
+ 	}
+ 
+
+Modified: trunk/src/main/java/rtspproxy/RdtServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RdtServerService.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/RdtServerService.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -21,6 +21,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.proxy.ServerRdtPacketHandler;
+ 
+ /**
+@@ -61,13 +62,13 @@
+ 	@Override
+ 	public String getNetworkInterface()
+ 	{
+-		return Config.get( &quot;proxy.server.interface&quot;, null );
++		return Config.proxyServerInterface.getValue();
+ 	}
+ 
+ 	@Override
+ 	public int[] getBindPorts()
+ 	{
+-		int port = Config.getInt( &quot;proxy.server.rdt.port&quot;, 8020 );
++		int port = Config.proxyServerRdtPort.getValue();
+ 		return new int[] { port };
+ 	}
+ 
+
+Modified: trunk/src/main/java/rtspproxy/Reactor.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/Reactor.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/Reactor.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -20,6 +20,9 @@
+ 
+ import org.apache.log4j.Logger;
+ 
++import rtspproxy.config.Config;
++import rtspproxy.config.ConfigReader;
++
+ /**
+  * 
+  */
+@@ -42,6 +45,39 @@
+ 	 */
+ 	static public void start() throws Exception
+ 	{
++		// Read configuration files
++		new Config();
++
++		String[] paths = new String[5];
++
++		// Used for testing purposes:
++		// checks for the configuration file
++		paths[4] = &quot;src/resources/conf/rtspproxy.properties&quot;;
++
++		// Current directory configuration
++		paths[3] = &quot;rtspproxy.properties&quot;;
++
++		// RtspProxy home folder
++		paths[2] = Config.getHome() + &quot;/conf/rtspproxy.properties&quot;;
++
++		// Per user config
++		paths[1] = System.getProperty( &quot;user.home&quot;, &quot;&quot; ) + &quot;/.rtspproxy.properties&quot;;
++		// System wide configuration (tipical in unix systems)
++		paths[0] = &quot;/etc/rtspproxy.properties&quot;;
++
++		for ( String path : paths ) {
++			new ConfigReader( path );
++		}
++
++		if ( log.isDebugEnabled() ) {
++			log.debug( Config.debugParameters() );
++		}
++
++		log.info( &quot;Starting &quot; + Config.getName() + &quot; &quot; + Config.getVersion() );
++
++		// Register the &quot;<A HREF="rtsp://">rtsp://</A>&quot; protocol scheme
++		System.setProperty( &quot;java.protocol.handler.pkgs&quot;, &quot;rtspproxy&quot; );
++
+ 		ProxyService rtspService = new RtspService();
+ 		rtspService.start();
+ 
+@@ -53,7 +89,7 @@
+ 
+ 		ProxyService rtpServerService = new RtpServerService();
+ 		rtpServerService.start();
+-		
++
+ 		ProxyService rtcpServerService = new RtcpServerService();
+ 		rtcpServerService.start();
+ 
+
+Modified: trunk/src/main/java/rtspproxy/RtcpClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtcpClientService.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/RtcpClientService.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -21,6 +21,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.proxy.ClientRtcpPacketHandler;
+ 
+ /**
+@@ -61,13 +62,13 @@
+ 	@Override
+ 	public String getNetworkInterface()
+ 	{
+-		return Config.get( &quot;proxy.client.interface&quot;, null );
++		return Config.proxyClientInterface.getValue();
+ 	}
+ 
+ 	@Override
+ 	public int[] getBindPorts()
+ 	{
+-		int port = Config.getInt( &quot;proxy.client.rtcp.port&quot;, 8003 );
++		int port = Config.proxyClientRtcpPort.getValue();
+ 		return new int[] { port };
+ 	}
+ 	
+
+Modified: trunk/src/main/java/rtspproxy/RtcpServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtcpServerService.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/RtcpServerService.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -21,6 +21,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.proxy.ServerRtcpPacketHandler;
+ 
+ /**
+@@ -61,13 +62,13 @@
+ 	@Override
+ 	public String getNetworkInterface()
+ 	{
+-		return Config.get( &quot;proxy.server.interface&quot;, null );
++		return Config.proxyServerInterface.getValue();
+ 	}
+ 
+ 	@Override
+ 	public int[] getBindPorts()
+ 	{
+-		int port = Config.getInt( &quot;proxy.server.rtcp.port&quot;, 8001 );
++		int port = Config.proxyServerRtcpPort.getValue();
+ 		return new int[] { port };
+ 	}
+ 	
+
+Modified: trunk/src/main/java/rtspproxy/RtpClientService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtpClientService.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/RtpClientService.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -21,6 +21,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.proxy.ClientRtpPacketHandler;
+ 
+ /**
+@@ -61,13 +62,13 @@
+ 	@Override
+ 	public String getNetworkInterface()
+ 	{
+-		return Config.get( &quot;proxy.client.interface&quot;, null );
++		return Config.proxyClientInterface.getValue();
+ 	}
+ 
+ 	@Override
+ 	public int[] getBindPorts()
+ 	{
+-		int port = Config.getInt( &quot;proxy.client.rtp.port&quot;, 8002 );
++		int port = Config.proxyClientRtpPort.getValue();
+ 		return new int[] { port };
+ 	}
+ 	
+
+Modified: trunk/src/main/java/rtspproxy/RtpServerService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtpServerService.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/RtpServerService.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -21,6 +21,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.proxy.ServerRtpPacketHandler;
+ 
+ /**
+@@ -61,13 +62,13 @@
+ 	@Override
+ 	public String getNetworkInterface()
+ 	{
+-		return Config.get( &quot;proxy.server.interface&quot;, null );
++		return Config.proxyServerInterface.getValue();
+ 	}
+ 
+ 	@Override
+ 	public int[] getBindPorts()
+ 	{
+-		int port = Config.getInt( &quot;proxy.server.rtp.port&quot;, 8000 );
++		int port = Config.proxyServerRtpPort.getValue();
+ 		return new int[] { port };
+ 	}
+ 	
+
+Modified: trunk/src/main/java/rtspproxy/RtspService.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/RtspService.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/RtspService.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -22,9 +22,9 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.TransportType;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.filter.RtspClientFilters;
+ import rtspproxy.proxy.ClientSide;
+-import rtspproxy.rtsp.Handler;
+ 
+ /**
+  * @author Matteo Merli
+@@ -72,14 +72,13 @@
+ 	@Override
+ 	public String getNetworkInterface()
+ 	{
+-		return Config.get( &quot;proxy.rtsp.interface&quot;, null );
++		return Config.proxyClientInterface.getValue();
+ 	}
+ 
+ 	@Override
+ 	public int[] getBindPorts()
+ 	{
+-		return Config
+-				.getIntArray( &quot;proxy.rtsp.port&quot;, Handler.DEFAULT_RTSP_PORT );
++		return Config.proxyRtspPort.getValue();
+ 	}
+ 	
+ 	public static RtspService getInstance()
+
+Modified: trunk/src/main/java/rtspproxy/ShutdownHandler.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/ShutdownHandler.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/ShutdownHandler.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -20,6 +20,7 @@
+ 
+ import org.apache.log4j.Logger;
+ 
++import rtspproxy.config.Config;
+ import rtspproxy.lib.Exceptions;
+ 
+ /**
+
+Added: trunk/src/main/java/rtspproxy/config/BooleanParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/BooleanParameter.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/config/BooleanParameter.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -0,0 +1,60 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++/**
++ * @author Matteo Merli
++ */
++public class BooleanParameter extends Parameter
++{
++
++	private Boolean value = null;
++
++	private boolean defaultValue;
++
++	public BooleanParameter( String name, boolean defaultValue, boolean mutable,
++			String description )
++	{
++		super( name, mutable, description );
++		this.defaultValue = defaultValue;
++	}
++
++	public void setValue( String value ) throws IllegalArgumentException
++	{
++		value = value.trim().toLowerCase();
++		if ( &quot;true&quot;.equals( value ) || &quot;yes&quot;.equals( value ) )
++			this.value = true;
++		else if ( &quot;false&quot;.equals( value ) || &quot;no&quot;.equals( value ) )
++			this.value = false;
++		else
++			throw new IllegalArgumentException( &quot;Boolean value not valid: &quot; + value );
++		
++		setChanged();
++	}
++
++	/**
++	 * @return Returns the defaultValue.
++	 */
++	public String getDefaultValue()
++	{
++		return defaultValue ? &quot;true&quot; : &quot;false&quot;;
++	}
++
++	@Override
++	public String getStringValue()
++	{
++		return getValue() ? &quot;true&quot; : &quot;false&quot;;
++	}
++
++	@Override
++	public String getType()
++	{
++		return &quot;Boolean&quot;;
++	}
++
++	public boolean getValue()
++	{
++		return value == null ? defaultValue : value.booleanValue();
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/config/BooleanParameter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/Config.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/config/Config.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -0,0 +1,314 @@
++package rtspproxy.config;
++
++import java.io.File;
++import java.util.Collection;
++import java.util.Map;
++import java.util.Properties;
++import java.util.TreeMap;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.ConcurrentMap;
++
++import org.apache.log4j.PropertyConfigurator;
++
++import rtspproxy.lib.Singleton;
++import rtspproxy.rtsp.Handler;
++
++public class Config extends Singleton
++{
++	private static ConcurrentMap&lt;String, Parameter&gt; parameters = new ConcurrentHashMap&lt;String, Parameter&gt;();
++
++	protected static void addParameter( Parameter parameter )
++	{
++		parameters.put( parameter.getName(), parameter );
++	}
++
++	public static Parameter getParameter( String name )
++	{
++		if ( name == null )
++			throw new IllegalArgumentException( &quot;name is null&quot; );
++
++		return parameters.get( name );
++	}
++
++	public static Collection&lt;Parameter&gt; getAllParameters()
++	{
++		return parameters.values();
++	}
++
++	protected static Map&lt;String, Parameter&gt; getParametersMap()
++	{
++		return parameters;
++	}
++
++	public static final BooleanParameter logDebug = new BooleanParameter( &quot;log.debug&quot;, // name
++			false, // default value
++			true, // mutable
++			&quot;This flag let you to enable or disable the debug &quot;
++					+ &quot;output of the program.&quot; );
++
++	public static final BooleanParameter logLogToFile = new BooleanParameter(
++			&quot;log.logtofile&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;If you want to save to a file the debug output	set this to Yes&quot; );
++
++	public static final StringParameter logFile = new StringParameter( &quot;log.file&quot;, // name
++			&quot;logs/rtspproxy.log&quot;, // default value
++			false, // mutable
++			&quot;Here you specify the file to log to.&quot; );
++
++	public static final IntegerListParameter proxyRtspPort = new IntegerListParameter(
++			&quot;proxy.rtsp.port&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( Handler.DEFAULT_RTSP_PORT ), // default value
++			true, // mutable
++			&quot;This is the port which the proxy will listen for &quot;
++					+ &quot;RTSP connection. The default is 554, like normal RTSP servers.&quot; );
++
++	public static final StringParameter proxyClientInterface = new StringParameter(
++			&quot;proxy.client.interface&quot;, // name
++			null, // default value
++			true, // mutable
++			&quot;Specify a network interface. Default is to listen on all interfaces.&quot; );
++
++	public static final StringParameter proxyServerInterface = new StringParameter(
++			&quot;proxy.server.interface&quot;, // name
++			null, // default value
++			true, // mutable
++			&quot;Specify a network interface. Default is to listen on all interfaces.&quot; );
++
++	public static final IntegerParameter proxyServerRtpPort = new IntegerParameter(
++			&quot;proxy.server.rtp.port&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( 8000 ), // default value
++			true, // mutable
++			&quot;Port to listen for RTP packets arriving from servers.&quot; );
++
++	public static final IntegerParameter proxyServerRtcpPort = new IntegerParameter(
++			&quot;proxy.server.rtcp.port&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( 8001 ), // default value
++			true, // mutable
++			&quot;Port to listen for RTCP packets arriving from servers.&quot; );
++
++	public static final IntegerParameter proxyClientRtpPort = new IntegerParameter(
++			&quot;proxy.client.rtp.port&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( 8002 ), // default value
++			true, // mutable
++			&quot;Port to listen for RTP packets arriving from clients.&quot; );
++
++	public static final IntegerParameter proxyClientRtcpPort = new IntegerParameter(
++			&quot;proxy.client.rtcp.port&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( 8003 ), // default value
++			true, // mutable
++			&quot;Port to listen for RTCP packets arriving from clients.&quot; );
++
++	public static final IntegerParameter proxyServerRdtPort = new IntegerParameter(
++			&quot;proxy.server.rdt.port&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( 8020 ), // default value
++			true, // mutable
++			&quot;Port to listen for RDT packets arriving from servers.&quot; );
++
++	public static final IntegerParameter proxyClientRdtPort = new IntegerParameter(
++			&quot;proxy.client.rdt.port&quot;, // name
++			new Integer( 0 ), // min value
++			new Integer( 65536 ), // max value
++			new Integer( 8022 ), // default value
++			true, // mutable
++			&quot;Port to listen for RDT packets arriving from clients.&quot; );
++
++	// // IP address filter
++
++	public static final BooleanParameter proxyFilterIpaddressEnable = new BooleanParameter(
++			&quot;proxy.filter.ipaddress.enable&quot;, // name
++			false, // default value
++			true, // mutable
++			&quot;Enable or disable the IP address filtering system.&quot; );
++
++	public static final StringParameter proxyFilterIpaddressImplementationClass = new StringParameter(
++			&quot;proxy.filter.ipaddress.implementationClass&quot;, // name
++			&quot;rtspproxy.filter.ipaddress.PlainTextIpAddressProvider&quot;, // default
++			// value
++			false, // mutable
++			&quot;Use an alternative backend class. This can be any class &quot;
++					+ &quot;that implements the rtspproxy.filter.ipaddress.IpAddressProvider &quot;
++					+ &quot;interface.&quot; );
++
++	public static final StringParameter proxyFilterIpaddressTextFile = new StringParameter(
++			&quot;proxy.filter.ipaddress.text.file&quot;, // name
++			&quot;conf/ipfilter.txt&quot;, // default value
++			false, // mutable
++			&quot;Plain Text based implementation specific configuration&quot; );
++
++	// // Authentication filter
++
++	public static final BooleanParameter proxyFilterAuthenticationEnable = new BooleanParameter(
++			&quot;proxy.filter.authentication.enable&quot;, // name
++			false, // default value
++			true, // mutable
++			&quot;Enable or disable the authentication system.&quot; );
++
++	public static final StringParameter proxyFilterAuthenticationScheme = new StringParameter(
++			&quot;proxy.filter.authentication.scheme&quot;, // name
++			&quot;Basic&quot;, // default value
++			false, // mutable
++			&quot;Authentication Scheme. This could be Basic (the default), Digest or any &quot;
++					+ &quot;other supported scheme.&quot; );
++
++	public static final StringParameter proxyFilterAuthenticationImplementationClass = new StringParameter(
++			&quot;proxy.filter.authentication.implementationClass&quot;, // name
++			&quot;rtspproxy.filter.authentication.PlainTextAuthenticationProvider&quot;, // default
++			// value
++			false, // mutable
++			&quot;Use an alternative backend class. This can be any class &quot;
++					+ &quot;that implements the rtspproxy.filter.authentication.AuthenticationProvider &quot;
++					+ &quot;interface.&quot; );
++
++	public static final StringParameter proxyFilterAuthenticationTextFile = new StringParameter(
++			&quot;proxy.filter.authentication.text.file&quot;, // name
++			&quot;conf/users.txt&quot;, // default value
++			false, // mutable
++			&quot;Plain Text based implementation specific configuration&quot; );
++
++	// /////////////////////////////////////////////////////////
++
++	private static String rtspproxyHome;
++
++	private static String name;
++
++	private static String version;
++
++	private static String proxySignature;
++
++	// /////////////////////////////////////////////////////////
++
++	public Config()
++	{
++		// Read home directory
++		rtspproxyHome = System.getProperty( &quot;rtspproxy.home&quot; );
++		if ( rtspproxyHome == null ) {
++			rtspproxyHome = System.getProperty( &quot;user.dir&quot; );
++			if ( rtspproxyHome == null )
++				rtspproxyHome = &quot;&quot;;
++		}
++
++		// Read program name and version
++		Properties jarProps = new Properties();
++		try {
++			jarProps.load( Thread.currentThread().getContextClassLoader()
++					.getResourceAsStream( &quot;META-INF/application.properties&quot; ) );
++			name = jarProps.getProperty( &quot;application.name&quot; );
++			version = jarProps.getProperty( &quot;application.version&quot; );
++		} catch ( Exception e ) {
++			name = &quot;RtspProxy&quot;;
++			version = &quot;&quot;;
++		}
++
++		// Build proxy signature
++		StringBuilder sb = new StringBuilder();
++		sb.append( name ).append( &quot; &quot; ).append( version );
++		sb.append( &quot; (&quot; ).append( System.getProperty( &quot;os.name&quot; ) );
++		sb.append( &quot; / &quot; ).append( System.getProperty( &quot;os.version&quot; ) );
++		sb.append( &quot; / &quot; ).append( System.getProperty( &quot;os.arch&quot; ) );
++		sb.append( &quot;)&quot; );
++		proxySignature = sb.toString();
++	}
++
++	/**
++	 * @return the application base dir
++	 */
++	public static String getHome()
++	{
++		return rtspproxyHome;
++	}
++
++	/**
++	 * @return Returns the application name.
++	 */
++	public static String getName()
++	{
++		return name;
++	}
++
++	/**
++	 * @return Returns the application version.
++	 */
++	public static String getVersion()
++	{
++		return version;
++	}
++
++	/**
++	 * @return Returns the proxySignature.
++	 */
++	public static String getProxySignature()
++	{
++		return proxySignature;
++	}
++
++	// /////////////////////////////////////////////////////////
++
++	protected static void updateDebugSettings()
++	{
++		Properties prop = new Properties();
++		// common properties
++		prop.setProperty( &quot;log4j.appender.A1.layout&quot;, &quot;org.apache.log4j.PatternLayout&quot; );
++		prop.setProperty( &quot;log4j.appender.A1.layout.ConversionPattern&quot;,
++				&quot;%7p [%t] (%F:%L) - %m%n&quot; );
++
++		if ( logDebug.getValue() )
++			prop.setProperty( &quot;log4j.rootLogger&quot;, &quot;DEBUG, A1&quot; );
++		else
++			// only write important messages
++			prop.setProperty( &quot;log4j.rootLogger&quot;, &quot;INFO, A1&quot; );
++
++		if ( logLogToFile.getValue() ) {
++			// save logs in a file
++			String filename = logFile.getValue();
++			prop
++					.setProperty( &quot;log4j.appender.A1&quot;,
++							&quot;org.apache.log4j.RollingFileAppender&quot; );
++			prop.setProperty( &quot;log4j.appender.A1.File&quot;, filename );
++
++			// if logs directory does not exists, create it
++			File logs = new File( rtspproxyHome + File.separator + &quot;logs&quot; );
++			if ( !logs.exists() )
++				logs.mkdir();
++
++		} else {
++			// Log to console
++			prop.setProperty( &quot;log4j.appender.A1&quot;, &quot;org.apache.log4j.ConsoleAppender&quot; );
++		}
++
++		PropertyConfigurator.configure( prop );
++	}
++
++	/**
++	 * @return a String containing all the parameters
++	 */
++	public static String debugParameters()
++	{
++		StringBuilder sb = new StringBuilder();
++		Map&lt;String, Parameter&gt; parameters = new TreeMap&lt;String, Parameter&gt;( Config
++				.getParametersMap() );
++		sb.append( &quot;Parameters:\n&quot; );
++		for ( Parameter parameter : parameters.values() ) {
++			sb.append( parameter.getName() );
++			sb.append( &quot;: &quot; );
++			sb.append( parameter.getStringValue() );
++			sb.append( &quot;\n&quot; );
++		}
++
++		return sb.toString();
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/config/Config.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/config/ConfigReader.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/ConfigReader.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/config/ConfigReader.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -0,0 +1,58 @@
++package rtspproxy.config;
++
++import java.io.File;
++import java.io.FileInputStream;
++import java.io.FileNotFoundException;
++import java.io.IOException;
++import java.io.InputStream;
++import java.util.Properties;
++
++import org.apache.log4j.Logger;
++
++public class ConfigReader
++{
++	private static Logger log = Logger.getLogger( ConfigReader.class );
++
++	public ConfigReader( String fileName ) throws IllegalArgumentException
++	{
++		Properties properties = new Properties();
++		
++		File file = new File( fileName );
++
++		try {
++			InputStream is = new FileInputStream( file );
++			properties.load( is );
++		} catch ( FileNotFoundException e ) {
++			// silently ignore
++			return;
++		} catch ( IOException e ) {
++			log.error( &quot;Error reading configuration file: &quot; + e );
++			return;
++		}
++
++		// cycle throuh all the properties
++		for ( Object key : properties.keySet() ) {
++			String name = (String) key;
++			String value = properties.getProperty( name );
++
++			Parameter parameter = Config.getParameter( name );
++			if ( parameter == null ) {
++				// The property name is invalid
++				log.fatal( &quot;Invalid parameter name: &quot; + name );
++				throw new IllegalArgumentException();
++			}
++
++			try {
++				parameter.setValue( value );
++			} catch ( IllegalArgumentException e ) {
++				log.fatal( &quot;Invalid value for parameter &quot; + name + &quot;: &quot; + value );
++				throw e;
++			}
++		}
++
++		Config.updateDebugSettings();
++
++		log.debug( &quot;Reading configurations from '&quot; + file + &quot;'&quot; );
++
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/config/ConfigReader.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/config/IntegerListParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/IntegerListParameter.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/config/IntegerListParameter.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -0,0 +1,105 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * @author Matteo Merli
++ */
++public class IntegerListParameter extends Parameter
++{
++	private List&lt;Integer&gt; values = null;
++
++	private Integer minValue;
++
++	private Integer maxValue;
++
++	private Integer defaultValue;
++
++	public IntegerListParameter( String name, Integer minValue, Integer maxValue,
++			Integer defaultValue, boolean mutable, String description )
++	{
++		super( name, mutable, description );
++
++		if ( defaultValue == null )
++			throw new IllegalArgumentException( &quot;Default value for &quot; + name
++					+ &quot; must be not null.&quot; );
++		this.defaultValue = defaultValue;
++		this.minValue = minValue;
++		this.maxValue = maxValue;
++	}
++
++	@Override
++	public void setValue( String value ) throws IllegalArgumentException
++	{
++		this.values = new ArrayList&lt;Integer&gt;();
++		Integer tmpValue = null;
++		String[] tokens = value.split( &quot;,&quot; );
++
++		for ( String token : tokens ) {
++			
++			token = token.trim();
++			try {
++				tmpValue = Integer.valueOf( token );
++			} catch ( NumberFormatException nfe ) {
++				throw new IllegalArgumentException( &quot;Integer value for &quot; + name
++						+ &quot; not valid: &quot; + token );
++			}
++
++			if ( minValue != null &amp;&amp; (tmpValue.compareTo( minValue ) &lt; 0) )
++				throw new IllegalArgumentException( &quot;Integer value for &quot; + name
++						+ &quot; must be greater than &quot; + minValue );
++			if ( maxValue != null &amp;&amp; (tmpValue.compareTo( maxValue ) &gt; 0) )
++				throw new IllegalArgumentException( &quot;Integer value for &quot; + name
++						+ &quot; must be lesser than &quot; + maxValue );
++			
++			this.values.add( tmpValue );
++		}
++	
++		setChanged();
++	}
++
++	@Override
++	public String getStringValue()
++	{
++		if ( values == null )
++			return defaultValue.toString();
++
++		StringBuilder sb = new StringBuilder();
++		final int size = values.size();
++		for ( int i = 0; i &lt; size; i++ ) {
++			sb.append( values.get( i ).toString() );
++			if ( i &lt; size - 1 )
++				sb.append( &quot;, &quot; );
++		}
++		return sb.toString();
++	}
++
++	/**
++	 * @return Returns the defaultValue.
++	 */
++	public String getDefaultValue()
++	{
++		return defaultValue.toString();
++	}
++
++	public int[] getValue()
++	{
++		if ( values == null )
++			return new int[] { defaultValue };
++
++		int[] v = new int[values.size()];
++		for ( int i = values.size() - 1; i &gt;= 0; i-- )
++			v[i] = values.get( i );
++		return v;
++	}
++
++	@Override
++	public String getType()
++	{
++		return &quot;IntegerList&quot;;
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/config/IntegerListParameter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/config/IntegerParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/IntegerParameter.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/config/IntegerParameter.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -0,0 +1,79 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++/**
++ * @author Matteo Merli
++ */
++public class IntegerParameter extends Parameter
++{
++	private Integer value = null;
++
++	private Integer minValue;
++
++	private Integer maxValue;
++
++	private Integer defaultValue;
++
++	public IntegerParameter( String name, Integer minValue, Integer maxValue,
++			Integer defaultValue, boolean mutable, String description )
++	{
++		super( name, mutable, description );
++
++		if ( defaultValue == null )
++			throw new IllegalArgumentException( &quot;Default value for &quot; + name
++					+ &quot; must be not null.&quot; );
++		this.defaultValue = defaultValue;
++		this.minValue = minValue;
++		this.maxValue = maxValue;
++	}
++
++	@Override
++	public void setValue( String value ) throws IllegalArgumentException
++	{
++
++		Integer tmpValue;
++		try {
++			tmpValue = Integer.valueOf( value );
++		} catch ( NumberFormatException nfe ) {
++			throw new IllegalArgumentException( &quot;Integer value for &quot; + name
++					+ &quot;not valid: &quot; + value );
++		}
++
++		if ( minValue != null &amp;&amp; (tmpValue.compareTo( minValue ) &lt; 0) )
++			throw new IllegalArgumentException( &quot;Integer value for &quot; + name
++					+ &quot; must be greater than &quot; + minValue );
++		if ( maxValue != null &amp;&amp; (tmpValue.compareTo( maxValue ) &gt; 0) )
++			throw new IllegalArgumentException( &quot;Integer value for &quot; + name
++					+ &quot; must be lesser than &quot; + maxValue );
++
++		this.value = tmpValue;
++		setChanged();
++	}
++
++	@Override
++	public String getStringValue()
++	{
++		return (value != null ? value : defaultValue).toString();
++	}
++
++	/**
++	 * @return Returns the defaultValue.
++	 */
++	public String getDefaultValue()
++	{
++		return defaultValue.toString();
++	}
++
++	public int getValue()
++	{
++		return value == null ? defaultValue.intValue() : value.intValue();
++	}
++
++	@Override
++	public String getType()
++	{
++		return &quot;Integer&quot;;
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/config/IntegerParameter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/config/Parameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/Parameter.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/config/Parameter.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -0,0 +1,99 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++import java.util.Observable;
++
++/**
++ * @author Matteo Merli
++ */
++public abstract class Parameter extends Observable
++{
++
++	protected String name;
++
++	protected boolean mutable;
++
++	protected String description;
++
++	protected Parameter( String name, boolean mutable, String description )
++	{
++		validateName( name );
++
++		this.name = name;
++		this.mutable = mutable;
++		this.description = description;
++		
++		Config.addParameter( this );
++	}
++
++	/**
++	 * Validate the name of the parameter. The name length must be &gt; 0
++	 */
++	private void validateName( String name ) throws IllegalArgumentException
++	{
++		if ( (name == null) || (name.length() &lt; 1) ) {
++			throw new IllegalArgumentException(
++					&quot; A configuration parameter name can't be null or 0 length&quot; );
++		}
++	}
++
++	/**
++	 * Changes the value of this parameter
++	 * 
++	 * @param value
++	 * @throws IllegalArgumentException
++	 */
++	public abstract void setValue( String value ) throws IllegalArgumentException;
++
++	/**
++	 * @return a String representation of the value of this parameter.
++	 */
++	public abstract String getStringValue();
++
++	/**
++	 * @return the name of this parameter
++	 */
++	public String getName()
++	{
++		return name;
++	}
++
++	/**
++	 * @return true if this parameter is &quot;mutable&quot; (so that it can be modified
++	 *         at runtime)
++	 */
++	public boolean isMutable()
++	{
++		return mutable;
++	}
++
++	/**
++	 * @return the description string of this parameter
++	 */
++	public String getDescription()
++	{
++		return description;
++	}
++
++	/**
++	 * @return a human readable type name for this parameter, such as String,
++	 *         Integer...
++	 */
++	public abstract String getType();
++
++	/**
++	 * Marks the parameter as changed and notify all the Observers.
++	 * 
++	 * @see java.util.Observable#setChanged()
++	 */
++	@Override
++	protected void setChanged()
++	{
++		super.setChanged();
++		if ( mutable )
++			notifyObservers();
++	}
++
++}
+\ No newline at end of file
+
+
+Property changes on: trunk/src/main/java/rtspproxy/config/Parameter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/config/StringListParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/StringListParameter.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/config/StringListParameter.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -0,0 +1,78 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * @author Matteo Merli
++ */
++public class StringListParameter extends Parameter
++{
++	private List&lt;String&gt; values = null;
++
++	private String defaultValue;
++
++	public StringListParameter( String name, String defaultValue, boolean mutable,
++			String description )
++	{
++		super( name, mutable, description );
++
++		if ( defaultValue == null )
++			throw new IllegalArgumentException( &quot;Default value for &quot; + name
++					+ &quot; must be not null.&quot; );
++		this.defaultValue = defaultValue;
++	}
++
++	@Override
++	public void setValue( String value ) throws IllegalArgumentException
++	{
++		this.values = new ArrayList&lt;String&gt;();
++		String[] tokens = value.split( &quot;,&quot; );
++
++		for ( String token : tokens ) {
++			this.values.add( token );
++		}
++		setChanged();
++	}
++
++	@Override
++	public String getStringValue()
++	{
++		if ( values == null )
++			return defaultValue.toString();
++
++		StringBuilder sb = new StringBuilder();
++		final int size = values.size();
++		for ( int i = 0; i &lt; size; i++ ) {
++			sb.append( values.get( i ) );
++			if ( i &lt; size - 1 )
++				sb.append( &quot;, &quot; );
++		}
++		return sb.toString();
++	}
++
++	/**
++	 * @return Returns the defaultValue.
++	 */
++	public String getDefaultValue()
++	{
++		return defaultValue.toString();
++	}
++
++	public String[] getValue()
++	{
++		String[] v = new String[values.size()];
++		for ( int i = values.size() - 1; i &gt;= 0; i-- )
++			v[i] = values.get( i );
++		return v;
++	}
++
++	@Override
++	public String getType()
++	{
++		return &quot;StringList&quot;;
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/config/StringListParameter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/config/StringParameter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/StringParameter.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/config/StringParameter.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -0,0 +1,56 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++
++/**
++ * @author Matteo Merli
++ */
++public class StringParameter extends Parameter
++{
++
++	private String value = null;
++
++	private String defaultValue;
++
++	public StringParameter( String name, String defaultValue, boolean mutable,
++			String description )
++	{
++		super( name, mutable, description );
++		this.defaultValue = defaultValue;
++	}
++
++	@Override
++	public void setValue( String value ) throws IllegalArgumentException
++	{
++		this.value = value;
++		setChanged();
++	}
++
++	@Override
++	public String getStringValue()
++	{
++		return getValue();
++	}
++
++	@Override
++	public String getType()
++	{
++		return &quot;String&quot;;
++	}
++
++	public String getValue()
++	{
++		return value == null ? defaultValue : value;
++	}
++
++	/**
++	 * @return Returns the defaultValue.
++	 */
++	public String getDefaultValue()
++	{
++		return defaultValue;
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/config/StringParameter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -31,7 +31,6 @@
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.transport.socket.nio.SocketConnector;
+ 
+-import rtspproxy.Config;
+ import rtspproxy.RdtClientService;
+ import rtspproxy.RdtServerService;
+ import rtspproxy.RtcpClientService;
+@@ -230,10 +229,6 @@
+ 			return;
+ 		}
+ 
+-		int proxyRtpPort = RtpServerService.getInstance().getPort();
+-		int proxyRtcpPort = RtcpServerService.getInstance().getPort();
+-		int proxyRdtPort = RdtServerService.getInstance().getPort();
+-
+ 		// I'm saving the client Transport header before modifying it,
+ 		// because I will need to know which port the client will
+ 		// use for RTP/RTCP connections.
+@@ -249,11 +244,16 @@
+ 
+ 					clientSession.setAttribute( clientPortsATTR, transport
+ 							.getClientPort() );
++					
++					int proxyRtpPort = RtpServerService.getInstance().getPort();
++					int proxyRtcpPort = RtcpServerService.getInstance().getPort();
+ 					transport.setClientPort( new int[] { proxyRtpPort, proxyRtcpPort } );
+ 
+ 				} else if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
+ 					clientSession.setAttribute( clientRdtPortATTR, new Integer( transport
+ 							.getClientPort()[0] ) );
++					
++					int proxyRdtPort = RdtServerService.getInstance().getPort();
+ 					transport.setClientPort( proxyRdtPort );
+ 				}
+ 				log.debug( &quot;Transport Rewritten: &quot; + transport );
+@@ -299,8 +299,6 @@
+ 		RtspTransportList rtspTransportList = new RtspTransportList( response
+ 				.getHeader( &quot;Transport&quot; ) );
+ 
+-		String netInterface = Config.get( &quot;proxy.client.interface&quot;, null );
+-
+ 		RtspTransport transport = rtspTransportList.getList().get( 0 );
+ 		log.debug( &quot;Using Transport:&quot; + transport );
+ 
+@@ -343,13 +341,7 @@
+ 				int rtpPort = RtpClientService.getInstance().getPort();
+ 				int rtcpPort = RtcpClientService.getInstance().getPort();
+ 				transport.setServerPort( new int[] { rtpPort, rtcpPort } );
+-				// transport.setClientPort( );
+-				try {
+-					transport.setSource( InetAddress.getByName( netInterface )
+-							.getHostAddress() );
+-				} catch ( UnknownHostException e ) {
+-					transport.setSource( netInterface );
+-				}
++				transport.setSource( RtpClientService.getInstance().getAddress().getHostAddress() );
+ 
+ 				// Obtaing client specified ports
+ 				int ports[] = (int[]) clientSession.getAttribute( clientPortsATTR );
+@@ -396,12 +388,7 @@
+ 			} else {
+ 				int rdtPort = RdtClientService.getInstance().getPort();
+ 				transport.setServerPort( rdtPort );
+-				try {
+-					transport.setSource( InetAddress.getByName( netInterface )
+-							.getHostAddress() );
+-				} catch ( UnknownHostException e ) {
+-					transport.setSource( netInterface );
+-				}
++				// transport.setSource( RdtClientService.getInstance().getAddress().getHostAddress() );
+ 
+ 				// Obtaing client specified ports
+ 				int port = ((Integer) clientSession.getAttribute( clientRdtPortATTR ))
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/proxy/ServerRtpPacketHandler.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -45,7 +45,7 @@
+ 	@Override
+ 	public void messageReceived( IoSession session, Object buffer ) throws Exception
+ 	{
+-		log.debug( &quot;Received RTP packet&quot; );
++		// log.debug( &quot;Received RTP packet&quot; );
+ 		RtpPacket packet = new RtpPacket( (ByteBuffer) buffer );
+ 		RtpTrack track = RtpTrack.getByServerSSRC( packet.getSsrc() );
+ 
+
+Modified: trunk/src/main/java/rtspproxy/rtsp/RtspMessage.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/rtsp/RtspMessage.java	2005-12-20 20:18:30 UTC (rev 353)
++++ trunk/src/main/java/rtspproxy/rtsp/RtspMessage.java	2005-12-20 20:20:43 UTC (rev 354)
+@@ -22,7 +22,7 @@
+ import java.util.LinkedHashMap;
+ import java.util.Map;
+ 
+-import rtspproxy.Config;
++import rtspproxy.config.Config;
+ 
+ /**
+  * Base abstract class for RTSP messages.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000038.html">[Rtspproxy-devel] r353 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+	<LI>Next message: <A HREF="000039.html">[Rtspproxy-devel] r355 - in trunk/src/main/java/rtspproxy: filter filter/authentication filter/authentication/scheme filter/ipaddress lib
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#40">[ date ]</a>
+              <a href="thread.html#40">[ thread ]</a>
+              <a href="subject.html#40">[ subject ]</a>
+              <a href="author.html#40">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

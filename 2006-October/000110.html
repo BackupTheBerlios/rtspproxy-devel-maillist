@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r427 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r427%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp&In-Reply-To=%3C200610111052.k9BAqWYY021011%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000111.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r427 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp</H1>
+    <B>merlimat at mail.berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r427%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp&In-Reply-To=%3C200610111052.k9BAqWYY021011%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r427 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp">merlimat at mail.berlios.de
+       </A><BR>
+    <I>Wed Oct 11 12:52:32 CEST 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000111.html">[Rtspproxy-devel] r428 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#110">[ date ]</a>
+              <a href="thread.html#110">[ thread ]</a>
+              <a href="subject.html#110">[ subject ]</a>
+              <a href="author.html#110">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-10-11 12:52:27 +0200 (Wed, 11 Oct 2006)
+New Revision: 427
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+Log:
+Added a hasHeader() method.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-09-04 23:26:18 UTC (rev 426)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-10-11 10:52:27 UTC (rev 427)
+@@ -24,6 +24,8 @@
+ import java.util.LinkedHashMap;
+ import java.util.Map;
+ 
++import org.apache.mina.common.ByteBuffer;
++
+ import rtspproxy.config.Config;
+ 
+ /**
+@@ -102,6 +104,17 @@
+     }
+ 
+     /**
++     * Test if a specific header is present in the message.
++     * 
++     * @param key name of the RTSP header
++     * @return true if the message has the header, false otherwise
++     */
++    public boolean hasHeader( String key )
++    {
++        return headers.get( key ) != null;
++    }
++
++    /**
+      * @param key
+      *            Header name
+      * @param defaultValue
+@@ -181,7 +194,7 @@
+ 
+         if ( Config.proxyClientAddress.getStringValue() != null ) {
+             String via = getHeader( &quot;Via&quot; );
+-            StringBuffer newVia = new StringBuffer();
++            StringBuilder newVia = new StringBuilder();
+ 
+             if ( via != null &amp;&amp; via.length() &gt; 0 ) {
+                 newVia.append( via );
+@@ -219,6 +232,15 @@
+     {
+         this.buffer.append( other );
+     }
++    
++    /**
++     * @param other
++     *            buffer with content to be appended
++     */
++    public void appendToBuffer( ByteBuffer other )
++    {
++        this.buffer.append( other );
++    }
+ 
+     /**
+      * @param other
+@@ -266,10 +288,10 @@
+      */
+     public int getSequenceNumber()
+     {
+-        if ( this.sequenceNumber == 0 ) {
++        if ( sequenceNumber == 0 ) {
+             try {
+-                if ( this.headers.containsKey( &quot;CSeq&quot; ) )
+-                    this.sequenceNumber = Integer.parseInt( this.headers.get( &quot;CSeq&quot; ) );
++                if ( headers.containsKey( &quot;CSeq&quot; ) )
++                    sequenceNumber = Integer.parseInt( headers.get( &quot;CSeq&quot; ) );
+             } catch ( Exception e ) {
+                   // Do nothing
+             }
+@@ -290,4 +312,7 @@
+         this.sequenceNumber = sequenceNumber;
+         this.headers.put( &quot;CSeq&quot;, String.valueOf( this.sequenceNumber ) );
+     }
++    
++    @Override
++    public abstract String toString();
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000111.html">[Rtspproxy-devel] r428 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#110">[ date ]</a>
+              <a href="thread.html#110">[ thread ]</a>
+              <a href="subject.html#110">[ subject ]</a>
+              <a href="author.html#110">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

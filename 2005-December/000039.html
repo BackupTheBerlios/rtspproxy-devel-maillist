@@ -1,0 +1,1181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r355 - in trunk/src/main/java/rtspproxy: filter filter/authentication filter/authentication/scheme filter/ipaddress lib
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r355%20-%20in%20trunk/src/main/java/rtspproxy%3A%20filter%20filter/authentication%20filter/authentication/scheme%20filter/ipaddress%20lib&In-Reply-To=%3C200512202023.jBKKNDPk000231%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000040.html">
+   <LINK REL="Next"  HREF="000041.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r355 - in trunk/src/main/java/rtspproxy: filter filter/authentication filter/authentication/scheme filter/ipaddress lib</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r355%20-%20in%20trunk/src/main/java/rtspproxy%3A%20filter%20filter/authentication%20filter/authentication/scheme%20filter/ipaddress%20lib&In-Reply-To=%3C200512202023.jBKKNDPk000231%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r355 - in trunk/src/main/java/rtspproxy: filter filter/authentication filter/authentication/scheme filter/ipaddress lib">merlimat at berlios.de
+       </A><BR>
+    <I>Tue Dec 20 21:23:13 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000040.html">[Rtspproxy-devel] r354 - in trunk/src/main/java/rtspproxy: . config proxy rtsp
+</A></li>
+        <LI>Next message: <A HREF="000041.html">[Rtspproxy-devel] r356 - trunk/src/resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#39">[ date ]</a>
+              <a href="thread.html#39">[ thread ]</a>
+              <a href="subject.html#39">[ subject ]</a>
+              <a href="author.html#39">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-20 21:23:02 +0100 (Tue, 20 Dec 2005)
+New Revision: 355
+
+Added:
+   trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java
+   trunk/src/main/java/rtspproxy/lib/StringUtil.java
+Modified:
+   trunk/src/main/java/rtspproxy/filter/RtspFilters.java
+   trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationFilter.java
+   trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationProvider.java
+   trunk/src/main/java/rtspproxy/filter/authentication/PlainTextAuthenticationProvider.java
+   trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java
+   trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java
+   trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java
+   trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java
+   trunk/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java
+Log:
+* Switched filter code to new config system
+* Implemented Digest authentication
+
+Modified: trunk/src/main/java/rtspproxy/filter/RtspFilters.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/RtspFilters.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/RtspFilters.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -26,8 +26,8 @@
+ import org.apache.mina.filter.codec.ProtocolDecoder;
+ import org.apache.mina.filter.codec.ProtocolEncoder;
+ 
+-import rtspproxy.Config;
+ import rtspproxy.Reactor;
++import rtspproxy.config.Config;
+ import rtspproxy.filter.authentication.AuthenticationFilter;
+ import rtspproxy.filter.ipaddress.IpAddressFilter;
+ import rtspproxy.filter.rewrite.RequestUrlRewritingImpl;
+@@ -47,6 +47,7 @@
+ 
+ 		// Decoders can be shared
+ 		private ProtocolEncoder rtspEncoder = new RtspEncoder();
++
+ 		private ProtocolDecoder rtspDecoder = new RtspDecoder();
+ 
+ 		public ProtocolEncoder getEncoder()
+@@ -64,6 +65,7 @@
+ 
+ 	// These filters are instanciated only one time, when requested
+ 	private static IpAddressFilter ipAddressFilter = null;
++
+ 	private static AuthenticationFilter authenticationFilter = null;
+ 
+ 	/**
+@@ -75,8 +77,7 @@
+ 	 */
+ 	protected void addIpAddressFilter( IoFilterChain chain )
+ 	{
+-		boolean enableIpAddressFilter = Config.getBoolean(
+-				&quot;proxy.filter.ipaddress.enable&quot;, false );
++		boolean enableIpAddressFilter = Config.proxyFilterIpaddressEnable.getValue();
+ 
+ 		if ( enableIpAddressFilter ) {
+ 			if ( ipAddressFilter == null )
+@@ -99,8 +100,8 @@
+ 	 */
+ 	protected void addAuthenticationFilter( IoFilterChain chain )
+ 	{
+-		boolean enableAuthenticationFilter = Config.getBoolean(
+-				&quot;proxy.filter.authentication.enable&quot;, false );
++		boolean enableAuthenticationFilter = Config.proxyFilterAuthenticationEnable
++				.getValue();
+ 
+ 		if ( enableAuthenticationFilter ) {
+ 			if ( authenticationFilter == null )
+@@ -111,9 +112,9 @@
+ 
+ 	protected void addRewriteFilter( IoFilterChain chain )
+ 	{
+-		// TODO: move this to RtspFilters
+-		String rewritingFilter = Config.get(
+-				&quot;filter.requestUrlRewriting.implementationClass&quot;, null );
++		// TODO: use different parameters..
++		String rewritingFilter = null; //Config.get(
++				//&quot;filter.requestUrlRewriting.implementationClass&quot;, null );
+ 
+ 		try {
+ 			if ( rewritingFilter != null )
+
+Modified: trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationFilter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationFilter.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationFilter.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -18,17 +18,20 @@
+ 
+ package rtspproxy.filter.authentication;
+ 
++import java.util.Arrays;
++import java.util.HashMap;
++import java.util.Map;
++
+ import org.apache.log4j.Logger;
+-import org.apache.mina.common.ByteBuffer;
+ import org.apache.mina.common.IoFilterAdapter;
+ import org.apache.mina.common.IoSession;
+-import org.apache.mina.common.WriteFuture;
+ 
+-import rtspproxy.Config;
+ import rtspproxy.Reactor;
++import rtspproxy.config.Config;
+ import rtspproxy.filter.authentication.scheme.AuthenticationScheme;
+ import rtspproxy.filter.authentication.scheme.BasicAuthentication;
+ import rtspproxy.filter.authentication.scheme.Credentials;
++import rtspproxy.filter.authentication.scheme.DigestAuthentication;
+ import rtspproxy.rtsp.RtspCode;
+ import rtspproxy.rtsp.RtspMessage;
+ import rtspproxy.rtsp.RtspRequest;
+@@ -41,23 +44,15 @@
+ {
+ 
+ 	private static Logger log = Logger.getLogger( AuthenticationFilter.class );
+-	
++
+ 	private static final String ATTR = AuthenticationFilter.class.toString() + &quot;Attr&quot;;
+ 
+-	/** Different authentication schemes implementation */
+-	private static AuthenticationScheme[] schemes = { new BasicAuthentication() };
++	private static final Map&lt;String, Class&gt; schemeRegistry = new HashMap&lt;String, Class&gt;();
+ 
+-	/** Contains a comma-separated list of the scheme names. */
+-	private static String schemesString;
+-
+ 	static {
+-		// Pre-fill the scheme names
+-		schemesString = new String();
+-		for ( int i = 0; i &lt; schemes.length; i++ ) {
+-			schemesString += schemes[i].getName();
+-			if ( i &lt; schemes.length - 1 )
+-				schemesString += &quot;, &quot;;
+-		}
++		// Fill in known schemes
++		schemeRegistry.put( &quot;basic&quot;, BasicAuthentication.class );
++		schemeRegistry.put( &quot;digest&quot;, DigestAuthentication.class );
+ 	}
+ 
+ 	/**
+@@ -65,7 +60,8 @@
+ 	 */
+ 	private AuthenticationProvider provider;
+ 
+-	private String realm;
++	/** Different authentication schemes implementation */
++	private AuthenticationScheme scheme = null;
+ 
+ 	/**
+ 	 * Construct a new AuthenticationFilter. Looks at the configuration to load
+@@ -75,8 +71,7 @@
+ 	{
+ 		// Check which backend implementation to use
+ 		// Default is plain-text implementation
+-		String className = Config.get( &quot;proxy.filter.authentication.implementationClass&quot;,
+-				&quot;rtspproxy.filter.authentication.PlainTextAuthenticationProvider&quot; );
++		String className = Config.proxyFilterAuthenticationImplementationClass.getValue();
+ 
+ 		Class providerClass;
+ 		try {
+@@ -114,15 +109,32 @@
+ 			return;
+ 		}
+ 
+-		realm = &quot;RtspProxy &quot; + Config.get( &quot;proxy.rtsp.interface&quot;, &quot;&quot; );
++		// Validate the choosen authentication scheme
++		String schemeName = Config.proxyFilterAuthenticationScheme.getValue();
++		Class schemeClass = schemeRegistry.get( schemeName.toLowerCase() );
++		if ( schemeClass == null ) {
++			// scheme not found
++			log.fatal( &quot;Authentication Scheme not found: &quot; + schemeName
++					+ &quot;. Valid values are: &quot;
++					+ Arrays.toString( schemeRegistry.keySet().toArray() ) );
++			Reactor.stop();
++			return;
++		}
+ 
+-		log.info( &quot;Using AuthenticationFilter (&quot; + className + &quot;)&quot; );
++		// Instanciate the selected scheme
++		try {
++			scheme = (AuthenticationScheme) schemeClass.newInstance();
++		} catch ( Exception e ) {
++		}
++
++		log.info( &quot;Using AuthenticationFilter &quot; + scheme.getName() + &quot; (&quot; + className
++				+ &quot;)&quot; );
+ 	}
+ 
+ 	public void messageReceived( NextFilter nextFilter, IoSession session, Object message )
+ 			throws Exception
+ 	{
+-		if ( !( message instanceof RtspRequest ) ) {
++		if ( !(message instanceof RtspRequest) ) {
+ 			// Shouldn't happen
+ 			log.warn( &quot;Object message is not a RTSP message&quot; );
+ 			return;
+@@ -134,49 +146,53 @@
+ 			nextFilter.messageReceived( session, message );
+ 		}
+ 
+-		String authString = ( (RtspMessage) message ).getHeader( &quot;Proxy-Authorization&quot; );
++		String authString = ((RtspMessage) message).getHeader( &quot;Proxy-Authorization&quot; );
+ 		if ( authString == null ) {
+ 			log.debug( &quot;RTSP message: \n&quot; + message );
+-			RtspResponse response = RtspResponse.errorResponse( RtspCode.ProxyAuthenticationRequired );
+-			response.setHeader( &quot;Proxy-Authenticate&quot;, schemesString + &quot; realm=\&quot;&quot; + realm
+-					+ &quot;\&quot;&quot; );
++			RtspResponse response = RtspResponse
++					.errorResponse( RtspCode.ProxyAuthenticationRequired );
++			response.setHeader( &quot;Proxy-Authenticate&quot;, scheme.getName() + &quot; &quot;
++					+ scheme.getChallenge() );
+ 
+-			// TODO: I should be able to send a RtspMessage here using the
+-			// already provided encoder.
+-			WriteFuture written = session.write( response );
+-			// Why have I to wait here????
+-			written.join();
+-			// session.close();
++			log.debug( &quot;Sending RTSP message: \n&quot; + response );
++
++			session.write( response );
+ 			return;
+ 		}
+ 
+-		AuthenticationScheme scheme = getAuthenticationScheme( authString );
+-		if ( scheme == null ) {
++		if ( !validateAuthenticationScheme( authString ) ) {
+ 			RtspResponse response = RtspResponse.errorResponse( RtspCode.BadRequest );
+ 
+-			// TODO: I should be able to send a RtspMessage here using the
+-			// already provided encoder.
+-			WriteFuture written = session.write( response );
+-			// Why have I to wait here????
+-			written.join();
+-			// session.close();
++			session.write( response );
+ 			return;
+ 		}
+ 
++		log.debug( &quot;RTSP message: \n&quot; + message );
++
+ 		// Check the authentication credentials
+-		Credentials credentials = scheme.getCredentials( authString );
+-		if ( credentials == null || provider.isAuthenticated( credentials ) == false ) {
+-			RtspResponse response = RtspResponse.errorResponse( RtspCode.Unauthorized );
++		Credentials credentials = scheme.getCredentials( (RtspMessage) message );
+ 
+-			// TODO: I should be able to send a RtspMessage here using the
+-			// already provided encoder.
+-			WriteFuture written = session.write( ByteBuffer.wrap( response.toString().getBytes() ) );
+-			// Why have I to wait here????
+-			written.join();
+-			session.close();
++		boolean authenticationOk = false;
++		if ( credentials != null ) {
++			String password = provider.getPassword( credentials.getUserName() );
++			if ( password != null )
++				if ( scheme.computeAuthentication( credentials, password ) == true )
++					authenticationOk = true;
++		}
++
++		if ( !authenticationOk ) {
++			log.warn( &quot;Authentication failed for user: &quot; + credentials );
++			RtspResponse response = RtspResponse
++					.errorResponse( RtspCode.ProxyAuthenticationRequired );
++			response.setHeader( &quot;Proxy-Authenticate&quot;, scheme.getName() + &quot; &quot;
++					+ scheme.getChallenge() );
++
++			session.write( response );
+ 			return;
+ 		}
+ 
++		log.debug( &quot;Authentication succesfull for user: &quot; + credentials );
++
+ 		/*
+ 		 * Mark the session with an &quot;authenticated&quot; attribute. This will prevent
+ 		 * the check for the credentials for every message received.
+@@ -193,23 +209,21 @@
+ 	 * @param authString
+ 	 * @return
+ 	 */
+-	private static AuthenticationScheme getAuthenticationScheme( String authString )
++	private boolean validateAuthenticationScheme( String authString )
+ 	{
+ 		String schemeName;
+ 		try {
+ 			schemeName = authString.split( &quot; &quot; )[0];
+ 		} catch ( IndexOutOfBoundsException e ) {
+ 			// Malformed auth string
+-			return null;
++			return false;
+ 		}
+ 
+-		for ( int i = 0; i &lt; schemes.length; i++ ) {
+-			if ( schemeName.equalsIgnoreCase( schemes[i].getName() ) )
+-				return schemes[i];
+-		}
++		if ( schemeName.equalsIgnoreCase( scheme.getName() ) )
++			return true;
+ 
+ 		// Scheme not valid
+-		return null;
++		return false;
+ 	}
+ 
+ }
+
+Modified: trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationProvider.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationProvider.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationProvider.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -53,4 +53,6 @@
+ 	 *         wrong.
+ 	 */
+ 	public boolean isAuthenticated( Credentials credentials );
++	
++	public String getPassword( String username );
+ }
+
+Modified: trunk/src/main/java/rtspproxy/filter/authentication/PlainTextAuthenticationProvider.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/PlainTextAuthenticationProvider.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/authentication/PlainTextAuthenticationProvider.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -26,8 +26,8 @@
+ 
+ import org.apache.log4j.Logger;
+ 
+-import rtspproxy.Config;
+ import rtspproxy.Reactor;
++import rtspproxy.config.Config;
+ import rtspproxy.filter.authentication.scheme.Credentials;
+ 
+ /**
+@@ -43,10 +43,8 @@
+ 	public void init() throws Exception
+ 	{
+ 		// Load users from file
+-		String fileName = Config.getHome()
+-				+ File.separator
+-				+ Config.get( &quot;proxy.filter.authentication.text.file&quot;, &quot;conf&quot; + File.separator
+-						+ &quot;users.txt&quot; );
++		String fileName = Config.getHome() + File.separator
++				+ Config.proxyFilterAuthenticationTextFile.getValue();
+ 
+ 		try {
+ 			usersDb.load( new FileInputStream( new File( fileName ) ) );
+@@ -68,6 +66,11 @@
+ 	{
+ 		// Do nothing
+ 	}
++	
++	public String getPassword( String username )
++	{
++		return usersDb.getProperty( username );
++	}
+ 
+ 	public boolean isAuthenticated( Credentials credentials )
+ 	{
+
+Modified: trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -18,6 +18,8 @@
+ 
+ package rtspproxy.filter.authentication.scheme;
+ 
++import rtspproxy.rtsp.RtspMessage;
++
+ /**
+  * Base interface for diverse authentication schemes such as &quot;Basic&quot;, &quot;Digest&quot;
+  * and possibly others.
+@@ -31,7 +33,22 @@
+ 	 * @return the name of the authentication scheme.
+ 	 */
+ 	public String getName();
+-	
+-	public Credentials getCredentials( String authString );
+ 
++	/**
++	 * Constructs a Credentials object from the scheme-specific authentication
++	 * string.
++	 * 
++	 * @param authString
++	 *            the authentication string
++	 * @return a new Credentials object
++	 */
++	public Credentials getCredentials( RtspMessage message );
++
++	/**
++	 * @return the challenge string to be sent to client
++	 */
++	public String getChallenge();
++
++	public boolean computeAuthentication( Credentials credentials, String storedPassword );
++
+ }
+\ No newline at end of file
+
+Modified: trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -20,7 +20,10 @@
+ 
+ import org.apache.log4j.Logger;
+ 
++import rtspproxy.RtspService;
+ import rtspproxy.lib.Base64;
++import rtspproxy.lib.StringUtil;
++import rtspproxy.rtsp.RtspMessage;
+ 
+ /**
+  * Implementation of the Basic authentication scheme.
+@@ -32,36 +35,56 @@
+ 
+ 	private static Logger log = Logger.getLogger( BasicAuthentication.class );
+ 
++	private String realm;
++
++	public BasicAuthentication()
++	{
++		// Initiazialize the realm string
++		realm = &quot;realm=\&quot;RtspProxy @ &quot;
++				+ RtspService.getInstance().getAddress().getHostAddress() + &quot;\&quot;&quot;;
++	}
++
+ 	public String getName()
+ 	{
+ 		return &quot;Basic&quot;;
+ 	}
+ 
+-	public Credentials getCredentials( String authString )
++	public Credentials getCredentials( RtspMessage message )
+ 	{
+ 		String username;
+ 		String password;
+ 
++		String authString = message.getHeader( &quot;Proxy-Authorization&quot; );
++
+ 		try {
+ 			// authString = Basic [base64 data]
+ 			authString = authString.split( &quot; &quot; )[1];
+ 			// Basic scheme credential are BASE64 encoded.
+ 			byte[] decBytes = Base64.decode( authString );
+-			StringBuilder sb = new StringBuilder();
+-			for ( byte b : decBytes )
+-				sb.append( (char)b );
+-			String auth = sb.toString();
++			String auth = StringUtil.toString( decBytes );
+ 
+ 			log.debug( &quot;auth: &quot; + auth );
+ 			username = auth.split( &quot;:&quot;, 2 )[0];
+ 			password = auth.split( &quot;:&quot;, 2 )[1];
+ 			log.debug( &quot;username=&quot; + username + &quot; - password=&quot; + password );
+ 		} catch ( Exception e ) {
+-			log.info( &quot;Malformed authString: &quot; + authString );
++			log.warn( &quot;Malformed authString: &quot; + authString );
+ 			return null;
+ 		}
+ 
+ 		return new Credentials( username, password );
+ 	}
+ 
++	public String getChallenge()
++	{
++		// The Basic authentication challenge is simply composed of the Realm
++		return realm;
++	}
++
++	public boolean computeAuthentication( Credentials credentials, String storedPassword )
++	{
++		// In basic authentication the password is supplied in clear text
++		return storedPassword.equals( credentials.getPassword() );
++	}
++
+ }
+
+Modified: trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -26,9 +26,14 @@
+ public class Credentials
+ {
+ 
+-	private String userName;
+-	private String password;
++	protected String userName;
+ 
++	protected String password;
++	
++	public Credentials()
++	{
++	}
++
+ 	public Credentials( String userName, String password )
+ 	{
+ 		this.userName = userName;
+@@ -45,7 +50,7 @@
+ 
+ 	/**
+ 	 * @param password
+-	 *        The password to set.
++	 *            The password to set.
+ 	 */
+ 	public void setPassword( String password )
+ 	{
+@@ -62,10 +67,15 @@
+ 
+ 	/**
+ 	 * @param userName
+-	 *        The userName to set.
++	 *            The userName to set.
+ 	 */
+ 	public void setUserName( String userName )
+ 	{
+ 		this.userName = userName;
+ 	}
++
++	public String toString()
++	{
++		return &quot;(&quot; + userName + &quot;:&quot; + password + &quot;)&quot;;
++	}
+ }
+
+Added: trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -0,0 +1,318 @@
++package rtspproxy.filter.authentication.scheme;
++
++import static rtspproxy.lib.StringUtil.getStringMap;
++import static rtspproxy.lib.StringUtil.quote;
++import static rtspproxy.lib.StringUtil.toByteArray;
++import static rtspproxy.lib.StringUtil.toHexString;
++
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.Map;
++import java.util.Random;
++
++import org.apache.log4j.Logger;
++
++import rtspproxy.RtspService;
++import rtspproxy.lib.number.UnsignedLong;
++import rtspproxy.rtsp.RtspMessage;
++import rtspproxy.rtsp.RtspRequest;
++
++public class DigestAuthentication implements AuthenticationScheme
++{
++
++	private static Logger log = Logger.getLogger( DigestAuthentication.class );
++
++	/** This is the value of the validity of a challenge response. */
++	private static final int NONCE_TIMEOUT = 60 * 5; // 5 minutes
++
++	private UnsignedLong privateKey;
++
++	private String realm;
++
++	private MessageDigest md5;
++
++	public DigestAuthentication()
++	{
++		// Generate the private key
++		Random random = new Random();
++		privateKey = new UnsignedLong( random );
++
++		try {
++			md5 = MessageDigest.getInstance( &quot;MD5&quot; );
++		} catch ( NoSuchAlgorithmException e ) {
++		}
++
++		// Initiazialize the realm string
++		realm = &quot;realm=&quot;
++				+ quote( &quot;RtspProxy@&quot;
++						+ RtspService.getInstance().getAddress().getHostAddress() );
++	}
++
++	public String getName()
++	{
++		return &quot;Digest&quot;;
++	}
++
++	public Credentials getCredentials( RtspMessage message )
++	{
++		String authString = message.getHeader( &quot;Proxy-Authorization&quot; );
++		authString = authString.split( &quot; &quot; )[1];
++		Map&lt;String, String&gt; params = getStringMap( authString );
++		if ( params == null )
++			return null;
++
++		String username = params.get( &quot;username&quot; );
++		String response = params.get( &quot;response&quot; );
++		String realm = params.get( &quot;realm&quot; );
++		String nonce = params.get( &quot;nonce&quot; );
++		String uri = params.get( &quot;uri&quot; );
++		String cnonce = params.get( &quot;cnonce&quot; );
++		String nc = params.get( &quot;nc&quot; );
++		if ( username == null || response == null || realm == null || nonce == null
++				|| uri == null || cnonce == null || nc == null )
++			return null;
++
++		// Check the validity of the nonce
++		String sTimeStamp = nonce.substring( 0, 16 );
++		long timestamp = Long.valueOf( sTimeStamp, 16 );
++		long current = System.currentTimeMillis();
++		long diff = current - timestamp;
++		log.debug( &quot;Time diff: &quot; + ((float)diff / 1000) + &quot; sec&quot; );
++		if ( diff &lt; 0 || diff &gt; NONCE_TIMEOUT * 1000 )
++			// Timeout excedeed
++			return null;
++
++		DigestCredentials credentials = new DigestCredentials();
++		credentials.setUserName( username );
++		credentials.setResponse( response );
++		credentials.setRealm( realm );
++		credentials.setNonce( nonce );
++		credentials.setUri( uri );
++		credentials.setMethod( ((RtspRequest) message).getVerbString() );
++		credentials.setCnonce( cnonce );
++		credentials.setNc( nc );
++
++		return credentials;
++	}
++
++	public String getChallenge()
++	{
++		StringBuilder challenge = new StringBuilder();
++		challenge.append( realm ).append( &quot;,&quot; );
++		challenge.append( &quot;nonce=&quot; ).append( quote( newNonce() ) );
++		challenge.append( &quot;qop=auth,&quot; );
++		challenge.append( &quot;algorithm=MD5&quot; );
++		return challenge.toString();
++	}
++
++	/**
++	 * Generate a new nonce, defined as
++	 * &lt;code&gt;time-stamp H(time-stamp &quot;:&quot; private-key)&lt;/code&gt;
++	 * 
++	 * encoded in Base64.
++	 * 
++	 * @return the nonce
++	 */
++	private String newNonce()
++	{
++		UnsignedLong timestamp = new UnsignedLong( System.currentTimeMillis() );
++
++		byte[] firstPart = null;
++		synchronized ( md5 ) {
++			md5.update( timestamp.getBytes() );
++			md5.update( (byte) ':' );
++			md5.update( privateKey.getBytes() );
++			firstPart = md5.digest();
++		}
++
++		return toHexString( timestamp.getBytes() ) + toHexString( firstPart );
++	}
++
++	public boolean computeAuthentication( Credentials credentials, String storedPassword )
++	{
++		if ( !(credentials instanceof DigestCredentials) )
++			return false;
++
++		// response = KD ( H(A1), unq(nonce-value) &quot;:&quot; H(A2) )
++		// A1 = unq(username-value) &quot;:&quot; unq(realm-value) &quot;:&quot; passwd
++		// A2 = Method &quot;:&quot; digest-uri-value
++
++		DigestCredentials creds = (DigestCredentials) credentials;
++		String A1 = creds.getUserName() + &quot;:&quot; + creds.getRealm() + &quot;:&quot; + storedPassword;
++		String A2 = creds.getMethod() + &quot;:&quot; + creds.getUri();
++
++		byte[] response;
++		synchronized ( md5 ) {
++			md5.update( toByteArray( A1 ) );
++			byte[] HA1 = md5.digest();
++			md5.update( toByteArray( A2 ) );
++			byte[] HA2 = md5.digest();
++
++			String sHA1 = toHexString( HA1 );
++			String sHA2 = toHexString( HA2 );
++
++			md5.update( toByteArray( sHA1 ) );
++			md5.update( (byte) ':' );
++			md5.update( toByteArray( creds.getNonce() ) );
++			md5.update( (byte) ':' );
++			md5.update( toByteArray( creds.getNc() ) );
++			md5.update( (byte) ':' );
++			md5.update( toByteArray( creds.getCnonce() ) );
++			md5.update( (byte) ':' );
++			md5.update( toByteArray( &quot;auth&quot; ) );
++			md5.update( (byte) ':' );
++			md5.update( toByteArray( sHA2 ) );
++			response = md5.digest();
++		}
++
++		String expectedResponse = toHexString( response );
++		log.debug( &quot;Expected: &quot; + expectedResponse );
++		log.debug( &quot;Got:      &quot; + creds.getResponse() );
++		return expectedResponse.equals( creds.getResponse() );
++	}
++
++	/**
++	 * Specialized credentials class that holds all the relevant digest data.
++	 */
++	private static class DigestCredentials extends Credentials
++	{
++		private String response;
++
++		private String realm;
++
++		private String nonce;
++
++		private String uri;
++
++		private String method;
++
++		private String cnonce;
++
++		private String nc;
++
++		/**
++		 * @return Returns the nonce.
++		 */
++		public String getNonce()
++		{
++			return nonce;
++		}
++
++		/**
++		 * @param nonce
++		 *            The nonce to set.
++		 */
++		public void setNonce( String nonce )
++		{
++			this.nonce = nonce;
++		}
++
++		/**
++		 * @return Returns the realm.
++		 */
++		public String getRealm()
++		{
++			return realm;
++		}
++
++		/**
++		 * @param realm
++		 *            The realm to set.
++		 */
++		public void setRealm( String realm )
++		{
++			this.realm = realm;
++		}
++
++		/**
++		 * @return Returns the response.
++		 */
++		public String getResponse()
++		{
++			return response;
++		}
++
++		/**
++		 * @param response
++		 *            The response to set.
++		 */
++		public void setResponse( String response )
++		{
++			this.response = response;
++		}
++
++		/**
++		 * @return Returns the uri.
++		 */
++		public String getUri()
++		{
++			return uri;
++		}
++
++		/**
++		 * @param uri
++		 *            The uri to set.
++		 */
++		public void setUri( String uri )
++		{
++			this.uri = uri;
++		}
++
++		/**
++		 * @return Returns the method.
++		 */
++		public String getMethod()
++		{
++			return method;
++		}
++
++		/**
++		 * @param method
++		 *            The method to set.
++		 */
++		public void setMethod( String method )
++		{
++			this.method = method;
++		}
++
++		/**
++		 * @return Returns the cnonce.
++		 */
++		public String getCnonce()
++		{
++			return cnonce;
++		}
++
++		/**
++		 * @param cnonce
++		 *            The cnonce to set.
++		 */
++		public void setCnonce( String cnonce )
++		{
++			this.cnonce = cnonce;
++		}
++
++		/**
++		 * @return Returns the nc.
++		 */
++		public String getNc()
++		{
++			return nc;
++		}
++
++		/**
++		 * @param nc
++		 *            The nc to set.
++		 */
++		public void setNc( String nc )
++		{
++			this.nc = nc;
++		}
++
++		public String toString()
++		{
++			return &quot;(&quot; + userName + &quot;:&quot; + response + &quot;)&quot;;
++		}
++
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/ipaddress/IpAddressFilter.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -24,8 +24,8 @@
+ import org.apache.mina.common.IoFilterAdapter;
+ import org.apache.mina.common.IoSession;
+ 
+-import rtspproxy.Config;
+ import rtspproxy.Reactor;
++import rtspproxy.config.Config;
+ 
+ /**
+  * @author Matteo Merli
+@@ -42,8 +42,7 @@
+ 	{
+ 		// Check which backend implementation to use
+ 		// Default is plain-text implementation
+-		String className = Config.get( &quot;proxy.filter.ipaddress.implementationClass&quot;,
+-				&quot;rtspproxy.filter.ipaddress.PlainTextIpAddressProvider&quot; );
++		String className = Config.proxyFilterIpaddressImplementationClass.getValue();
+ 
+ 		Class providerClass;
+ 		try {
+
+Modified: trunk/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/filter/ipaddress/PlainTextIpAddressProvider.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -30,12 +30,11 @@
+ 
+ import org.apache.log4j.Logger;
+ 
+-import rtspproxy.Config;
++import rtspproxy.config.Config;
+ 
+ /**
+- * Implementation of the IpAddressFilter that is based on plain 
+- * text file containing instruction on &quot;allowed&quot; and &quot;denied&quot; 
+- * addresses and hosts.
++ * Implementation of the IpAddressFilter that is based on plain text file
++ * containing instruction on &quot;allowed&quot; and &quot;denied&quot; addresses and hosts.
+  * 
+  * @author Matteo Merli
+  */
+@@ -52,27 +51,30 @@
+ 	{
+ 
+ 		public RuleType type;
++
+ 		public Pattern pattern;
+ 	}
+ 
+ 	private static List&lt;Rule&gt; rules = new LinkedList&lt;Rule&gt;();
+ 
+-	/* (non-Javadoc)
++	/*
++	 * (non-Javadoc)
++	 * 
+ 	 * @see rtspproxy.auth.IpAddressProvider#init()
+ 	 */
+ 	public void init() throws Exception
+ 	{
+ 		// Load rules from file
+-		String fileName = Config.getHome()
+-				+ File.separator
+-				+ Config.get( &quot;proxy.filter.ipaddress.text.file&quot;, &quot;conf&quot; + File.separator
+-						+ &quot;ipfilter.txt&quot; );
++		String fileName = Config.getHome() + File.separator
++				+ Config.proxyFilterIpaddressTextFile.getValue();
+ 
+ 		loadRules( new FileReader( new File( fileName ) ) );
+ 
+ 	}
+ 
+-	/* (non-Javadoc)
++	/*
++	 * (non-Javadoc)
++	 * 
+ 	 * @see rtspproxy.auth.IpAddressProvider#shutdown()
+ 	 */
+ 	public void shutdown() throws Exception
+@@ -80,7 +82,9 @@
+ 		rules.clear();
+ 	}
+ 
+-	/* (non-Javadoc)
++	/*
++	 * (non-Javadoc)
++	 * 
+ 	 * @see rtspproxy.auth.IpAddressProvider#isBlocked(java.net.InetAddress)
+ 	 */
+ 	public boolean isBlocked( InetAddress address )
+@@ -98,17 +102,19 @@
+ 
+ 			if ( rule.pattern.matcher( ip ).matches()
+ 					|| rule.pattern.matcher( host ).matches() )
+-				// the address matches the pattern 
++				// the address matches the pattern
+ 				// check if it's allow or deny
+-				blocked = ( rule.type == RuleType.Allow ) ? false : true;
++				blocked = (rule.type == RuleType.Allow) ? false : true;
+ 		}
+ 
+ 		return blocked;
+ 	}
+ 
+-	/** 
++	/**
+ 	 * Reads the rules from a file
+-	 * @param reader Reader of a file containing the access rules
++	 * 
++	 * @param reader
++	 *            Reader of a file containing the access rules
+ 	 * @throws IOException
+ 	 */
+ 	protected void loadRules( Reader reader ) throws IOException
+@@ -118,24 +124,23 @@
+ 		String line;
+ 		int lineNumber = 0;
+ 		try {
+-			while ( ( line = in.readLine() ) != null ) {
+-				line = line.replaceAll( &quot;\t&quot;, &quot; &quot; ); // replace tabs 
++			while ( (line = in.readLine()) != null ) {
++				line = line.replaceAll( &quot;\t&quot;, &quot; &quot; ); // replace tabs
+ 				line = line.trim();
+ 				++lineNumber;
+ 
+ 				if ( line.length() == 0 )
+-					continue; // Ignore empty lines 
++					continue; // Ignore empty lines
+ 				if ( line.startsWith( &quot;#&quot; ) )
+ 					continue; // Ignore comments
+ 				RuleType ruleType = null;
+ 				if ( line.startsWith( &quot;Allow&quot; ) )
+ 					ruleType = RuleType.Allow;
++				else if ( line.startsWith( &quot;Deny&quot; ) )
++					ruleType = RuleType.Deny;
+ 				else
+-					if ( line.startsWith( &quot;Deny&quot; ) )
+-						ruleType = RuleType.Deny;
+-					else
+-						throw new IOException( &quot;Invalid filter pattern (line &quot;
+-								+ lineNumber + &quot;)&quot; );
++					throw new IOException( &quot;Invalid filter pattern (line &quot; + lineNumber
++							+ &quot;)&quot; );
+ 
+ 				// read the pattern
+ 				String[] patternSplit = line.split( &quot; &quot;, 2 );
+
+Added: trunk/src/main/java/rtspproxy/lib/StringUtil.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/lib/StringUtil.java	2005-12-20 20:20:43 UTC (rev 354)
++++ trunk/src/main/java/rtspproxy/lib/StringUtil.java	2005-12-20 20:23:02 UTC (rev 355)
+@@ -0,0 +1,99 @@
++package rtspproxy.lib;
++
++import java.util.HashMap;
++import java.util.Map;
++
++/**
++ * Random collection of strings utility function.
++ * 
++ * @author Matteo Merli
++ */
++public class StringUtil
++{
++
++	/**
++	 * Return a the passed string double quoted. Eg: &lt;code&gt;
++	 * String s = &quot;test&quot;;
++	 * StringUtil.quote( s ) == &quot;\&quot;test\&quot;&quot;
++	 * &lt;/code&gt;
++	 * 
++	 * @param str
++	 *            the string to be quoted
++	 * @return the quoted string
++	 */
++	public static String quote( String str )
++	{
++		return &quot;\&quot;&quot; + str + &quot;\&quot;&quot;;
++	}
++
++	/**
++	 * Remove the quotation marks from the string
++	 * 
++	 * @param str
++	 *            a quoted string
++	 * @return the string unquoted
++	 */
++	public static String unquote( String str )
++	{
++		if ( str.charAt( 0 ) == '&quot;' )
++			str = str.substring( 1 );
++		if ( str.charAt( str.length() - 1 ) == '&quot;' )
++			str = str.substring( 0, str.length() - 1 );
++		return str;
++	}
++
++	public static String toString( byte[] bytes )
++	{
++		StringBuilder sb = new StringBuilder();
++		for ( byte b : bytes )
++			sb.append( (char) b );
++		return sb.toString();
++	}
++	
++	public static String toHexString( byte[] bytes )
++	{
++		StringBuilder sb = new StringBuilder();
++		for ( byte b : bytes )
++			sb.append( hexLetters[(byte) ((b &gt;&gt; 4) &amp; 0x0F)] ).append(
++					hexLetters[b &amp; 0x0F] );
++		if ( sb.length() == 0 )
++			return &quot;0&quot;;
++		return sb.toString();
++	}
++
++	public static byte[] toByteArray( String str )
++	{
++		byte[] bytes = new byte[str.length()];
++		for ( int i = str.length() - 1; i &gt;= 0; i-- )
++			bytes[i] = (byte) str.charAt( i );
++		return bytes;
++	}
++
++	/**
++	 * Transforms a comma separated couples of key-values into a string Map (key -&gt;
++	 * value) eg: key1:&quot;value1&quot;,key2=&quot;value2&quot;,....
++	 * 
++	 * @param values
++	 * @return
++	 */
++	public static Map&lt;String, String&gt; getStringMap( String values )
++	{
++		Map&lt;String, String&gt; map = new HashMap&lt;String, String&gt;();
++		String key, value;
++
++		try {
++			for ( String tuple : values.split( &quot;,&quot; ) ) {
++				key = tuple.split( &quot;=&quot; )[0];
++				value = unquote( tuple.split( &quot;=&quot; )[1] );
++				map.put( key, value );
++			}
++		} catch ( Exception e ) {
++			return null;
++		}
++		return map;
++	}
++
++	protected static final char[] hexLetters = { '0', '1', '2', '3', '4', '5', '6', '7',
++			'8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/lib/StringUtil.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000040.html">[Rtspproxy-devel] r354 - in trunk/src/main/java/rtspproxy: . config proxy rtsp
+</A></li>
+	<LI>Next message: <A HREF="000041.html">[Rtspproxy-devel] r356 - trunk/src/resources/conf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#39">[ date ]</a>
+              <a href="thread.html#39">[ thread ]</a>
+              <a href="subject.html#39">[ subject ]</a>
+              <a href="author.html#39">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

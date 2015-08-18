@@ -1,0 +1,3256 @@
+From merlimat at mail.berlios.de  Wed Oct 11 12:52:32 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Wed, 11 Oct 2006 12:52:32 +0200
+Subject: [Rtspproxy-devel] r427 -
+	trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp
+Message-ID: <200610111052.k9BAqWYY021011@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-11 12:52:27 +0200 (Wed, 11 Oct 2006)
+New Revision: 427
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+Log:
+Added a hasHeader() method.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-09-04 23:26:18 UTC (rev 426)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-10-11 10:52:27 UTC (rev 427)
+@@ -24,6 +24,8 @@
+ import java.util.LinkedHashMap;
+ import java.util.Map;
+ 
++import org.apache.mina.common.ByteBuffer;
++
+ import rtspproxy.config.Config;
+ 
+ /**
+@@ -102,6 +104,17 @@
+     }
+ 
+     /**
++     * Test if a specific header is present in the message.
++     * 
++     * @param key name of the RTSP header
++     * @return true if the message has the header, false otherwise
++     */
++    public boolean hasHeader( String key )
++    {
++        return headers.get( key ) != null;
++    }
++
++    /**
+      * @param key
+      *            Header name
+      * @param defaultValue
+@@ -181,7 +194,7 @@
+ 
+         if ( Config.proxyClientAddress.getStringValue() != null ) {
+             String via = getHeader( "Via" );
+-            StringBuffer newVia = new StringBuffer();
++            StringBuilder newVia = new StringBuilder();
+ 
+             if ( via != null && via.length() > 0 ) {
+                 newVia.append( via );
+@@ -219,6 +232,15 @@
+     {
+         this.buffer.append( other );
+     }
++    
++    /**
++     * @param other
++     *            buffer with content to be appended
++     */
++    public void appendToBuffer( ByteBuffer other )
++    {
++        this.buffer.append( other );
++    }
+ 
+     /**
+      * @param other
+@@ -266,10 +288,10 @@
+      */
+     public int getSequenceNumber()
+     {
+-        if ( this.sequenceNumber == 0 ) {
++        if ( sequenceNumber == 0 ) {
+             try {
+-                if ( this.headers.containsKey( "CSeq" ) )
+-                    this.sequenceNumber = Integer.parseInt( this.headers.get( "CSeq" ) );
++                if ( headers.containsKey( "CSeq" ) )
++                    sequenceNumber = Integer.parseInt( headers.get( "CSeq" ) );
+             } catch ( Exception e ) {
+                   // Do nothing
+             }
+@@ -290,4 +312,7 @@
+         this.sequenceNumber = sequenceNumber;
+         this.headers.put( "CSeq", String.valueOf( this.sequenceNumber ) );
+     }
++    
++    @Override
++    public abstract String toString();
+ }
+
+
+
+From merlimat at mail.berlios.de  Wed Oct 11 13:02:03 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Wed, 11 Oct 2006 13:02:03 +0200
+Subject: [Rtspproxy-devel] r428 - trunk/RTSPProxy-App/src/resources/conf
+Message-ID: <200610111102.k9BB234P031141@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-11 13:01:59 +0200 (Wed, 11 Oct 2006)
+New Revision: 428
+
+Added:
+   trunk/RTSPProxy-App/src/resources/conf/log4j.dtd
+Modified:
+   trunk/RTSPProxy-App/src/resources/conf/rtspproxy.log4j.xml
+Log:
+Added a dtd to validate log4j configuration.
+
+Added: trunk/RTSPProxy-App/src/resources/conf/log4j.dtd
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/conf/log4j.dtd	2006-10-11 10:52:27 UTC (rev 427)
++++ trunk/RTSPProxy-App/src/resources/conf/log4j.dtd	2006-10-11 11:01:59 UTC (rev 428)
+@@ -0,0 +1,162 @@
++<!-- Authors: Chris Taylor, Ceki Gulcu. -->
++
++<!-- Version: 1.2 -->
++
++<!-- A configuration element consists of optional renderer
++elements,appender elements, categories and an optional root
++element. -->
++
++<!ELEMENT log4j:configuration (renderer*, appender*,(category|logger)*,root?,
++                               categoryFactory?)>
++
++<!-- The "threshold" attribute takes a level value such that all -->
++<!-- logging statements with a level equal or below this value are -->
++<!-- disabled. -->
++
++<!-- Setting the "debug" or "configDebug" attributes enable the printing -->
++<!-- of internal log4j logging statements.                               -->
++
++<!-- By default, debug attribute is "null", meaning that we not touch    -->
++<!-- internal log4j logging settings.                                    -->
++
++     
++<!ATTLIST log4j:configuration
++  xmlns:log4j              CDATA #FIXED "http://jakarta.apache.org/log4j/" 
++  threshold                (all|debug|info|warn|error|fatal|off|null) "null"
++  debug                    (true|false|null)  "null"
++>
++
++<!-- renderer elements allow the user to customize the conversion of  -->
++<!-- message objects to String.                                       -->
++
++<!ELEMENT renderer EMPTY>
++<!ATTLIST renderer
++  renderedClass  CDATA #REQUIRED
++  renderingClass CDATA #REQUIRED
++>
++
++<!-- Appenders must have a name and a class. -->
++<!-- Appenders may contain an error handler, a layout, optional parameters -->
++<!-- and filters. They may also reference (or include) other appenders. -->
++<!ELEMENT appender (errorHandler?, param*, layout?, filter*, appender-ref*)>
++<!ATTLIST appender
++  name 		ID 	#REQUIRED
++  class 	CDATA	#REQUIRED
++>
++
++<!ELEMENT layout (param*)>
++<!ATTLIST layout
++  class		CDATA	#REQUIRED
++>
++
++<!ELEMENT filter (param*)>
++<!ATTLIST filter
++  class		CDATA	#REQUIRED
++>
++
++<!-- ErrorHandlers can be of any class. They can admit any number of -->
++<!-- parameters. -->
++
++<!ELEMENT errorHandler (param*, root-ref?, logger-ref*,  appender-ref?)>
++<!ATTLIST errorHandler
++   class        CDATA   #REQUIRED 
++>
++
++<!ELEMENT root-ref EMPTY>
++
++<!ELEMENT logger-ref EMPTY>
++<!ATTLIST logger-ref
++  ref IDREF #REQUIRED
++>
++
++<!ELEMENT param EMPTY>
++<!ATTLIST param
++  name		CDATA   #REQUIRED
++  value		CDATA	#REQUIRED
++>
++
++
++<!-- The priority class is org.apache.log4j.Level by default -->
++<!ELEMENT priority (param*)>
++<!ATTLIST priority
++  class   CDATA	#IMPLIED
++  value	  CDATA #REQUIRED
++>
++
++<!-- The level class is org.apache.log4j.Level by default -->
++<!ELEMENT level (param*)>
++<!ATTLIST level
++  class   CDATA	#IMPLIED
++  value	  CDATA #REQUIRED
++>
++
++
++<!-- If no level element is specified, then the configurator MUST not -->
++<!-- touch the level of the named category. -->
++<!ELEMENT category (param*,(priority|level)?,appender-ref*)>
++<!ATTLIST category
++  class         CDATA   #IMPLIED
++  name		CDATA	#REQUIRED
++  additivity	(true|false) "true"  
++>
++
++<!-- If no level element is specified, then the configurator MUST not -->
++<!-- touch the level of the named logger. -->
++<!ELEMENT logger (level?,appender-ref*)>
++<!ATTLIST logger
++  name		ID	#REQUIRED
++  additivity	(true|false) "true"  
++>
++
++
++<!ELEMENT categoryFactory (param*)>
++<!ATTLIST categoryFactory
++   class        CDATA #REQUIRED>
++
++<!ELEMENT appender-ref EMPTY>
++<!ATTLIST appender-ref
++  ref IDREF #REQUIRED
++>
++
++<!-- If no priority element is specified, then the configurator MUST not -->
++<!-- touch the priority of root. -->
++<!-- The root category always exists and cannot be subclassed. -->
++<!ELEMENT root (param*, (priority|level)?, appender-ref*)>
++
++
++<!-- ==================================================================== -->
++<!--                       A logging event                                -->
++<!-- ==================================================================== -->
++<!ELEMENT log4j:eventSet (log4j:event*)>
++<!ATTLIST log4j:eventSet
++  xmlns:log4j             CDATA #FIXED "http://jakarta.apache.org/log4j/" 
++  version                (1.1|1.2) "1.2" 
++  includesLocationInfo   (true|false) "true"
++>
++
++
++
++<!ELEMENT log4j:event (log4j:message, log4j:NDC?, log4j:throwable?,
++                       log4j:locationInfo?) >
++
++<!-- The timestamp format is application dependent. -->
++<!ATTLIST log4j:event
++    logger     CDATA #REQUIRED
++    level      CDATA #REQUIRED
++    thread     CDATA #REQUIRED
++    timestamp  CDATA #REQUIRED
++>
++
++<!ELEMENT log4j:message (#PCDATA)>
++<!ELEMENT log4j:NDC (#PCDATA)>
++
++<!ELEMENT log4j:throwable (#PCDATA)>
++
++<!ELEMENT log4j:locationInfo EMPTY>
++<!ATTLIST log4j:locationInfo
++  class  CDATA	#REQUIRED
++  method CDATA	#REQUIRED
++  file   CDATA	#REQUIRED
++  line   CDATA	#REQUIRED
++>
++
+
+
+Property changes on: trunk/RTSPProxy-App/src/resources/conf/log4j.dtd
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Modified: trunk/RTSPProxy-App/src/resources/conf/rtspproxy.log4j.xml
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/conf/rtspproxy.log4j.xml	2006-10-11 10:52:27 UTC (rev 427)
++++ trunk/RTSPProxy-App/src/resources/conf/rtspproxy.log4j.xml	2006-10-11 11:01:59 UTC (rev 428)
+@@ -23,7 +23,7 @@
+ 
+ 	<!-- A time/date based rolling appender -->
+ 	<appender name="FILE" class="org.apache.log4j.FileAppender">
+-		<param name="File" value="/tmp/rtspproxy.log" />
++		<param name="File" value="log/rtspproxy.log" />
+ 		<param name="Append" value="false" />
+ 
+ 		<layout class="org.apache.log4j.PatternLayout">
+@@ -39,7 +39,7 @@
+ 
+ 	<!-- A time/date based rolling appender -->
+ 	<appender name="ACCOUNTING" class="org.apache.log4j.FileAppender">
+-		<param name="File" value="/tmp/rtspproxy-accounting.log" />
++		<param name="File" value="log/access.log" />
+ 		<param name="Append" value="true" />
+ 
+ 		<layout class="org.apache.log4j.PatternLayout">
+@@ -67,10 +67,6 @@
+ 		<appender-ref ref="ACCOUNTING" />
+ 	</category>
+ 	
+-	<category name="rtspproxy.rtsp.RtspDecoder">
+-		<priority value="INFO" />
+-	</category>
+-	
+ 	<category name="rtspproxy.ProxyService">
+ 		<priority value="INFO" />
+ 	</category>
+
+
+
+From merlimat at mail.berlios.de  Wed Oct 11 13:04:46 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Wed, 11 Oct 2006 13:04:46 +0200
+Subject: [Rtspproxy-devel] r429 - trunk/RTSPProxy-App/src/resources/conf
+Message-ID: <200610111104.k9BB4kwU000598@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-11 13:04:42 +0200 (Wed, 11 Oct 2006)
+New Revision: 429
+
+Modified:
+   trunk/RTSPProxy-App/src/resources/conf/rtspproxy.log4j.xml
+Log:
+Reformatting and silented some categories.
+
+Modified: trunk/RTSPProxy-App/src/resources/conf/rtspproxy.log4j.xml
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/conf/rtspproxy.log4j.xml	2006-10-11 11:01:59 UTC (rev 428)
++++ trunk/RTSPProxy-App/src/resources/conf/rtspproxy.log4j.xml	2006-10-11 11:04:42 UTC (rev 429)
+@@ -14,8 +14,7 @@
+ 	| owebsite: http://jakarta.apache.org/log4j
+ -->
+ 
+-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/"
+-	debug="false">
++<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+ 
+ 	<!-- ================================= -->
+ 	<!-- Preserve messages in a local file -->
+@@ -28,8 +27,7 @@
+ 
+ 		<layout class="org.apache.log4j.PatternLayout">
+ 			<!-- The default pattern: Date Priority [Category] Message\n -->
+-			<param name="ConversionPattern"
+-				value="%9r %5p [%t] %c - %m%n" />
++			<param name="ConversionPattern" value="%9r %5p [%t] %c - %m%n" />
+ 
+ 			<!-- The full pattern: Date MS Priority [Category] (Thread:NDC) Message\n
+ 				<param name="ConversionPattern" value="%d %-5r %-5p [%c] (%t:%x) %m%n"/>
+@@ -57,8 +55,7 @@
+ 
+ 		<layout class="org.apache.log4j.PatternLayout">
+ 			<!-- The default pattern: Date Priority [Category] Message\n -->
+-			<param name="ConversionPattern"
+-				value="%9r %5p [%t] %c - %m%n" />
++			<param name="ConversionPattern" value="%9r %5p [%t] %c - %m%n" />
+ 		</layout>
+ 	</appender>
+ 
+@@ -66,18 +63,26 @@
+ 		<priority value="INFO" />
+ 		<appender-ref ref="ACCOUNTING" />
+ 	</category>
+-	
++
+ 	<category name="rtspproxy.ProxyService">
+ 		<priority value="INFO" />
+ 	</category>
+ 
++	<category name="rtspproxy.rtsp.RtspHeaderDecoder">
++		<priority value="INFO" />
++	</category>
++
++	<category name="org.apache.mina">
++		<priority value="INFO" />
++	</category>
++
+ 	<!-- ======================= -->
+ 	<!-- Setup the Root category -->
+ 	<!-- ======================= -->
+ 
+ 	<root>
+ 		<priority value="INFO" />
+-		
++
+ 		<appender-ref ref="CONSOLE" />
+ 		<!-- appender-ref ref="FILE" / -->
+ 	</root>
+
+
+
+From merlimat at mail.berlios.de  Thu Oct 12 12:44:01 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Thu, 12 Oct 2006 12:44:01 +0200
+Subject: [Rtspproxy-devel] r431 - in
+	trunk/RTSPProxy-Core/src/main/java/rtspproxy: . config filter
+Message-ID: <200610121044.k9CAi1G6024429@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-12 12:43:55 +0200 (Thu, 12 Oct 2006)
+New Revision: 431
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java
+Log:
+Changed the ThreadPool handling code.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -31,7 +31,6 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.filter.ThreadPoolFilter;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
+@@ -314,24 +313,5 @@
+             throw new RuntimeException( e );
+         }
+     }
+-
+-    /**
+-     * service may provide their own ThreadPoolFilter instances.
+-     * 
+-     * @return a ThreadPoolFilter instance or null if the service wants to use
+-     *         the shared instance.
+-     * 
+-     */
+-    public ThreadPoolFilter getThreadPoolFilter()
+-    {
+-        return null;
+-    }
+-
+-    /**
+-     * flag if the service wants to use a ThreadPoolFilter at all
+-     */
+-    public boolean wantThreadPoolFilter()
+-    {
+-        return true;
+-    }
++    
+ }
+
+
+Property changes on: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+___________________________________________________________________
+Name: svn:keywords
+   - Id URL Rev
+   + LastChangedRevision HeadURL Id
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -27,15 +27,16 @@
+ import java.util.Set;
+ import java.util.concurrent.ConcurrentHashMap;
+ import java.util.concurrent.ConcurrentMap;
++import java.util.concurrent.Executor;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
+ 
+ import org.apache.mina.common.IoAcceptor;
+-import org.apache.mina.common.IoFilter;
+-import org.apache.mina.common.IoFilterChain;
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.filter.ThreadPoolFilter;
++import org.apache.mina.filter.executor.ExecutorExecutor;
+ import org.apache.mina.transport.socket.nio.DatagramAcceptor;
+ import org.apache.mina.transport.socket.nio.DatagramAcceptorConfig;
+ import org.apache.mina.transport.socket.nio.DatagramSessionConfig;
+@@ -56,41 +57,37 @@
+  */
+ public final class ProxyServiceRegistry extends Singleton implements Observer
+ {
+-
+-    private static Logger log = LoggerFactory.getLogger( ProxyServiceRegistry.class );
+-
+-    public static final String threadPoolFilterNAME = "threadPoolFilter";
+-
+-    /** Thread pool instance that will be added to all acceptors. */
+-    private final ThreadPoolFilter threadPoolFilter = new ThreadPoolFilter(
+-            "sharedThreadPoolFilter" );
+-
++    
++    private static Logger log = LoggerFactory
++            .getLogger( ProxyServiceRegistry.class );
++    
+     /** All the services, mapped by name. */
+     private final ConcurrentMap<String, ProxyService> services = new ConcurrentHashMap<String, ProxyService>();
+-
++    
+     /** Map a ProxyService to all its bound addresses. */
+     private final ConcurrentMap<ProxyService, Set<SocketAddress>> addresses = new ConcurrentHashMap<ProxyService, Set<SocketAddress>>();
+-
++    
+     /** Map a ProxyService to its own IoAcceptor. */
+     private final ConcurrentMap<ProxyService, IoAcceptor> acceptors = new ConcurrentHashMap<ProxyService, IoAcceptor>();
+-
++    
+     private SocketAcceptor socketAcceptor = null;
+-
++    
+     private DatagramAcceptor datagramAcceptor = null;
+-
++    
++    private ExecutorService executor = Executors.newCachedThreadPool();
++    
+     /**
+      * Construct a new ProxyServiceRegistry. This class is a Singleton, so there
+      * can be only one instance.
+      */
+     public ProxyServiceRegistry()
+     {
+-        int poolMaxSize = Config.threadPoolSize.getValue();
+-        threadPoolFilter.setMaximumPoolSize( poolMaxSize );
+-
++        /// int poolMaxSize = Config.threadPoolSize.getValue();
++        
+         // Subscribe to thread pool size changes notification
+         Config.threadPoolSize.addObserver( this );
+     }
+-
++    
+     /**
+      * Bind a Service to a local address and specify the IoHandler that will
+      * manage ingoing and outgoing messages.
+@@ -103,12 +100,12 @@
+      *            the local address to bind on
+      * @throws IOException
+      */
+-    public void bind( ProxyService service, IoHandler ioHandler, InetSocketAddress address )
+-            throws IOException
++    public void bind( ProxyService service, IoHandler ioHandler,
++            InetSocketAddress address ) throws IOException
+     {
+         bind( service, ioHandler, address, null );
+     }
+-
++    
+     /**
+      * Bind a Service to a local address and specify the IoHandler that will
+      * manage ingoing and outgoing messages.
+@@ -132,24 +129,22 @@
+             throws IOException
+     {
+         IoAcceptor acceptor = newAcceptor( service );
+-
+-        IoFilterChainBuilder builder = new IoFilterChainBuilderWrapper( service,
+-                filterChainBuilder );
+-        acceptor.setFilterChainBuilder( builder );
++        
++        acceptor.setFilterChainBuilder( filterChainBuilder );
+         acceptor.bind( address, ioHandler );
+-
++        
+         services.put( service.getName(), service );
+-
++        
+         if ( addresses.get( service ) == null )
+             addresses.put( service, new HashSet<SocketAddress>() );
+         addresses.get( service ).add( address );
+     }
+-
++    
+     public void unbind( ProxyService service ) throws Exception
+     {
+         unbind( service, true );
+     }
+-
++    
+     /**
+      * Unbind the service from all of its bound addresses.
+      * 
+@@ -161,35 +156,40 @@
+             throws Exception
+     {
+         IoAcceptor acceptor = acceptors.get( service );
+-
+-        for ( SocketAddress address : addresses.get( service ) ) {
+-            try {
++        
++        for ( SocketAddress address : addresses.get( service ) )
++        {
++            try
++            {
+                 // Disconnect all clients
+                 Set sessions = acceptor.getManagedSessions( address );
+-                log.debug( "{} has {} connected clients.", service.getName(), sessions
+-                        .size() );
+-                for ( Object obj : sessions ) {
++                log.debug( "{} has {} connected clients.", service.getName(),
++                        sessions.size() );
++                for ( Object obj : sessions )
++                {
+                     IoSession session = (IoSession) obj;
+                     session.close();
+                 }
+-
++                
+                 acceptor.unbind( address );
+-            } catch ( Exception e ) {
++            } catch ( Exception e )
++            {
+                 // log.debug( "Error unbinding {}", service.getName() );
+                 // Exceptions.logStackTrace( e );
+                 // ignore
+             }
+         }
+-
+-        if ( stopService && service.isRunning() ) {
++        
++        if ( stopService && service.isRunning() )
++        {
+             service.stop();
+         }
+-
++        
+         services.remove( service.getName() );
+         acceptors.remove( service );
+         addresses.remove( service );
+     }
+-
++    
+     /**
+      * Unbind all the services registered in the ProxyServiceRegistry, from all
+      * of they bound addresses.
+@@ -198,11 +198,12 @@
+      */
+     public synchronized void unbindAll() throws Exception
+     {
+-        for ( ProxyService service : services.values() ) {
++        for ( ProxyService service : services.values() )
++        {
+             unbind( service );
+         }
+     }
+-
++    
+     /**
+      * @return a Set containing all the registered services.
+      */
+@@ -210,7 +211,7 @@
+     {
+         return new HashSet<ProxyService>( services.values() );
+     }
+-
++    
+     /**
+      * Return the instance of a ProxyService.
+      * 
+@@ -222,7 +223,7 @@
+     {
+         return services.get( name );
+     }
+-
++    
+     /**
+      * Returns a reference to the IoAcceptor used by the specified ProxyService.
+      * 
+@@ -236,10 +237,10 @@
+         ProxyService service = services.get( serviceName );
+         if ( service == null )
+             return null;
+-
++        
+         return acceptors.get( service );
+     }
+-
++    
+     /**
+      * Returns a reference to the IoAcceptor used by the specified ProxyService.
+      * 
+@@ -251,7 +252,7 @@
+     {
+         return acceptors.get( service );
+     }
+-
++    
+     /**
+      * Gets a new IoAcceptor suitable for the specified ProxyService
+      * 
+@@ -265,21 +266,27 @@
+         IoAcceptor acceptor = acceptors.get( service );
+         if ( acceptor != null )
+             return acceptor;
+-
++        
+         // Create a new one
+         TransportType transportType = service.getTransportType();
+-        if ( transportType == TransportType.SOCKET ) {
+-            if ( socketAcceptor == null ) {
+-                socketAcceptor = new SocketAcceptor();
++        if ( transportType == TransportType.SOCKET )
++        {
++            if ( socketAcceptor == null )
++            {
++                socketAcceptor = new SocketAcceptor( 1, new ExecutorExecutor(
++                        executor ) );
+                 SocketAcceptorConfig config = (SocketAcceptorConfig) socketAcceptor
+                         .getDefaultConfig();
+                 config.setReuseAddress( true );
+             }
+             acceptor = socketAcceptor;
+-
+-        } else if ( transportType == TransportType.DATAGRAM ) {
+-            if ( datagramAcceptor == null ) {
+-                datagramAcceptor = new DatagramAcceptor(); // datagramAcceptor;
++            
++        } else if ( transportType == TransportType.DATAGRAM )
++        {
++            if ( datagramAcceptor == null )
++            {
++                datagramAcceptor = new DatagramAcceptor( 
++                        new ExecutorExecutor( executor ) ); 
+                 DatagramAcceptorConfig config = (DatagramAcceptorConfig) datagramAcceptor
+                         .getDefaultConfig();
+                 DatagramSessionConfig sessionConfig = (DatagramSessionConfig) config
+@@ -287,17 +294,23 @@
+                 sessionConfig.setReuseAddress( true );
+             }
+             acceptor = datagramAcceptor;
+-
+-        } else {
++            
++        } else
++        {
+             log.debug( "Unrecognized transport type: {}", transportType );
+             return null;
+         }
+-
++        
+         // Save the acceptor
+         acceptors.put( service, acceptor );
+         return acceptor;
+     }
+-
++    
++    public Executor getExecutor()
++    {
++        return executor;
++    }
++    
+     /**
+      * Gets notification of changed parameters.
+      * 
+@@ -307,73 +320,25 @@
+     {
+         if ( !(o instanceof Parameter) )
+             throw new IllegalArgumentException( "Only observe parameters" );
+-
+-        if ( o == Config.threadPoolSize ) {
++        
++        if ( o == Config.threadPoolSize )
++        {
+             // Update the thread pool size
+-            threadPoolFilter.setMaximumPoolSize( Config.threadPoolSize.getValue() );
+-            log.info( "Changed ThreadPool size. New max size: {}", threadPoolFilter
+-                    .getMaximumPoolSize() );
++            // XXX: Refactor this: the thread pool should have no fixed upper
++            //      limit
++            // executor.setMaximumPoolSize( Config.threadPoolSize.getValue() );
++            // log.info( "Changed ThreadPool size. New max size: {}",
++            //        executor.getMaximumPoolSize() );
+         }
+     }
+-
++    
+     /**
+-     * @param service
+-     * @param service
+-     * @return the shared thread pool filter instance
+-     */
+-    public IoFilter getThreadPoolFilterInstance( ProxyService service )
+-    {
+-        ThreadPoolFilter filter = service.getThreadPoolFilter();
+-
+-        if ( filter == null )
+-            filter = threadPoolFilter;
+-        return filter;
+-    }
+-
+-    /**
+      * @return a reference to the (unique) ProxyServiceRegistry instance
+      */
+     public static ProxyServiceRegistry getInstance()
+     {
+-        return (ProxyServiceRegistry) Singleton.getInstance( ProxyServiceRegistry.class );
++        return (ProxyServiceRegistry) Singleton
++                .getInstance( ProxyServiceRegistry.class );
+     }
+-
+-    /**
+-     * Wrapper class for the IoFilterChainBuilder that always add the thread
+-     * pool filter as the filter in the chain.
+-     * <p>
+-     * The thread pool filter will be shared by all the services and acceptors.
+-     */
+-    protected static class IoFilterChainBuilderWrapper implements IoFilterChainBuilder
+-    {
+-
+-        private final ProxyService service;
+-
+-        private final IoFilterChainBuilder originalBuilder;
+-
+-        public IoFilterChainBuilderWrapper( ProxyService service,
+-                IoFilterChainBuilder originalBuilder )
+-        {
+-            this.service = service;
+-            this.originalBuilder = originalBuilder;
+-        }
+-
+-        /*
+-         * (non-Javadoc)
+-         * 
+-         * @see org.apache.mina.common.IoFilterChainBuilder#buildFilterChain(org.apache.mina.common.IoFilterChain)
+-         */
+-        public void buildFilterChain( IoFilterChain chain ) throws Exception
+-        {
+-            chain.getSession().setAttribute( ProxyService.SERVICE, service );
+-
+-            if ( service.wantThreadPoolFilter() ) {
+-                IoFilter threadPoolFilter = ProxyServiceRegistry.getInstance()
+-                        .getThreadPoolFilterInstance( service );
+-                chain.addFirst( threadPoolFilterNAME, threadPoolFilter );
+-            }
+-            originalBuilder.buildFilterChain( chain );
+-        }
+-    }
+-
++    
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -244,12 +244,6 @@
+             false, // mutable
+             "Enable keep-alive on RTSP connections to remote servers." );
+ 
+-    public static final BooleanParameter proxyRtspAllowBrokenHeaders = new BooleanParameter(
+-            "proxy.transport.hacks.rtspAllowBrokenHeaders", // name
+-            false, // default value
+-            false, // mutable
+-            "Allow certain work-arounds for clients generating non-conformant RTSP protocol traffic." );
+-
+     public static final BooleanParameter proxyRtspOfferSsrcToServer = new BooleanParameter(
+             "proxy.transport.hacks.offerRemoteSsrc", // name
+             false, // default value
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -30,14 +30,14 @@
+ public class RtspClientFilters extends RtspFilters
+ {
+ 
+-	public void buildFilterChain( IoFilterChain chain ) throws Exception
+-	{
+-		addIpAddressFilter( chain, Side.Client );
+-		addRtspCodecFilter( chain );
+-		addAuthenticationFilter( chain );
+-		addRewriteFilter( chain, Side.Client );
+-		addAccountingFilter( chain );
+-		addControlFilter( chain );
+-	}
++    public void buildFilterChain( IoFilterChain chain ) throws Exception
++    {
++        addIpAddressFilter( chain, Side.Client );
++        addRtspCodecFilter( chain );
++        addAuthenticationFilter( chain );
++        addRewriteFilter( chain, Side.Client );
++        addAccountingFilter( chain );
++        addControlFilter( chain );
++    }
+ 
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -21,19 +21,14 @@
+ import org.apache.mina.common.IoFilter;
+ import org.apache.mina.common.IoFilterChain;
+ import org.apache.mina.common.IoFilterChainBuilder;
+-import org.apache.mina.filter.codec.ProtocolCodecFactory;
+ import org.apache.mina.filter.codec.ProtocolCodecFilter;
+-import org.apache.mina.filter.codec.ProtocolDecoder;
+-import org.apache.mina.filter.codec.ProtocolEncoder;
+ 
+-import rtspproxy.ProxyServiceRegistry;
+ import rtspproxy.filter.accounting.AccountingFilter;
+ import rtspproxy.filter.authentication.AuthenticationFilter;
+ import rtspproxy.filter.ipaddress.IpAddressFilter;
+ import rtspproxy.filter.rewrite.UrlRewritingFilter;
+ import rtspproxy.lib.Side;
+-import rtspproxy.rtsp.RtspDecoder;
+-import rtspproxy.rtsp.RtspEncoder;
++import rtspproxy.rtsp.RtspCodecFactory;
+ 
+ /**
+  * Base class for filter chains based on configuration settings.
+@@ -43,27 +38,9 @@
+ public abstract class RtspFilters implements IoFilterChainBuilder
+ {
+ 
+-    private static ProtocolCodecFactory codecFactory = new ProtocolCodecFactory()
+-    {
++    private static final IoFilter codecFilter = new ProtocolCodecFilter( RtspCodecFactory
++            .getInstance() );
+ 
+-        // Decoders can be shared
+-        private final ProtocolEncoder rtspEncoder = new RtspEncoder();
+-
+-        private final ProtocolDecoder rtspDecoder = new RtspDecoder();
+-
+-        public ProtocolEncoder getEncoder()
+-        {
+-            return rtspEncoder;
+-        }
+-
+-        public ProtocolDecoder getDecoder()
+-        {
+-            return rtspDecoder;
+-        }
+-    };
+-
+-    private static final IoFilter codecFilter = new ProtocolCodecFilter( codecFactory );
+-
+     private static final String rtspCodecNAME = "rtspCodec";
+ 
+     /**
+@@ -84,8 +61,7 @@
+         if ( filter == null || !filter.isRunning() )
+             return;
+ 
+-        chain.addAfter( ProxyServiceRegistry.threadPoolFilterNAME, filter.getChainName(),
+-                filter );
++        chain.addFirst( filter.getChainName(), filter );
+     }
+ 
+     /**
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -30,13 +30,13 @@
+ public class RtspServerFilters extends RtspFilters
+ {
+ 
+-	public void buildFilterChain( IoFilterChain chain ) throws Exception
+-	{
+-		addIpAddressFilter( chain, Side.Server );
+-		addRtspCodecFilter( chain );
+-		addRewriteFilter( chain, Side.Server );
+-		addAccountingFilter( chain );
+-		addControlFilter ( chain );
+-	}
++    public void buildFilterChain( IoFilterChain chain ) throws Exception
++    {
++        addIpAddressFilter( chain, Side.Server );
++        addRtspCodecFilter( chain );
++        addRewriteFilter( chain, Side.Server );
++        addAccountingFilter( chain );
++        addControlFilter( chain );
++    }
+ 
+ }
+
+
+
+From merlimat at mail.berlios.de  Thu Oct 12 12:46:53 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Thu, 12 Oct 2006 12:46:53 +0200
+Subject: [Rtspproxy-devel] r432 -
+	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+Message-ID: <200610121046.k9CAkroJ028784@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-12 12:46:50 +0200 (Thu, 12 Oct 2006)
+New Revision: 432
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+Log:
+Refactorized the handler code.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 10:43:55 UTC (rev 431)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 10:46:50 UTC (rev 432)
+@@ -29,13 +29,16 @@
+ 
+ import org.apache.mina.common.ConnectFuture;
+ import org.apache.mina.common.IoFuture;
++import org.apache.mina.common.IoFutureListener;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TrafficMask;
+-import org.apache.mina.common.IoFuture.Callback;
++import org.apache.mina.filter.executor.ExecutorExecutor;
+ import org.apache.mina.transport.socket.nio.SocketConnector;
++import org.apache.mina.transport.socket.nio.SocketSessionConfig;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
++import rtspproxy.ProxyServiceRegistry;
+ import rtspproxy.RdtClientService;
+ import rtspproxy.RdtServerService;
+ import rtspproxy.RtcpClientService;
+@@ -60,29 +63,32 @@
+ /**
+  * @author Matteo Merli
+  */
+-public class ProxyHandler implements Callback
++public class ProxyHandler implements IoFutureListener
+ {
+-
+-    private static Logger log = LoggerFactory.getLogger( ProxyHandler.class );
+-
++    
++    final static Logger log = LoggerFactory.getLogger( ProxyHandler.class );
++    
+     /** Used to save a reference to this handler in the IoSession */
+     protected static final String ATTR = ProxyHandler.class.toString() + "Attr";
+-
++    
+     protected static final String setupUrlATTR = ProxyHandler.class.toString()
+             + "setupUrlATTR";
+-
+-    protected static final String clientPortsATTR = ProxyHandler.class.toString()
++    
++    protected static final String clientPortsATTR = ProxyHandler.class
++            .toString()
+             + "clientPortsATTR";
+-
+-    protected static final String clientRdtPortATTR = ProxyHandler.class.toString()
++    
++    protected static final String clientRdtPortATTR = ProxyHandler.class
++            .toString()
+             + "clientRdtPortATTR";
+-
++    
+     private IoSession clientSession = null;
+-
++    
+     private IoSession serverSession = null;
+-
+-    private ConcurrentHashMap<String, Object> sharedSessionObjects = new ConcurrentHashMap<String, Object>();
+-
++    
++    private ConcurrentHashMap<String, Object> sharedSessionObjects = 
++                                    new ConcurrentHashMap<String, Object>();
++    
+     /**
+      * Creates a new ProxyHandler from a client side protocol session.
+      * 
+@@ -91,20 +97,26 @@
+     public ProxyHandler( IoSession clientSession )
+     {
+         this.clientSession = clientSession;
+-        this.clientSession.setAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
++        this.clientSession.setAttribute(
++                ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
+                 sharedSessionObjects );
+     }
+-
++    
+     public void passToServer( RtspMessage message )
+     {
+         log.debug( "Pass to server" );
+-        if ( message.getHeader( "Session" ) != null ) {
+-            ProxySession proxySession = ProxySession.getByClientSessionID( message
+-                    .getHeader( "Session" ) );
+-            if ( proxySession != null ) {
++        if ( message.hasHeader( "Session" ) )
++        {
++            ProxySession proxySession = ProxySession
++                    .getByClientSessionID( message.getHeader( "Session" ) );
++            if ( proxySession != null )
++            {
+                 // Session is Ok
+-                message.setHeader( "Session", proxySession.getServerSessionId() );
+-            } else {
++                message
++                        .setHeader( "Session", proxySession
++                                .getServerSessionId() );
++            } else
++            {
+                 // Error. The client specified a session ID but it's
+                 // not valid
+                 sendResponse( clientSession, RtspResponse
+@@ -112,23 +124,33 @@
+                 return;
+             }
+         }
+-        if ( serverSession == null && message.getType() == RtspMessage.Type.TypeResponse ) {
+-            log.error( "We can't send a response message to an uninitialized serverSide" );
++        
++        if ( serverSession == null
++                && message.getType() == RtspMessage.Type.TypeResponse )
++        {
++            log
++                    .error( "We can't send a response message to an uninitialized serverSide" );
+             return;
+-        } else if ( serverSession == null ) {
++        } else if ( serverSession == null )
++        {
+             RtspRequest request = (RtspRequest) message;
+-            try {
++            try
++            {
+                 connectServerSide( request.getUrl() );
+-
+-            } catch ( IOException e ) {
++                
++            } catch ( IOException e )
++            {
+                 log.error( "I/O exception", e );
+                 // closeAll();
+-            } finally {
++            } finally
++            {
+                 if ( serverSession == null )
+                     return;
+             }
+         }
+-
++        
++        log.debug( "The server should be already connected..." );
++        
+         switch ( message.getType() )
+         {
+         case TypeRequest:
+@@ -136,38 +158,47 @@
+                     ((RtspRequest) message).getVerb() );
+             sendRequest( serverSession, (RtspRequest) message );
+             break;
+-
++        
+         case TypeResponse:
+             sendResponse( serverSession, (RtspResponse) message );
+             break;
+-
++        
+         default:
+             log.error( "Message type not valid: " + message.getType() );
+         }
+     }
+-
++    
+     public void passToClient( RtspMessage message )
+     {
+         log.debug( "Pass to client" );
+-        if ( message.getHeader( "Session" ) != null ) {
+-            ProxySession proxySession = ProxySession.getByServerSessionID( message
+-                    .getHeader( "Session" ) );
+-            if ( proxySession != null ) {
++        if ( message.getHeader( "Session" ) != null )
++        {
++            ProxySession proxySession = ProxySession
++                    .getByServerSessionID( message.getHeader( "Session" ) );
++            if ( proxySession != null )
++            {
+                 // Session is Ok
+-                message.setHeader( "Session", proxySession.getClientSessionId() );
+-            } else {
+-                if ( message.getType() == RtspMessage.Type.TypeResponse ) {
++                message
++                        .setHeader( "Session", proxySession
++                                .getClientSessionId() );
++            } else
++            {
++                if ( message.getType() == RtspMessage.Type.TypeResponse )
++                {
+                     // create a proxy session on the fly if message is a
+                     // response. Certain mobile handset clients
+                     // tend to start a RSTP session without its own session id
+                     // and wait for the session object from the
+                     // remote server
+                     proxySession = new ProxySession();
+-
+-                    proxySession.setServerSessionId( message.getHeader( "Session" ) );
+-                    message.setHeader( "Session", proxySession.getClientSessionId() );
++                    
++                    proxySession.setServerSessionId( message
++                            .getHeader( "Session" ) );
++                    message.setHeader( "Session", proxySession
++                            .getClientSessionId() );
+                     log.debug( "Created a new proxy session on-the-fly." );
+-                } else {
++                } else
++                {
+                     // Error. The client specified a session ID but it's
+                     // not valid
+                     sendResponse( clientSession, RtspResponse
+@@ -176,7 +207,7 @@
+                 }
+             }
+         }
+-
++        
+         switch ( message.getType() )
+         {
+         case TypeRequest:
+@@ -184,16 +215,16 @@
+                     ((RtspRequest) message).getVerb() );
+             sendRequest( clientSession, (RtspRequest) message );
+             break;
+-
++        
+         case TypeResponse:
+             sendResponse( clientSession, (RtspResponse) message );
+             break;
+-
++        
+         default:
+             log.error( "Message type not valid: " + message.getType() );
+         }
+     }
+-
++    
+     /**
+      * A SETUP request should treated more carefully tha other RTSP requests.
+      * The proxy will perform some hijacking on the communication between client
+@@ -206,51 +237,63 @@
+     {
+         ProxySession proxySession = null;
+         PortrangeRtpServerSession portrangeRtpSession = null;
+-
+-        if ( request.getHeader( "Session" ) != null ) {
++        
++        if ( request.getHeader( "Session" ) != null )
++        {
+             // The client already specified a session ID.
+             // Let's validate it
+             proxySession = ProxySession.getByClientSessionID( request
+                     .getHeader( "Session" ) );
+-            if ( proxySession != null ) {
++            if ( proxySession != null )
++            {
+                 // Session ID is ok
+-                request.setHeader( "Session", proxySession.getServerSessionId() );
+-            } else {
++                request
++                        .setHeader( "Session", proxySession
++                                .getServerSessionId() );
++            } else
++            {
+                 // Error. The client specified a session ID but it's
+                 // not valid
+-                log.debug( "Invalid sessionId: {}", request.getHeader( "Session" ) );
++                log.debug( "Invalid sessionId: {}", request
++                        .getHeader( "Session" ) );
+                 sendResponse( clientSession, RtspResponse
+                         .errorResponse( RtspCode.SessionNotFound ) );
+                 return;
+             }
+         }
+-
+-        if ( serverSession == null ) {
++        
++        if ( serverSession == null )
++        {
+             /**
+              * A mobile handset client may start the RTSP dialogue directly with
+              * a SETUP request if it has discovered the streaming media
+              * characteristics through any other mechanism. --> Make sure a
+              * server-side session exists in this case.
+              */
+-            try {
++            try
++            {
+                 connectServerSide( request.getUrl() );
+-            } catch ( IOException e ) {
++            } catch ( IOException e )
++            {
+                 log.error( "I/O exception", e );
+                 // closeAll();
+-            } finally {
++            } finally
++            {
+                 if ( serverSession == null )
+                     return;
+             }
+         }
+-        serverSession.setAttribute( RtspMessage.lastRequestVerbATTR, request.getVerb() );
+-
++        serverSession.setAttribute( RtspMessage.lastRequestVerbATTR, request
++                .getVerb() );
++        
+         log.debug( "Client Transport:{}", request.getHeader( "Transport" ) );
+-
++        
+         RtspTransportList rtspTransportList = new RtspTransportList( request
+                 .getHeader( "Transport" ) );
+         log.debug( "Parsed: [{}]", rtspTransportList );
+-
+-        if ( rtspTransportList.count() == 0 ) {
++        
++        if ( rtspTransportList.count() == 0 )
++        {
+             /**
+              * If no one of the client specified transports is acceptable by the
+              * proxy, direct reply with an unsupported transport error. Then the
+@@ -262,82 +305,103 @@
+                     .errorResponse( RtspCode.UnsupportedTransport ) );
+             return;
+         }
+-
++        
+         // I'm saving the client Transport header before modifying it,
+         // because I will need to know which port the client will
+         // use for RTP/RTCP connections.
+         clientSession.setAttribute( setupUrlATTR, request.getUrl().toString() );
+-
+-        for ( RtspTransport transport : rtspTransportList.getList() ) {
++        
++        for ( RtspTransport transport : rtspTransportList.getList() )
++        {
+             log.debug( "Transport: {}", transport );
+-
+-            if ( transport.getLowerTransport() == LowerTransport.TCP ) {
++            
++            if ( transport.getLowerTransport() == LowerTransport.TCP )
++            {
+                 log.debug( "Transport is TCP based." );
+-            } else {
+-                if ( transport.getTransportProtocol() == TransportProtocol.RTP ) {
+-
++            } else
++            {
++                if ( transport.getTransportProtocol() == TransportProtocol.RTP )
++                {
++                    
+                     clientSession.setAttribute( clientPortsATTR, transport
+                             .getClientPort() );
+-
++                    
+                     int proxyRtpPort = RtpServerService.getInstance().getPort();
+-                    int proxyRtcpPort = RtcpServerService.getInstance().getPort();
+-
+-                    if ( Config.proxyServerRtpMultiplePorts.getValue() ) {
++                    int proxyRtcpPort = RtcpServerService.getInstance()
++                            .getPort();
++                    
++                    if ( Config.proxyServerRtpMultiplePorts.getValue() )
++                    {
+                         log.debug( "using RTP port range" );
+-
+-                        try {
++                        
++                        try
++                        {
+                             portrangeRtpSession = PortrangeRtpServerSessionFactory
+                                     .getInstance().getSession();
+-
++                            
+                             proxyRtpPort = portrangeRtpSession.getRtpPort();
+                             proxyRtcpPort = portrangeRtpSession.getRtcpPort();
+-
+-                            log.debug( "setting local server RTP/RTCP ports to {}/{}",
+-                                    proxyRtpPort, proxyRtcpPort );
+-                        } catch ( IOException ioe ) {
+-                            log.info( "failed to allocate local RTP/RTCP ports", ioe );
+-
+-                            sendResponse( clientSession, RtspResponse
+-                                    .errorResponse( RtspCode.InternalServerError ) );
++                            
++                            log
++                                    .debug(
++                                            "setting local server RTP/RTCP ports to {}/{}",
++                                            proxyRtpPort, proxyRtcpPort );
++                        } catch ( IOException ioe )
++                        {
++                            log.info(
++                                    "failed to allocate local RTP/RTCP ports",
++                                    ioe );
++                            
++                            sendResponse(
++                                    clientSession,
++                                    RtspResponse
++                                            .errorResponse( RtspCode.InternalServerError ) );
+                             return;
+                         }
+                     }
+-                    transport.setClientPort( new int[] { proxyRtpPort, proxyRtcpPort } );
+-
++                    transport.setClientPort( new int[] { proxyRtpPort,
++                            proxyRtcpPort } );
++                    
+                     // offer a distinguished SSRC to the remote server
+-                    if ( Config.proxyRtspOfferSsrcToServer.getValue() ) {
+-                        String ssrc = ProxySession.newServerSessionID().toHexString();
+-                        log.debug( "offering generated SSRC to remote server, ssrc={}",
+-                                ssrc );
+-
++                    if ( Config.proxyRtspOfferSsrcToServer.getValue() )
++                    {
++                        String ssrc = ProxySession.newServerSessionID()
++                                .toHexString();
++                        log
++                                .debug(
++                                        "offering generated SSRC to remote server, ssrc={}",
++                                        ssrc );
++                        
+                         transport.setSSRC( ssrc );
+                     }
+-
+-                } else if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
+-                    clientSession.setAttribute( clientRdtPortATTR, new Integer( transport
+-                            .getClientPort()[0] ) );
+-
++                    
++                } else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
++                {
++                    clientSession.setAttribute( clientRdtPortATTR, new Integer(
++                            transport.getClientPort()[0] ) );
++                    
+                     int proxyRdtPort = RdtServerService.getInstance().getPort();
+                     transport.setClientPort( proxyRdtPort );
+                 }
+                 log.debug( "Transport Rewritten: {}", transport );
+             }
+         }
+-
+-        if ( proxySession == null ) {
++        
++        if ( proxySession == null )
++        {
+             proxySession = new ProxySession();
+             clientSession.setAttribute( ProxySession.ATTR, proxySession );
+         }
+         if ( portrangeRtpSession != null )
+             proxySession.setPortrangeRtpServerSession( portrangeRtpSession );
+-
++        
+         request.setHeader( "Transport", rtspTransportList.toString() );
+-
++        
+         log.debug( "Sending SETUP request: \n{}", request );
+-
++        
+         sendRequest( serverSession, request );
+     }
+-
++    
+     /**
+      * Forward a RTSP SETUP response message to client.
+      * 
+@@ -349,137 +413,166 @@
+         // If there isn't yet a proxySession, create a new one
+         ProxySession proxySession = ProxySession.getByServerSessionID( response
+                 .getHeader( "Session" ) );
+-        if ( proxySession == null ) {
+-            proxySession = (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
+-            if ( proxySession == null ) {
++        if ( proxySession == null )
++        {
++            proxySession = (ProxySession) clientSession
++                    .getAttribute( ProxySession.ATTR );
++            if ( proxySession == null )
++            {
+                 proxySession = new ProxySession();
+                 clientSession.setAttribute( ProxySession.ATTR, proxySession );
+             }
+         }
+-
+-        if ( proxySession.getServerSessionId() == null ) {
++        
++        if ( proxySession.getServerSessionId() == null )
++        {
+             proxySession.setServerSessionId( response.getHeader( "Session" ) );
+         }
+-
++        
+         // Modify transport parameters for the client.
+         RtspTransportList rtspTransportList = new RtspTransportList( response
+                 .getHeader( "Transport" ) );
+-
++        
+         RtspTransport transport = rtspTransportList.getList().get( 0 );
+         log.debug( "Using Transport: {}", transport );
+-
+-        if ( transport.getTransportProtocol() == TransportProtocol.RTP ) {
+-
++        
++        if ( transport.getTransportProtocol() == TransportProtocol.RTP )
++        {
++            
+             // Create a new Track object
+             RtpTrack track = proxySession.addRtpTrack( (String) clientSession
+                     .getAttribute( setupUrlATTR ), transport.getSSRC() );
+-
++            
+             // Setting client and server info on the track
+             InetAddress serverAddress = null;
+-            if ( transport.getSource() != null ) {
+-                try {
+-                    serverAddress = InetAddress.getByName( transport.getSource() );
+-                } catch ( UnknownHostException e ) {
++            if ( transport.getSource() != null )
++            {
++                try
++                {
++                    serverAddress = InetAddress.getByName( transport
++                            .getSource() );
++                } catch ( UnknownHostException e )
++                {
+                     log.warn( "Unknown host: " + transport.getSource() );
+                 }
+-            } else {
+-                serverAddress = ((InetSocketAddress) serverSession.getRemoteAddress())
+-                        .getAddress();
++            } else
++            {
++                serverAddress = ((InetSocketAddress) serverSession
++                        .getRemoteAddress()).getAddress();
+             }
+             int[] serverPorts = transport.getServerPort();
+-            track.setServerAddress( serverAddress, serverPorts[0], serverPorts[1] );
+-
++            track.setServerAddress( serverAddress, serverPorts[0],
++                    serverPorts[1] );
++            
+             InetAddress clientAddress = null;
+-            try {
++            try
++            {
+                 clientAddress = Inet4Address
+-                        .getByName( ((InetSocketAddress) clientSession.getRemoteAddress())
+-                                .getHostName() );
+-            } catch ( UnknownHostException e ) {
++                        .getByName( ((InetSocketAddress) clientSession
++                                .getRemoteAddress()).getHostName() );
++            } catch ( UnknownHostException e )
++            {
+                 log.warn( "Unknown host: " + clientSession.getRemoteAddress() );
+             }
+-            int clientPorts[] = (int[]) clientSession.getAttribute( clientPortsATTR );
+-            track.setClientAddress( clientAddress, clientPorts[0], clientPorts[1] );
+-
+-            if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP ) {
++            int clientPorts[] = (int[]) clientSession
++                    .getAttribute( clientPortsATTR );
++            track.setClientAddress( clientAddress, clientPorts[0],
++                    clientPorts[1] );
++            
++            if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP )
++            {
+                 log.debug( "Transport is TCP based." );
+-            } else {
++            } else
++            {
+                 transport.setSSRC( track.getProxySSRC().toHexString() );
+                 int rtpPort = RtpClientService.getInstance().getPort();
+                 int rtcpPort = RtcpClientService.getInstance().getPort();
+                 transport.setServerPort( new int[] { rtpPort, rtcpPort } );
+-                transport.setSource( RtpClientService.getInstance().getAddress()
+-                        .getHostAddress() );
+-
++                transport.setSource( RtpClientService.getInstance()
++                        .getAddress().getHostAddress() );
++                
+                 // Obtaing client specified ports
+-                int ports[] = (int[]) clientSession.getAttribute( clientPortsATTR );
++                int ports[] = (int[]) clientSession
++                        .getAttribute( clientPortsATTR );
+                 transport.setClientPort( ports );
+-
++                
+                 log.debug( "Transport Rewritten: {}", transport );
+             }
+-
+-        } else if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
+-
++            
++        } else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
++        {
++            
+             // Create a new Track object
+             RdtTrack track = proxySession.addRdtTrack( (String) clientSession
+                     .getAttribute( setupUrlATTR ) );
+             // Setting client and server info on the track
+             InetAddress serverAddress = null;
+-            if ( transport.getSource() != null ) {
+-                try {
+-                    serverAddress = InetAddress.getByName( transport.getSource() );
+-                } catch ( UnknownHostException e ) {
++            if ( transport.getSource() != null )
++            {
++                try
++                {
++                    serverAddress = InetAddress.getByName( transport
++                            .getSource() );
++                } catch ( UnknownHostException e )
++                {
+                     log.warn( "Unknown host: " + transport.getSource() );
+                 }
+-            } else {
+-                serverAddress = ((InetSocketAddress) serverSession.getRemoteAddress())
+-                        .getAddress();
++            } else
++            {
++                serverAddress = ((InetSocketAddress) serverSession
++                        .getRemoteAddress()).getAddress();
+             }
+             int[] serverPorts = transport.getServerPort();
+             track.setServerAddress( serverAddress, serverPorts[0] );
+-
++            
+             InetAddress clientAddress = null;
+-            try {
++            try
++            {
+                 clientAddress = Inet4Address
+-                        .getByName( ((InetSocketAddress) clientSession.getRemoteAddress())
+-                                .getHostName() );
+-            } catch ( UnknownHostException e ) {
++                        .getByName( ((InetSocketAddress) clientSession
++                                .getRemoteAddress()).getHostName() );
++            } catch ( UnknownHostException e )
++            {
+                 log.warn( "Unknown host: " + clientSession.getRemoteAddress() );
+             }
+-            int clientRdtPort = ((Integer) clientSession.getAttribute( clientRdtPortATTR ))
+-                    .intValue();
++            int clientRdtPort = ((Integer) clientSession
++                    .getAttribute( clientRdtPortATTR )).intValue();
+             track.setClientAddress( clientAddress, clientRdtPort );
+-
+-            if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP ) {
++            
++            if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP )
++            {
+                 log.debug( "Transport is TCP based." );
+-            } else {
++            } else
++            {
+                 int rdtPort = RdtClientService.getInstance().getPort();
+                 transport.setServerPort( rdtPort );
+                 // transport.setSource(
+                 // RdtClientService.getInstance().getAddress().getHostAddress()
+                 // );
+-
++                
+                 // Obtaing client specified ports
+-                int port = ((Integer) clientSession.getAttribute( clientRdtPortATTR ))
+-                        .intValue();
++                int port = ((Integer) clientSession
++                        .getAttribute( clientRdtPortATTR )).intValue();
+                 transport.setClientPort( port );
+-
++                
+                 log.debug( "Transport Rewritten: {}", transport );
+             }
+-
+-        } else {
++            
++        } else
++        {
+             sendResponse( clientSession, RtspResponse
+                     .errorResponse( RtspCode.UnsupportedTransport ) );
+             return;
+         }
+-
++        
+         response.setHeader( "Session", proxySession.getClientSessionId() );
+         response.setHeader( "Transport", transport.toString() );
+-
++        
+         log.debug( "SENDING RESPONSE TO CLIENT:\n{}", response );
+-
++        
+         sendResponse( clientSession, response );
+     }
+-
++    
+     /**
+      * Tries to connect to remote RTSP server.
+      * 
+@@ -489,98 +582,106 @@
+      */
+     private void connectServerSide( URL url ) throws IOException
+     {
+-        log.debug( "Server url: {}", url );
++        log.debug( "Connect to Server url: {}", url );
+         String host = url.getHost();
+         int port = url.getPort();
+         if ( port == -1 )
+             port = url.getDefaultPort();
+-
++        
+         // Create TCP/IP connector.
+-        SocketConnector connector = new SocketConnector();
++        ExecutorExecutor executor = new ExecutorExecutor( ProxyServiceRegistry
++                .getInstance().getExecutor() );
++        SocketConnector connector = new SocketConnector( 1, executor );
+         connector.setFilterChainBuilder( new RtspServerFilters() );
+-
++        
+         // Start communication.
+         InetSocketAddress addr = new InetSocketAddress( host, port );
+-        log.debug( "Trying to connect to '{}' {}", host, port );
+-        if ( addr.isUnresolved() ) {
++        if ( addr.isUnresolved() )
++        {
+             log.warn( "Cannot resolve hostname: {}", host );
+             sendResponse( clientSession, RtspResponse
+                     .errorResponse( RtspCode.DestinationUnreachable ) );
+             clientSession.close();
+             return;
+         }
+-
++        
++        log.debug( "Trying to connect to '{}' {}", addr.getAddress(), port );
++        
+         // Set the traffic mask to none to avoid reception of
+         // messages from the client.
+         clientSession.setTrafficMask( TrafficMask.NONE );
+-
++        
+         ConnectFuture future = connector.connect( addr, new ServerSide() );
+-        future.setCallback( this );
++        future.addListener( this );
++        log.debug( "The operation shouldn't be completed..." );
+     }
+-
++    
+     public void operationComplete( IoFuture future )
+     {
+         ConnectFuture connectFuture = (ConnectFuture) future;
+         log.debug( "operation completed" );
+         clientSession.setTrafficMask( TrafficMask.ALL );
+-
+-        if ( !connectFuture.isConnected() ) {
+-            log.warn( "Destination unreachable" );
++        
++        if ( !connectFuture.isConnected() )
++        {
++            log.warn( "Destination unreachable: {}", connectFuture.getSession()
++                    .getRemoteAddress() );
+             sendResponse( clientSession, RtspResponse
+                     .errorResponse( RtspCode.DestinationUnreachable ) );
+             clientSession.close();
+             return;
+         }
+-
++        
+         log.debug( "Connected!" );
+-
+-        try {
+-            serverSession = connectFuture.getSession();
+-        } catch ( IOException e ) {
+-            log.error( "Error getting connection session: " + e );
+-            clientSession.close();
++        
++        serverSession = connectFuture.getSession();
++        
++        if ( Config.proxyRtspKeepAlive.getValue() )
++        {
++            SocketSessionConfig config = (SocketSessionConfig) serverSession
++                    .getConfig();
++            config.setKeepAlive( true );
+         }
+-
+-        // TODO: Rtsp Keep Alive
+-        // if (Config.proxyRtspKeepAlive.getValue())
+-        // ((SocketSession) serverSession).setKeepAlive(true);
+-
++        
+         // Save current ProxyHandler into the ProtocolSession
+         serverSession.setAttribute( ProxyHandler.ATTR, this );
+-
+-        serverSession.setAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
++        
++        serverSession.setAttribute(
++                ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
+                 sharedSessionObjects );
+-
++        
+         log.debug( "Server session: {}", serverSession.getAttributeKeys() );
+     }
+-
++    
+     /**
+      * set an object in the shared objects map
+      */
+-    public static void setSharedSessionAttribute( IoSession session, String name,
+-            Object value )
++    @SuppressWarnings("unchecked")
++    public static void setSharedSessionAttribute( IoSession session,
++            String name, Object value )
+     {
+-        ConcurrentHashMap map = (ConcurrentHashMap) session
++        ConcurrentHashMap<String, Object> map = (ConcurrentHashMap<String, Object>) session
+                 .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+-
++        
+         map.put( name, value );
+     }
+-
+-    public static Object getSharedSessionAttribute( IoSession session, String name )
++    
++    public static Object getSharedSessionAttribute( IoSession session,
++            String name )
+     {
+         ConcurrentHashMap map = (ConcurrentHashMap) session
+                 .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+         return map.get( name );
+     }
+-
+-    public static final boolean containsSharedSessionAttribute( IoSession session,
+-            String name )
++    
++    public static final boolean containsSharedSessionAttribute(
++            IoSession session, String name )
+     {
+         HashMap map = (HashMap) session
+                 .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+         return map.containsKey( name );
+     }
+-
++    
+     /**
+      * Closes both sides of communication.
+      */
+@@ -590,16 +691,17 @@
+             clientSession.close();
+         if ( serverSession != null && serverSession.isConnected() )
+             serverSession.close();
+-
++        
+         // Remove ProxySession and Track instances
+-        if ( clientSession != null ) {
++        if ( clientSession != null )
++        {
+             ProxySession proxySession = (ProxySession) clientSession
+                     .getAttribute( ProxySession.ATTR );
+             if ( proxySession != null )
+                 proxySession.close();
+         }
+     }
+-
++    
+     /**
+      * Sends an RTSP request message
+      * 
+@@ -611,13 +713,15 @@
+     private void sendRequest( IoSession session, RtspRequest request )
+     {
+         request.setCommonHeaders();
+-        try {
++        try
++        {
+             session.write( request );
+-        } catch ( Exception e ) {
++        } catch ( Exception e )
++        {
+             log.error( "exception sending request", e.getCause() );
+         }
+     }
+-
++    
+     /**
+      * Sends an RTSP response message
+      * 
+@@ -629,11 +733,13 @@
+     private void sendResponse( IoSession session, RtspResponse response )
+     {
+         response.setCommonHeaders();
+-        try {
++        try
++        {
+             session.write( response );
+-        } catch ( Exception e ) {
++        } catch ( Exception e )
++        {
+             log.error( "exception sending response", e.getCause() );
+         }
+     }
+-
++    
+ }
+
+
+
+From merlimat at mail.berlios.de  Thu Oct 12 17:17:38 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Thu, 12 Oct 2006 17:17:38 +0200
+Subject: [Rtspproxy-devel] r433 -
+	trunk/RTSPProxy-Core/src/main/java/rtspproxy
+Message-ID: <200610121517.k9CFHcwD001522@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-12 17:17:32 +0200 (Thu, 12 Oct 2006)
+New Revision: 433
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+Log:
+Refactorized service binding with sockets.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-10-12 10:46:50 UTC (rev 432)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-10-12 15:17:32 UTC (rev 433)
+@@ -34,6 +34,7 @@
+ import org.apache.mina.common.IoAcceptor;
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoServiceConfig;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+ import org.apache.mina.filter.executor.ExecutorExecutor;
+@@ -67,9 +68,6 @@
+     /** Map a ProxyService to all its bound addresses. */
+     private final ConcurrentMap<ProxyService, Set<SocketAddress>> addresses = new ConcurrentHashMap<ProxyService, Set<SocketAddress>>();
+     
+-    /** Map a ProxyService to its own IoAcceptor. */
+-    private final ConcurrentMap<ProxyService, IoAcceptor> acceptors = new ConcurrentHashMap<ProxyService, IoAcceptor>();
+-    
+     private SocketAcceptor socketAcceptor = null;
+     
+     private DatagramAcceptor datagramAcceptor = null;
+@@ -82,8 +80,21 @@
+      */
+     public ProxyServiceRegistry()
+     {
+-        /// int poolMaxSize = Config.threadPoolSize.getValue();
++        ExecutorExecutor executorProxy = new ExecutorExecutor( executor );
++        socketAcceptor = new SocketAcceptor( 2, executorProxy );
++        SocketAcceptorConfig config = (SocketAcceptorConfig) socketAcceptor
++                .getDefaultConfig();
++        config.setReuseAddress( true );
+         
++        datagramAcceptor = new DatagramAcceptor( executorProxy );
++        DatagramAcceptorConfig datagramConfig = (DatagramAcceptorConfig) datagramAcceptor
++                .getDefaultConfig();
++        DatagramSessionConfig sessionConfig = (DatagramSessionConfig) datagramConfig
++                .getSessionConfig();
++        sessionConfig.setReuseAddress( true );
++        
++        // int poolMaxSize = Config.threadPoolSize.getValue();
++        
+         // Subscribe to thread pool size changes notification
+         Config.threadPoolSize.addObserver( this );
+     }
+@@ -128,10 +139,19 @@
+             InetSocketAddress address, IoFilterChainBuilder filterChainBuilder )
+             throws IOException
+     {
+-        IoAcceptor acceptor = newAcceptor( service );
++        IoAcceptor acceptor = getAcceptor( service );
+         
+-        acceptor.setFilterChainBuilder( filterChainBuilder );
+-        acceptor.bind( address, ioHandler );
++        if ( filterChainBuilder != IoFilterChainBuilder.NOOP )
++        {
++            IoServiceConfig config = (IoServiceConfig) acceptor
++                    .getDefaultConfig().clone();
++            config.setFilterChainBuilder( filterChainBuilder );
++            acceptor.bind( address, ioHandler, config );
++        }
++        else
++        {
++            acceptor.bind( address, ioHandler );
++        }
+         
+         services.put( service.getName(), service );
+         
+@@ -155,7 +175,8 @@
+     public synchronized void unbind( ProxyService service, boolean stopService )
+             throws Exception
+     {
+-        IoAcceptor acceptor = acceptors.get( service );
++        IoAcceptor acceptor = service.getTransportType() == TransportType.SOCKET ? socketAcceptor
++                : datagramAcceptor;
+         
+         for ( SocketAddress address : addresses.get( service ) )
+         {
+@@ -186,7 +207,6 @@
+         }
+         
+         services.remove( service.getName() );
+-        acceptors.remove( service );
+         addresses.remove( service );
+     }
+     
+@@ -235,10 +255,9 @@
+     public IoAcceptor getAcceptor( String serviceName )
+     {
+         ProxyService service = services.get( serviceName );
+-        if ( service == null )
+-            return null;
++        if ( service == null ) return null;
+         
+-        return acceptors.get( service );
++        return getAcceptor( service );
+     }
+     
+     /**
+@@ -250,62 +269,10 @@
+      */
+     public IoAcceptor getAcceptor( ProxyService service )
+     {
+-        return acceptors.get( service );
++        return service.getTransportType() == TransportType.SOCKET ? socketAcceptor
++                : datagramAcceptor;
+     }
+     
+-    /**
+-     * Gets a new IoAcceptor suitable for the specified ProxyService
+-     * 
+-     * @param service
+-     *            the ProxyService
+-     * @return a reference to the IoAcceptor
+-     */
+-    private IoAcceptor newAcceptor( ProxyService service )
+-    {
+-        // First check if there's already an acceptor
+-        IoAcceptor acceptor = acceptors.get( service );
+-        if ( acceptor != null )
+-            return acceptor;
+-        
+-        // Create a new one
+-        TransportType transportType = service.getTransportType();
+-        if ( transportType == TransportType.SOCKET )
+-        {
+-            if ( socketAcceptor == null )
+-            {
+-                socketAcceptor = new SocketAcceptor( 1, new ExecutorExecutor(
+-                        executor ) );
+-                SocketAcceptorConfig config = (SocketAcceptorConfig) socketAcceptor
+-                        .getDefaultConfig();
+-                config.setReuseAddress( true );
+-            }
+-            acceptor = socketAcceptor;
+-            
+-        } else if ( transportType == TransportType.DATAGRAM )
+-        {
+-            if ( datagramAcceptor == null )
+-            {
+-                datagramAcceptor = new DatagramAcceptor( 
+-                        new ExecutorExecutor( executor ) ); 
+-                DatagramAcceptorConfig config = (DatagramAcceptorConfig) datagramAcceptor
+-                        .getDefaultConfig();
+-                DatagramSessionConfig sessionConfig = (DatagramSessionConfig) config
+-                        .getSessionConfig();
+-                sessionConfig.setReuseAddress( true );
+-            }
+-            acceptor = datagramAcceptor;
+-            
+-        } else
+-        {
+-            log.debug( "Unrecognized transport type: {}", transportType );
+-            return null;
+-        }
+-        
+-        // Save the acceptor
+-        acceptors.put( service, acceptor );
+-        return acceptor;
+-    }
+-    
+     public Executor getExecutor()
+     {
+         return executor;
+@@ -325,10 +292,10 @@
+         {
+             // Update the thread pool size
+             // XXX: Refactor this: the thread pool should have no fixed upper
+-            //      limit
++            // limit
+             // executor.setMaximumPoolSize( Config.threadPoolSize.getValue() );
+             // log.info( "Changed ThreadPool size. New max size: {}",
+-            //        executor.getMaximumPoolSize() );
++            // executor.getMaximumPoolSize() );
+         }
+     }
+     
+
+
+
+From merlimat at mail.berlios.de  Thu Oct 12 18:12:20 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Thu, 12 Oct 2006 18:12:20 +0200
+Subject: [Rtspproxy-devel] r434 -
+	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+Message-ID: <200610121612.k9CGCKS8008718@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-12 18:12:14 +0200 (Thu, 12 Oct 2006)
+New Revision: 434
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+Log:
+Unified sendRequest and sendResponse methods.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 15:17:32 UTC (rev 433)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 16:12:14 UTC (rev 434)
+@@ -71,23 +71,21 @@
+     /** Used to save a reference to this handler in the IoSession */
+     protected static final String ATTR = ProxyHandler.class.toString() + "Attr";
+     
+-    protected static final String setupUrlATTR = ProxyHandler.class.toString()
+-            + "setupUrlATTR";
++    protected static final String setupUrlATTR =
++            ProxyHandler.class.toString() + "setupUrlATTR";
+     
+-    protected static final String clientPortsATTR = ProxyHandler.class
+-            .toString()
+-            + "clientPortsATTR";
++    protected static final String clientPortsATTR =
++            ProxyHandler.class.toString() + "clientPortsATTR";
+     
+-    protected static final String clientRdtPortATTR = ProxyHandler.class
+-            .toString()
+-            + "clientRdtPortATTR";
++    protected static final String clientRdtPortATTR =
++            ProxyHandler.class.toString() + "clientRdtPortATTR";
+     
+     private IoSession clientSession = null;
+     
+     private IoSession serverSession = null;
+     
+-    private ConcurrentHashMap<String, Object> sharedSessionObjects = 
+-                                    new ConcurrentHashMap<String, Object>();
++    private ConcurrentHashMap<String, Object> sharedSessionObjects =
++            new ConcurrentHashMap<String, Object>();
+     
+     /**
+      * Creates a new ProxyHandler from a client side protocol session.
+@@ -98,8 +96,8 @@
+     {
+         this.clientSession = clientSession;
+         this.clientSession.setAttribute(
+-                ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
+-                sharedSessionObjects );
++                                         ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
++                                         sharedSessionObjects );
+     }
+     
+     public void passToServer( RtspMessage message )
+@@ -107,20 +105,20 @@
+         log.debug( "Pass to server" );
+         if ( message.hasHeader( "Session" ) )
+         {
+-            ProxySession proxySession = ProxySession
+-                    .getByClientSessionID( message.getHeader( "Session" ) );
++            ProxySession proxySession =
++                    ProxySession.getByClientSessionID( message.getHeader( "Session" ) );
+             if ( proxySession != null )
+             {
+                 // Session is Ok
+-                message
+-                        .setHeader( "Session", proxySession
+-                                .getServerSessionId() );
+-            } else
++                message.setHeader( "Session", proxySession.getServerSessionId() );
++            }
++            else
+             {
+                 // Error. The client specified a session ID but it's
+                 // not valid
+-                sendResponse( clientSession, RtspResponse
+-                        .errorResponse( RtspCode.SessionNotFound ) );
++                sendMessage(
++                             clientSession,
++                             RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
+                 return;
+             }
+         }
+@@ -128,10 +126,11 @@
+         if ( serverSession == null
+                 && message.getType() == RtspMessage.Type.TypeResponse )
+         {
+-            log
+-                    .error( "We can't send a response message to an uninitialized serverSide" );
++            log.error( "We can't send a response message to "
++                    + "an uninitialized serverSide" );
+             return;
+-        } else if ( serverSession == null )
++        }
++        else if ( serverSession == null )
+         {
+             RtspRequest request = (RtspRequest) message;
+             try
+@@ -144,8 +143,7 @@
+                 // closeAll();
+             } finally
+             {
+-                if ( serverSession == null )
+-                    return;
++                if ( serverSession == null ) return;
+             }
+         }
+         
+@@ -155,12 +153,12 @@
+         {
+         case TypeRequest:
+             serverSession.setAttribute( RtspMessage.lastRequestVerbATTR,
+-                    ((RtspRequest) message).getVerb() );
+-            sendRequest( serverSession, (RtspRequest) message );
++                                        ((RtspRequest) message).getVerb() );
++            sendMessage( serverSession, (RtspRequest) message );
+             break;
+         
+         case TypeResponse:
+-            sendResponse( serverSession, (RtspResponse) message );
++            sendMessage( serverSession, (RtspResponse) message );
+             break;
+         
+         default:
+@@ -173,15 +171,14 @@
+         log.debug( "Pass to client" );
+         if ( message.getHeader( "Session" ) != null )
+         {
+-            ProxySession proxySession = ProxySession
+-                    .getByServerSessionID( message.getHeader( "Session" ) );
++            ProxySession proxySession =
++                    ProxySession.getByServerSessionID( message.getHeader( "Session" ) );
+             if ( proxySession != null )
+             {
+                 // Session is Ok
+-                message
+-                        .setHeader( "Session", proxySession
+-                                .getClientSessionId() );
+-            } else
++                message.setHeader( "Session", proxySession.getClientSessionId() );
++            }
++            else
+             {
+                 if ( message.getType() == RtspMessage.Type.TypeResponse )
+                 {
+@@ -192,17 +189,18 @@
+                     // remote server
+                     proxySession = new ProxySession();
+                     
+-                    proxySession.setServerSessionId( message
+-                            .getHeader( "Session" ) );
+-                    message.setHeader( "Session", proxySession
+-                            .getClientSessionId() );
++                    proxySession.setServerSessionId( message.getHeader( "Session" ) );
++                    message.setHeader( "Session",
++                                       proxySession.getClientSessionId() );
+                     log.debug( "Created a new proxy session on-the-fly." );
+-                } else
++                }
++                else
+                 {
+                     // Error. The client specified a session ID but it's
+                     // not valid
+-                    sendResponse( clientSession, RtspResponse
+-                            .errorResponse( RtspCode.SessionNotFound ) );
++                    sendMessage(
++                                 clientSession,
++                                 RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
+                     return;
+                 }
+             }
+@@ -212,12 +210,12 @@
+         {
+         case TypeRequest:
+             clientSession.setAttribute( RtspMessage.lastRequestVerbATTR,
+-                    ((RtspRequest) message).getVerb() );
+-            sendRequest( clientSession, (RtspRequest) message );
++                                        ((RtspRequest) message).getVerb() );
++            sendMessage( clientSession, (RtspRequest) message );
+             break;
+         
+         case TypeResponse:
+-            sendResponse( clientSession, (RtspResponse) message );
++            sendMessage( clientSession, (RtspResponse) message );
+             break;
+         
+         default:
+@@ -242,22 +240,22 @@
+         {
+             // The client already specified a session ID.
+             // Let's validate it
+-            proxySession = ProxySession.getByClientSessionID( request
+-                    .getHeader( "Session" ) );
++            proxySession =
++                    ProxySession.getByClientSessionID( request.getHeader( "Session" ) );
+             if ( proxySession != null )
+             {
+                 // Session ID is ok
+-                request
+-                        .setHeader( "Session", proxySession
+-                                .getServerSessionId() );
+-            } else
++                request.setHeader( "Session", proxySession.getServerSessionId() );
++            }
++            else
+             {
+                 // Error. The client specified a session ID but it's
+                 // not valid
+-                log.debug( "Invalid sessionId: {}", request
+-                        .getHeader( "Session" ) );
+-                sendResponse( clientSession, RtspResponse
+-                        .errorResponse( RtspCode.SessionNotFound ) );
++                log.debug( "Invalid sessionId: {}",
++                           request.getHeader( "Session" ) );
++                sendMessage(
++                             clientSession,
++                             RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
+                 return;
+             }
+         }
+@@ -279,17 +277,16 @@
+                 // closeAll();
+             } finally
+             {
+-                if ( serverSession == null )
+-                    return;
++                if ( serverSession == null ) return;
+             }
+         }
+-        serverSession.setAttribute( RtspMessage.lastRequestVerbATTR, request
+-                .getVerb() );
++        serverSession.setAttribute( RtspMessage.lastRequestVerbATTR,
++                                    request.getVerb() );
+         
+         log.debug( "Client Transport:{}", request.getHeader( "Transport" ) );
+         
+-        RtspTransportList rtspTransportList = new RtspTransportList( request
+-                .getHeader( "Transport" ) );
++        RtspTransportList rtspTransportList =
++                new RtspTransportList( request.getHeader( "Transport" ) );
+         log.debug( "Parsed: [{}]", rtspTransportList );
+         
+         if ( rtspTransportList.count() == 0 )
+@@ -301,8 +298,9 @@
+              * transports set.
+              */
+             log.debug( "No supported transport was found." );
+-            sendResponse( clientSession, RtspResponse
+-                    .errorResponse( RtspCode.UnsupportedTransport ) );
++            sendMessage(
++                         clientSession,
++                         RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
+             return;
+         }
+         
+@@ -318,17 +316,18 @@
+             if ( transport.getLowerTransport() == LowerTransport.TCP )
+             {
+                 log.debug( "Transport is TCP based." );
+-            } else
++            }
++            else
+             {
+                 if ( transport.getTransportProtocol() == TransportProtocol.RTP )
+                 {
+                     
+-                    clientSession.setAttribute( clientPortsATTR, transport
+-                            .getClientPort() );
++                    clientSession.setAttribute( clientPortsATTR,
++                                                transport.getClientPort() );
+                     
+                     int proxyRtpPort = RtpServerService.getInstance().getPort();
+-                    int proxyRtcpPort = RtcpServerService.getInstance()
+-                            .getPort();
++                    int proxyRtcpPort =
++                            RtcpServerService.getInstance().getPort();
+                     
+                     if ( Config.proxyServerRtpMultiplePorts.getValue() )
+                     {
+@@ -336,46 +335,44 @@
+                         
+                         try
+                         {
+-                            portrangeRtpSession = PortrangeRtpServerSessionFactory
+-                                    .getInstance().getSession();
++                            portrangeRtpSession =
++                                    PortrangeRtpServerSessionFactory.getInstance().getSession();
+                             
+                             proxyRtpPort = portrangeRtpSession.getRtpPort();
+                             proxyRtcpPort = portrangeRtpSession.getRtcpPort();
+                             
+-                            log
+-                                    .debug(
+-                                            "setting local server RTP/RTCP ports to {}/{}",
+-                                            proxyRtpPort, proxyRtcpPort );
++                            log.debug(
++                                       "setting local server RTP/RTCP ports to {}/{}",
++                                       proxyRtpPort, proxyRtcpPort );
+                         } catch ( IOException ioe )
+                         {
+                             log.info(
+-                                    "failed to allocate local RTP/RTCP ports",
+-                                    ioe );
++                                      "failed to allocate local RTP/RTCP ports",
++                                      ioe );
+                             
+-                            sendResponse(
+-                                    clientSession,
+-                                    RtspResponse
+-                                            .errorResponse( RtspCode.InternalServerError ) );
++                            sendMessage(
++                                         clientSession,
++                                         RtspResponse.errorResponse( RtspCode.InternalServerError ) );
+                             return;
+                         }
+                     }
+                     transport.setClientPort( new int[] { proxyRtpPort,
+-                            proxyRtcpPort } );
++                                                        proxyRtcpPort } );
+                     
+                     // offer a distinguished SSRC to the remote server
+                     if ( Config.proxyRtspOfferSsrcToServer.getValue() )
+                     {
+-                        String ssrc = ProxySession.newServerSessionID()
+-                                .toHexString();
+-                        log
+-                                .debug(
+-                                        "offering generated SSRC to remote server, ssrc={}",
+-                                        ssrc );
++                        String ssrc =
++                                ProxySession.newServerSessionID().toHexString();
++                        log.debug(
++                                   "offering generated SSRC to remote server, ssrc={}",
++                                   ssrc );
+                         
+                         transport.setSSRC( ssrc );
+                     }
+                     
+-                } else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
++                }
++                else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
+                 {
+                     clientSession.setAttribute( clientRdtPortATTR, new Integer(
+                             transport.getClientPort()[0] ) );
+@@ -399,7 +396,7 @@
+         
+         log.debug( "Sending SETUP request: \n{}", request );
+         
+-        sendRequest( serverSession, request );
++        sendMessage( serverSession, request );
+     }
+     
+     /**
+@@ -411,12 +408,12 @@
+     public void passSetupResponseToClient( RtspResponse response )
+     {
+         // If there isn't yet a proxySession, create a new one
+-        ProxySession proxySession = ProxySession.getByServerSessionID( response
+-                .getHeader( "Session" ) );
++        ProxySession proxySession =
++                ProxySession.getByServerSessionID( response.getHeader( "Session" ) );
+         if ( proxySession == null )
+         {
+-            proxySession = (ProxySession) clientSession
+-                    .getAttribute( ProxySession.ATTR );
++            proxySession =
++                    (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
+             if ( proxySession == null )
+             {
+                 proxySession = new ProxySession();
+@@ -430,8 +427,8 @@
+         }
+         
+         // Modify transport parameters for the client.
+-        RtspTransportList rtspTransportList = new RtspTransportList( response
+-                .getHeader( "Transport" ) );
++        RtspTransportList rtspTransportList =
++                new RtspTransportList( response.getHeader( "Transport" ) );
+         
+         RtspTransport transport = rtspTransportList.getList().get( 0 );
+         log.debug( "Using Transport: {}", transport );
+@@ -440,8 +437,10 @@
+         {
+             
+             // Create a new Track object
+-            RtpTrack track = proxySession.addRtpTrack( (String) clientSession
+-                    .getAttribute( setupUrlATTR ), transport.getSSRC() );
++            RtpTrack track =
++                    proxySession.addRtpTrack(
++                                              (String) clientSession.getAttribute( setupUrlATTR ),
++                                              transport.getSSRC() );
+             
+             // Setting client and server info on the track
+             InetAddress serverAddress = null;
+@@ -449,78 +448,80 @@
+             {
+                 try
+                 {
+-                    serverAddress = InetAddress.getByName( transport
+-                            .getSource() );
++                    serverAddress =
++                            InetAddress.getByName( transport.getSource() );
+                 } catch ( UnknownHostException e )
+                 {
+                     log.warn( "Unknown host: " + transport.getSource() );
+                 }
+-            } else
++            }
++            else
+             {
+-                serverAddress = ((InetSocketAddress) serverSession
+-                        .getRemoteAddress()).getAddress();
++                serverAddress =
++                        ((InetSocketAddress) serverSession.getRemoteAddress()).getAddress();
+             }
+             int[] serverPorts = transport.getServerPort();
+             track.setServerAddress( serverAddress, serverPorts[0],
+-                    serverPorts[1] );
++                                    serverPorts[1] );
+             
+             InetAddress clientAddress = null;
+             try
+             {
+-                clientAddress = Inet4Address
+-                        .getByName( ((InetSocketAddress) clientSession
+-                                .getRemoteAddress()).getHostName() );
++                clientAddress =
++                        Inet4Address.getByName( ((InetSocketAddress) clientSession.getRemoteAddress()).getHostName() );
+             } catch ( UnknownHostException e )
+             {
+                 log.warn( "Unknown host: " + clientSession.getRemoteAddress() );
+             }
+-            int clientPorts[] = (int[]) clientSession
+-                    .getAttribute( clientPortsATTR );
++            int clientPorts[] =
++                    (int[]) clientSession.getAttribute( clientPortsATTR );
+             track.setClientAddress( clientAddress, clientPorts[0],
+-                    clientPorts[1] );
++                                    clientPorts[1] );
+             
+             if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP )
+             {
+                 log.debug( "Transport is TCP based." );
+-            } else
++            }
++            else
+             {
+                 transport.setSSRC( track.getProxySSRC().toHexString() );
+                 int rtpPort = RtpClientService.getInstance().getPort();
+                 int rtcpPort = RtcpClientService.getInstance().getPort();
+                 transport.setServerPort( new int[] { rtpPort, rtcpPort } );
+-                transport.setSource( RtpClientService.getInstance()
+-                        .getAddress().getHostAddress() );
++                transport.setSource( RtpClientService.getInstance().getAddress().getHostAddress() );
+                 
+                 // Obtaing client specified ports
+-                int ports[] = (int[]) clientSession
+-                        .getAttribute( clientPortsATTR );
++                int ports[] =
++                        (int[]) clientSession.getAttribute( clientPortsATTR );
+                 transport.setClientPort( ports );
+                 
+                 log.debug( "Transport Rewritten: {}", transport );
+             }
+             
+-        } else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
++        }
++        else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
+         {
+             
+             // Create a new Track object
+-            RdtTrack track = proxySession.addRdtTrack( (String) clientSession
+-                    .getAttribute( setupUrlATTR ) );
++            RdtTrack track =
++                    proxySession.addRdtTrack( (String) clientSession.getAttribute( setupUrlATTR ) );
+             // Setting client and server info on the track
+             InetAddress serverAddress = null;
+             if ( transport.getSource() != null )
+             {
+                 try
+                 {
+-                    serverAddress = InetAddress.getByName( transport
+-                            .getSource() );
++                    serverAddress =
++                            InetAddress.getByName( transport.getSource() );
+                 } catch ( UnknownHostException e )
+                 {
+                     log.warn( "Unknown host: " + transport.getSource() );
+                 }
+-            } else
++            }
++            else
+             {
+-                serverAddress = ((InetSocketAddress) serverSession
+-                        .getRemoteAddress()).getAddress();
++                serverAddress =
++                        ((InetSocketAddress) serverSession.getRemoteAddress()).getAddress();
+             }
+             int[] serverPorts = transport.getServerPort();
+             track.setServerAddress( serverAddress, serverPorts[0] );
+@@ -528,21 +529,21 @@
+             InetAddress clientAddress = null;
+             try
+             {
+-                clientAddress = Inet4Address
+-                        .getByName( ((InetSocketAddress) clientSession
+-                                .getRemoteAddress()).getHostName() );
++                clientAddress =
++                        Inet4Address.getByName( ((InetSocketAddress) clientSession.getRemoteAddress()).getHostName() );
+             } catch ( UnknownHostException e )
+             {
+                 log.warn( "Unknown host: " + clientSession.getRemoteAddress() );
+             }
+-            int clientRdtPort = ((Integer) clientSession
+-                    .getAttribute( clientRdtPortATTR )).intValue();
++            int clientRdtPort =
++                    ((Integer) clientSession.getAttribute( clientRdtPortATTR )).intValue();
+             track.setClientAddress( clientAddress, clientRdtPort );
+             
+             if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP )
+             {
+                 log.debug( "Transport is TCP based." );
+-            } else
++            }
++            else
+             {
+                 int rdtPort = RdtClientService.getInstance().getPort();
+                 transport.setServerPort( rdtPort );
+@@ -551,17 +552,19 @@
+                 // );
+                 
+                 // Obtaing client specified ports
+-                int port = ((Integer) clientSession
+-                        .getAttribute( clientRdtPortATTR )).intValue();
++                int port =
++                        ((Integer) clientSession.getAttribute( clientRdtPortATTR )).intValue();
+                 transport.setClientPort( port );
+                 
+                 log.debug( "Transport Rewritten: {}", transport );
+             }
+             
+-        } else
++        }
++        else
+         {
+-            sendResponse( clientSession, RtspResponse
+-                    .errorResponse( RtspCode.UnsupportedTransport ) );
++            sendMessage(
++                         clientSession,
++                         RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
+             return;
+         }
+         
+@@ -570,7 +573,7 @@
+         
+         log.debug( "SENDING RESPONSE TO CLIENT:\n{}", response );
+         
+-        sendResponse( clientSession, response );
++        sendMessage( clientSession, response );
+     }
+     
+     /**
+@@ -585,12 +588,12 @@
+         log.debug( "Connect to Server url: {}", url );
+         String host = url.getHost();
+         int port = url.getPort();
+-        if ( port == -1 )
+-            port = url.getDefaultPort();
++        if ( port == -1 ) port = url.getDefaultPort();
+         
+         // Create TCP/IP connector.
+-        ExecutorExecutor executor = new ExecutorExecutor( ProxyServiceRegistry
+-                .getInstance().getExecutor() );
++        ExecutorExecutor executor =
++                new ExecutorExecutor(
++                        ProxyServiceRegistry.getInstance().getExecutor() );
+         SocketConnector connector = new SocketConnector( 1, executor );
+         connector.setFilterChainBuilder( new RtspServerFilters() );
+         
+@@ -599,8 +602,9 @@
+         if ( addr.isUnresolved() )
+         {
+             log.warn( "Cannot resolve hostname: {}", host );
+-            sendResponse( clientSession, RtspResponse
+-                    .errorResponse( RtspCode.DestinationUnreachable ) );
++            sendMessage(
++                         clientSession,
++                         RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
+             clientSession.close();
+             return;
+         }
+@@ -624,10 +628,11 @@
+         
+         if ( !connectFuture.isConnected() )
+         {
+-            log.warn( "Destination unreachable: {}", connectFuture.getSession()
+-                    .getRemoteAddress() );
+-            sendResponse( clientSession, RtspResponse
+-                    .errorResponse( RtspCode.DestinationUnreachable ) );
++            log.warn( "Destination unreachable: {}",
++                      connectFuture.getSession().getRemoteAddress() );
++            sendMessage(
++                         clientSession,
++                         RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
+             clientSession.close();
+             return;
+         }
+@@ -638,8 +643,9 @@
+         
+         if ( Config.proxyRtspKeepAlive.getValue() )
+         {
+-            SocketSessionConfig config = (SocketSessionConfig) serverSession
+-                    .getConfig();
++            log.debug( "Using keep-alive trick." );
++            SocketSessionConfig config =
++                    (SocketSessionConfig) serverSession.getConfig();
+             config.setKeepAlive( true );
+         }
+         
+@@ -647,8 +653,8 @@
+         serverSession.setAttribute( ProxyHandler.ATTR, this );
+         
+         serverSession.setAttribute(
+-                ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
+-                sharedSessionObjects );
++                                    ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
++                                    sharedSessionObjects );
+         
+         log.debug( "Server session: {}", serverSession.getAttributeKeys() );
+     }
+@@ -660,8 +666,8 @@
+     public static void setSharedSessionAttribute( IoSession session,
+             String name, Object value )
+     {
+-        ConcurrentHashMap<String, Object> map = (ConcurrentHashMap<String, Object>) session
+-                .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
++        ConcurrentHashMap<String, Object> map =
++                (ConcurrentHashMap<String, Object>) session.getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+         
+         map.put( name, value );
+     }
+@@ -669,16 +675,16 @@
+     public static Object getSharedSessionAttribute( IoSession session,
+             String name )
+     {
+-        ConcurrentHashMap map = (ConcurrentHashMap) session
+-                .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
++        ConcurrentHashMap map =
++                (ConcurrentHashMap) session.getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+         return map.get( name );
+     }
+     
+     public static final boolean containsSharedSessionAttribute(
+             IoSession session, String name )
+     {
+-        HashMap map = (HashMap) session
+-                .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
++        HashMap map =
++                (HashMap) session.getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+         return map.containsKey( name );
+     }
+     
+@@ -695,51 +701,30 @@
+         // Remove ProxySession and Track instances
+         if ( clientSession != null )
+         {
+-            ProxySession proxySession = (ProxySession) clientSession
+-                    .getAttribute( ProxySession.ATTR );
+-            if ( proxySession != null )
+-                proxySession.close();
++            ProxySession proxySession =
++                    (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
++            if ( proxySession != null ) proxySession.close();
+         }
+     }
+     
+     /**
+-     * Sends an RTSP request message
++     * Sends an RTSP message
+      * 
+      * @param session
+      *            current IoSession
+      * @param request
+      *            the message
+      */
+-    private void sendRequest( IoSession session, RtspRequest request )
++    private void sendMessage( IoSession session, RtspMessage message )
+     {
+-        request.setCommonHeaders();
++        message.setCommonHeaders();
+         try
+         {
+-            session.write( request );
++            session.write( message );
+         } catch ( Exception e )
+         {
+-            log.error( "exception sending request", e.getCause() );
++            log.error( "exception sending RTSP message", e.getCause() );
+         }
+     }
+     
+-    /**
+-     * Sends an RTSP response message
+-     * 
+-     * @param session
+-     *            current IoSession
+-     * @param response
+-     *            the message
+-     */
+-    private void sendResponse( IoSession session, RtspResponse response )
+-    {
+-        response.setCommonHeaders();
+-        try
+-        {
+-            session.write( response );
+-        } catch ( Exception e )
+-        {
+-            log.error( "exception sending response", e.getCause() );
+-        }
+-    }
+-    
+ }
+
+
+
+From merlimat at mail.berlios.de  Thu Oct 12 18:47:32 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Thu, 12 Oct 2006 18:47:32 +0200
+Subject: [Rtspproxy-devel] r435 -
+	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+Message-ID: <200610121647.k9CGlWJA016419@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-12 18:47:25 +0200 (Thu, 12 Oct 2006)
+New Revision: 435
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+Log:
+Resolved nasty problem with messages sent when there's no 
+connection with server. Now it's all done asynchronously, 
+but in the "right way". 
+When connection to server completes (whithout blocking) 
+all pending messages will be sent to server.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 16:12:14 UTC (rev 434)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 16:47:25 UTC (rev 435)
+@@ -25,13 +25,16 @@
+ import java.net.URL;
+ import java.net.UnknownHostException;
+ import java.util.HashMap;
++import java.util.Queue;
+ import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.ConcurrentLinkedQueue;
+ 
+ import org.apache.mina.common.ConnectFuture;
+ import org.apache.mina.common.IoFuture;
+ import org.apache.mina.common.IoFutureListener;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TrafficMask;
++import org.apache.mina.common.WriteFuture;
+ import org.apache.mina.filter.executor.ExecutorExecutor;
+ import org.apache.mina.transport.socket.nio.SocketConnector;
+ import org.apache.mina.transport.socket.nio.SocketSessionConfig;
+@@ -87,6 +90,8 @@
+     private ConcurrentHashMap<String, Object> sharedSessionObjects =
+             new ConcurrentHashMap<String, Object>();
+     
++    private Queue<RtspMessage> outgoingMessages;
++    
+     /**
+      * Creates a new ProxyHandler from a client side protocol session.
+      * 
+@@ -94,6 +99,7 @@
+      */
+     public ProxyHandler( IoSession clientSession )
+     {
++        outgoingMessages = new ConcurrentLinkedQueue<RtspMessage>();
+         this.clientSession = clientSession;
+         this.clientSession.setAttribute(
+                                          ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
+@@ -107,20 +113,16 @@
+         {
+             ProxySession proxySession =
+                     ProxySession.getByClientSessionID( message.getHeader( "Session" ) );
+-            if ( proxySession != null )
++            if ( proxySession == null )
+             {
+-                // Session is Ok
+-                message.setHeader( "Session", proxySession.getServerSessionId() );
+-            }
+-            else
+-            {
+                 // Error. The client specified a session ID but it's
+                 // not valid
+-                sendMessage(
+-                             clientSession,
+-                             RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++                sendError( clientSession, RtspCode.SessionNotFound );
+                 return;
+             }
++            
++            // Session is Ok
++            message.setHeader( "Session", proxySession.getServerSessionId() );
+         }
+         
+         if ( serverSession == null
+@@ -135,7 +137,7 @@
+             RtspRequest request = (RtspRequest) message;
+             try
+             {
+-                connectServerSide( request.getUrl() );
++                connectServerSide( request );
+                 
+             } catch ( IOException e )
+             {
+@@ -143,6 +145,7 @@
+                 // closeAll();
+             } finally
+             {
++                log.debug( "Server session != null: {}", serverSession != null );
+                 if ( serverSession == null ) return;
+             }
+         }
+@@ -173,13 +176,9 @@
+         {
+             ProxySession proxySession =
+                     ProxySession.getByServerSessionID( message.getHeader( "Session" ) );
+-            if ( proxySession != null )
++            
++            if ( proxySession == null )
+             {
+-                // Session is Ok
+-                message.setHeader( "Session", proxySession.getClientSessionId() );
+-            }
+-            else
+-            {
+                 if ( message.getType() == RtspMessage.Type.TypeResponse )
+                 {
+                     // create a proxy session on the fly if message is a
+@@ -198,12 +197,13 @@
+                 {
+                     // Error. The client specified a session ID but it's
+                     // not valid
+-                    sendMessage(
+-                                 clientSession,
+-                                 RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++                    sendError( clientSession, RtspCode.SessionNotFound );
+                     return;
+                 }
+             }
++            
++            // Session is Ok
++            message.setHeader( "Session", proxySession.getClientSessionId() );
+         }
+         
+         switch ( message.getType() )
+@@ -253,9 +253,7 @@
+                 // not valid
+                 log.debug( "Invalid sessionId: {}",
+                            request.getHeader( "Session" ) );
+-                sendMessage(
+-                             clientSession,
+-                             RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
++                sendError( clientSession, RtspCode.SessionNotFound );
+                 return;
+             }
+         }
+@@ -270,7 +268,7 @@
+              */
+             try
+             {
+-                connectServerSide( request.getUrl() );
++                connectServerSide( request );
+             } catch ( IOException e )
+             {
+                 log.error( "I/O exception", e );
+@@ -298,9 +296,7 @@
+              * transports set.
+              */
+             log.debug( "No supported transport was found." );
+-            sendMessage(
+-                         clientSession,
+-                         RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
++            sendError( clientSession, RtspCode.UnsupportedTransport );
+             return;
+         }
+         
+@@ -350,9 +346,8 @@
+                                       "failed to allocate local RTP/RTCP ports",
+                                       ioe );
+                             
+-                            sendMessage(
+-                                         clientSession,
+-                                         RtspResponse.errorResponse( RtspCode.InternalServerError ) );
++                            sendError( clientSession,
++                                       RtspCode.InternalServerError );
+                             return;
+                         }
+                     }
+@@ -562,9 +557,7 @@
+         }
+         else
+         {
+-            sendMessage(
+-                         clientSession,
+-                         RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
++            sendError( clientSession, RtspCode.UnsupportedTransport );
+             return;
+         }
+         
+@@ -583,8 +576,11 @@
+      *            the URI of the server
+      * @throws IOException
+      */
+-    private void connectServerSide( URL url ) throws IOException
++    private void connectServerSide( RtspRequest request ) throws IOException
+     {
++        URL url = request.getUrl();
++        outgoingMessages.add( request );
++        
+         log.debug( "Connect to Server url: {}", url );
+         String host = url.getHost();
+         int port = url.getPort();
+@@ -602,9 +598,7 @@
+         if ( addr.isUnresolved() )
+         {
+             log.warn( "Cannot resolve hostname: {}", host );
+-            sendMessage(
+-                         clientSession,
+-                         RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
++            sendError( clientSession, RtspCode.DestinationUnreachable );
+             clientSession.close();
+             return;
+         }
+@@ -630,9 +624,7 @@
+         {
+             log.warn( "Destination unreachable: {}",
+                       connectFuture.getSession().getRemoteAddress() );
+-            sendMessage(
+-                         clientSession,
+-                         RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
++            sendError( clientSession, RtspCode.DestinationUnreachable );
+             clientSession.close();
+             return;
+         }
+@@ -657,6 +649,23 @@
+                                     sharedSessionObjects );
+         
+         log.debug( "Server session: {}", serverSession.getAttributeKeys() );
++        
++        // Send pending outgoing messages
++        while ( ! outgoingMessages.isEmpty() )
++        {
++            RtspMessage message = outgoingMessages.poll();
++            if (message.getType() == RtspMessage.Type.TypeRequest )
++            {
++                RtspRequest request = (RtspRequest)message;
++                if ( request.getVerb() == RtspRequest.Verb.SETUP )
++                {
++                    passSetupRequestToServer( request );
++                    return;
++                }   
++            }
++            
++            passToServer( message );
++        }
+     }
+     
+     /**
+@@ -727,4 +736,25 @@
+         }
+     }
+     
++    /**
++     * Sends an RTSP error message response
++     * 
++     * @param session
++     *            current IoSession
++     * @param errorCode
++     *            the message
++     */
++    private void sendError( IoSession session, RtspCode errorCode )
++    {
++        try
++        {
++            WriteFuture future =
++                    session.write( RtspResponse.errorResponse( errorCode ) );
++            future.addListener( CLOSE );
++        } catch ( Exception e )
++        {
++            log.error( "exception sending RTSP error message", e.getCause() );
++        }
++    }
++    
+ }
+
+
+
+From merlimat at mail.berlios.de  Thu Oct 12 21:27:00 2006
+From: merlimat at mail.berlios.de (merlimat at mail.berlios.de)
+Date: Thu, 12 Oct 2006 21:27:00 +0200
+Subject: [Rtspproxy-devel] r436 -
+	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+Message-ID: <200610121927.k9CJR0xA003766@sheep.berlios.de>
+
+Author: merlimat
+Date: 2006-10-12 21:26:48 +0200 (Thu, 12 Oct 2006)
+New Revision: 436
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+Log:
+Every write() operation is now checked with an IoFutureListener
+that verify if the operation succeded. If not the sessions 
+(both client and server) are terminated.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 16:47:25 UTC (rev 435)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 19:26:48 UTC (rev 436)
+@@ -92,6 +92,8 @@
+     
+     private Queue<RtspMessage> outgoingMessages;
+     
++    private WriteListener writeListener = new WriteListener( this );
++    
+     /**
+      * Creates a new ProxyHandler from a client side protocol session.
+      * 
+@@ -651,17 +653,17 @@
+         log.debug( "Server session: {}", serverSession.getAttributeKeys() );
+         
+         // Send pending outgoing messages
+-        while ( ! outgoingMessages.isEmpty() )
++        while ( !outgoingMessages.isEmpty() )
+         {
+             RtspMessage message = outgoingMessages.poll();
+-            if (message.getType() == RtspMessage.Type.TypeRequest )
++            if ( message.getType() == RtspMessage.Type.TypeRequest )
+             {
+-                RtspRequest request = (RtspRequest)message;
++                RtspRequest request = (RtspRequest) message;
+                 if ( request.getVerb() == RtspRequest.Verb.SETUP )
+                 {
+                     passSetupRequestToServer( request );
+                     return;
+-                }   
++                }
+             }
+             
+             passToServer( message );
+@@ -727,13 +729,7 @@
+     private void sendMessage( IoSession session, RtspMessage message )
+     {
+         message.setCommonHeaders();
+-        try
+-        {
+-            session.write( message );
+-        } catch ( Exception e )
+-        {
+-            log.error( "exception sending RTSP message", e.getCause() );
+-        }
++        session.write( message ).addListener( writeListener );
+     }
+     
+     /**
+@@ -746,15 +742,57 @@
+      */
+     private void sendError( IoSession session, RtspCode errorCode )
+     {
+-        try
++        WriteFuture future =
++                session.write( RtspResponse.errorResponse( errorCode ) );
++        future.addListener( new CloseAllListener( this ) );        
++    }
++    
++    private static class WriteListener implements IoFutureListener
++    {
++        private ProxyHandler proxyHandler;
++        
++        public WriteListener( ProxyHandler proxyHandler )
+         {
+-            WriteFuture future =
+-                    session.write( RtspResponse.errorResponse( errorCode ) );
+-            future.addListener( CLOSE );
+-        } catch ( Exception e )
++            this.proxyHandler = proxyHandler;
++        }
++        
++        /*
++         * (non-Javadoc)
++         * 
++         * @see org.apache.mina.common.IoFutureListener#operationComplete(org.apache.mina.common.IoFuture)
++         */
++        public void operationComplete( IoFuture future )
+         {
+-            log.error( "exception sending RTSP error message", e.getCause() );
++            WriteFuture writeFuture = (WriteFuture) future;
++            if ( !writeFuture.isWritten() )
++            {
++                log.debug( "Writing operation failed." );
++                proxyHandler.closeAll();
++            }
+         }
++        
+     }
+     
++    private static class CloseAllListener implements IoFutureListener
++    {
++        
++        private ProxyHandler proxyHandler;
++        
++        public CloseAllListener( ProxyHandler proxyHandler )
++        {
++            this.proxyHandler = proxyHandler;
++        }
++        
++        /*
++         * (non-Javadoc)
++         * 
++         * @see org.apache.mina.common.IoFutureListener#operationComplete(org.apache.mina.common.IoFuture)
++         */
++        public void operationComplete( IoFuture future )
++        {
++            proxyHandler.closeAll();
++        }
++        
++    }
++    
+ }
+
+
+

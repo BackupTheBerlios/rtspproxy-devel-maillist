@@ -1,0 +1,681 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r328 - in trunk/src/main/java/rtspproxy: . filter/authentication filter/authentication/scheme
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r328%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20filter/authentication%20filter/authentication/scheme&In-Reply-To=%3C200512081317.jB8DHfmV017562%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000012.html">
+   <LINK REL="Next"  HREF="000014.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r328 - in trunk/src/main/java/rtspproxy: . filter/authentication filter/authentication/scheme</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r328%20-%20in%20trunk/src/main/java/rtspproxy%3A%20.%20filter/authentication%20filter/authentication/scheme&In-Reply-To=%3C200512081317.jB8DHfmV017562%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r328 - in trunk/src/main/java/rtspproxy: . filter/authentication filter/authentication/scheme">merlimat at berlios.de
+       </A><BR>
+    <I>Thu Dec  8 14:17:41 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000012.html">[Rtspproxy-devel] r327 - in trunk/src/main/java/rtspproxy/filter: . authentication
+</A></li>
+        <LI>Next message: <A HREF="000014.html">[Rtspproxy-devel] r329 - trunk/src/main/java/rtspproxy/filter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#13">[ date ]</a>
+              <a href="thread.html#13">[ thread ]</a>
+              <a href="subject.html#13">[ subject ]</a>
+              <a href="author.html#13">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-08 14:17:33 +0100 (Thu, 08 Dec 2005)
+New Revision: 328
+
+Added:
+   trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationFilter.java
+   trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationProvider.java
+   trunk/src/main/java/rtspproxy/filter/authentication/PlainTextAuthenticationProvider.java
+   trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java
+   trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java
+   trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java
+Removed:
+   trunk/src/main/java/rtspproxy/auth/
+Log:
+* Moved AuthenticationFilter to rtspproxy.filter.authentication
+
+Copied: trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationFilter.java (from rev 317, trunk/src/main/java/rtspproxy/auth/AuthenticationFilter.java)
+===================================================================
+--- trunk/src/main/java/rtspproxy/auth/AuthenticationFilter.java	2005-12-04 23:45:01 UTC (rev 317)
++++ trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationFilter.java	2005-12-08 13:17:33 UTC (rev 328)
+@@ -0,0 +1,213 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.filter.authentication;
++
++import org.apache.log4j.Logger;
++import org.apache.mina.common.ByteBuffer;
++import org.apache.mina.common.IoFilterAdapter;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.WriteFuture;
++
++import rtspproxy.Config;
++import rtspproxy.Reactor;
++import rtspproxy.filter.authentication.scheme.AuthenticationScheme;
++import rtspproxy.filter.authentication.scheme.BasicAuthentication;
++import rtspproxy.filter.authentication.scheme.Credentials;
++import rtspproxy.rtsp.RtspCode;
++import rtspproxy.rtsp.RtspMessage;
++import rtspproxy.rtsp.RtspRequest;
++import rtspproxy.rtsp.RtspResponse;
++
++/**
++ * @author Matteo Merli
++ */
++public class AuthenticationFilter extends IoFilterAdapter
++{
++
++	private static Logger log = Logger.getLogger( AuthenticationFilter.class );
++
++	/** Different authentication schemes implementation */
++	private static AuthenticationScheme[] schemes = { new BasicAuthentication() };
++
++	/** Contains a comma-separated list of the scheme names. */
++	private static String schemesString;
++
++	static {
++		// Pre-fill the scheme names
++		schemesString = new String();
++		for ( int i = 0; i &lt; schemes.length; i++ ) {
++			schemesString += schemes[i].getName();
++			if ( i &lt; schemes.length - 1 )
++				schemesString += &quot;, &quot;;
++		}
++	}
++
++	/**
++	 * Backend provider.
++	 */
++	private AuthenticationProvider provider;
++
++	private String realm;
++
++	/**
++	 * Construct a new AuthenticationFilter. Looks at the configuration to load
++	 * the choseen backend implementation.
++	 */
++	public AuthenticationFilter()
++	{
++		// Check which backend implementation to use
++		// Default is plain-text implementation
++		String className = Config.get( &quot;proxy.auth.authentication.implementationClass&quot;,
++				&quot;rtspproxy.auth.PlainTextAuthenticationProvider&quot; );
++
++		Class providerClass;
++		try {
++			providerClass = Class.forName( className );
++
++		} catch ( ClassNotFoundException e ) {
++			log.fatal( &quot;Invalid AuthenticationProvider class: &quot; + className );
++			Reactor.stop();
++			return;
++		}
++
++		// Check if the class implements the IpAddressProvider interfaces
++		boolean found = false;
++		for ( Class interFace : providerClass.getInterfaces() ) {
++			if ( AuthenticationProvider.class.equals( interFace ) ) {
++				found = true;
++				break;
++			}
++		}
++
++		if ( !found ) {
++			log.fatal( &quot;Class (&quot; + providerClass
++					+ &quot;) does not implement the AuthenticationProvider interface.&quot; );
++			Reactor.stop();
++			return;
++		}
++
++		try {
++			provider = (AuthenticationProvider) providerClass.newInstance();
++			provider.init();
++
++		} catch ( Exception e ) {
++			log.fatal( &quot;Error starting AuthenticationProvider: &quot; + e );
++			Reactor.stop();
++			return;
++		}
++
++		realm = &quot;RtspProxy &quot; + Config.get( &quot;proxy.rtsp.interface&quot;, &quot;&quot; );
++
++		log.info( &quot;Using AuthenticationFilter (&quot; + className + &quot;)&quot; );
++	}
++
++	public void messageReceived( NextFilter nextFilter, IoSession session, Object message )
++			throws Exception
++	{
++		if ( !( message instanceof RtspRequest ) ) {
++			// Shouldn't happen
++			log.warn( &quot;Object message is not a RTSP message&quot; );
++			return;
++		}
++
++		if ( session.getAttribute( &quot;auth&quot; ) != null ) {
++			// Client already autheticated
++			log.debug( &quot;Already authenticaed: &quot; + session.getAttribute( &quot;auth&quot; ) );
++			nextFilter.messageReceived( session, message );
++		}
++
++		String authString = ( (RtspMessage) message ).getHeader( &quot;Proxy-Authorization&quot; );
++		if ( authString == null ) {
++			log.debug( &quot;RTSP message: \n&quot; + message );
++			RtspResponse response = RtspResponse.errorResponse( RtspCode.ProxyAuthenticationRequired );
++			response.setHeader( &quot;Proxy-Authenticate&quot;, schemesString + &quot; realm=\&quot;&quot; + realm
++					+ &quot;\&quot;&quot; );
++
++			// TODO: I should be able to send a RtspMessage here using the
++			// already provided encoder.
++			WriteFuture written = session.write( response );
++			// Why have I to wait here????
++			written.join();
++			// session.close();
++			return;
++		}
++
++		AuthenticationScheme scheme = getAuthenticationScheme( authString );
++		if ( scheme == null ) {
++			RtspResponse response = RtspResponse.errorResponse( RtspCode.BadRequest );
++
++			// TODO: I should be able to send a RtspMessage here using the
++			// already provided encoder.
++			WriteFuture written = session.write( response );
++			// Why have I to wait here????
++			written.join();
++			// session.close();
++			return;
++		}
++
++		// Check the authentication credentials
++		Credentials credentials = scheme.getCredentials( authString );
++		if ( credentials == null || provider.isAuthenticated( credentials ) == false ) {
++			RtspResponse response = RtspResponse.errorResponse( RtspCode.Unauthorized );
++
++			// TODO: I should be able to send a RtspMessage here using the
++			// already provided encoder.
++			WriteFuture written = session.write( ByteBuffer.wrap( response.toString().getBytes() ) );
++			// Why have I to wait here????
++			written.join();
++			session.close();
++			return;
++		}
++
++		/*
++		 * Mark the session with an &quot;authenticated&quot; attribute. This will prevent
++		 * the check for the credentials for every message received.
++		 */
++		session.setAttribute( &quot;auth&quot;, credentials.getUserName() );
++
++		// Forward message
++		nextFilter.messageReceived( session, message );
++	}
++
++	/**
++	 * Gets the authentication scheme stated by the client.
++	 * 
++	 * @param authString
++	 * @return
++	 */
++	private static AuthenticationScheme getAuthenticationScheme( String authString )
++	{
++		String schemeName;
++		try {
++			schemeName = authString.split( &quot; &quot; )[0];
++		} catch ( IndexOutOfBoundsException e ) {
++			// Malformed auth string
++			return null;
++		}
++
++		for ( int i = 0; i &lt; schemes.length; i++ ) {
++			if ( schemeName.equalsIgnoreCase( schemes[i].getName() ) )
++				return schemes[i];
++		}
++
++		// Scheme not valid
++		return null;
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationFilter.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Copied: trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationProvider.java (from rev 317, trunk/src/main/java/rtspproxy/auth/AuthenticationProvider.java)
+===================================================================
+--- trunk/src/main/java/rtspproxy/auth/AuthenticationProvider.java	2005-12-04 23:45:01 UTC (rev 317)
++++ trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationProvider.java	2005-12-08 13:17:33 UTC (rev 328)
+@@ -0,0 +1,56 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++package rtspproxy.filter.authentication;
++
++import rtspproxy.filter.authentication.scheme.Credentials;
++
++/**
++ * Interface for authentication providers
++ * 
++ * @author Matteo Merli
++ */
++public interface AuthenticationProvider
++{
++
++	/**
++	 * Called once at service startup. Should be used to initialize the
++	 * provider.
++	 * 
++	 * @throws Exception
++	 */
++	public void init() throws Exception;
++
++	/**
++	 * Called once at service shutdown.
++	 * 
++	 * @throws Exception
++	 */
++	public void shutdown() throws Exception;
++
++	/**
++	 * Called every time that there is the need to verify the identity of a
++	 * user.
++	 * 
++	 * @param credentials
++	 *        User credentials (username and password)
++	 * @return true if the user succesfull authenticate with the given username
++	 *         and password. false if user is not present or the password is
++	 *         wrong.
++	 */
++	public boolean isAuthenticated( Credentials credentials );
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/authentication/AuthenticationProvider.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Copied: trunk/src/main/java/rtspproxy/filter/authentication/PlainTextAuthenticationProvider.java (from rev 317, trunk/src/main/java/rtspproxy/auth/PlainTextAuthenticationProvider.java)
+===================================================================
+--- trunk/src/main/java/rtspproxy/auth/PlainTextAuthenticationProvider.java	2005-12-04 23:45:01 UTC (rev 317)
++++ trunk/src/main/java/rtspproxy/filter/authentication/PlainTextAuthenticationProvider.java	2005-12-08 13:17:33 UTC (rev 328)
+@@ -0,0 +1,87 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.filter.authentication;
++
++import java.io.File;
++import java.io.FileInputStream;
++import java.io.FileNotFoundException;
++import java.io.IOException;
++import java.util.Properties;
++
++import org.apache.log4j.Logger;
++
++import rtspproxy.Config;
++import rtspproxy.Reactor;
++import rtspproxy.filter.authentication.scheme.Credentials;
++
++/**
++ * @author Matteo Merli
++ */
++public class PlainTextAuthenticationProvider implements AuthenticationProvider
++{
++
++	private static Logger log = Logger.getLogger( PlainTextAuthenticationProvider.class );
++
++	private static Properties usersDb = new Properties();
++
++	public void init() throws Exception
++	{
++		// Load users from file
++		String fileName = Config.getHome()
++				+ File.separator
++				+ Config.get( &quot;auth.authentication.text.file&quot;, &quot;conf&quot; + File.separator
++						+ &quot;users.txt&quot; );
++
++		try {
++			usersDb.load( new FileInputStream( new File( fileName ) ) );
++
++		} catch ( FileNotFoundException e ) {
++			log.fatal( &quot;Users file not found:&quot; + e );
++			Reactor.stop();
++		} catch ( IOException e ) {
++			log.fatal( &quot;Error reading users file: &quot; + e );
++			Reactor.stop();
++		} catch ( IllegalArgumentException e ) {
++			log.fatal( &quot;The users file is not valid&quot; );
++			Reactor.stop();
++		}
++
++	}
++
++	public void shutdown() throws Exception
++	{
++		// Do nothing
++	}
++
++	public boolean isAuthenticated( Credentials credentials )
++	{
++		String storedPassword = usersDb.getProperty( credentials.getUserName() );
++		if ( storedPassword == null )
++			// User is not present
++			return false;
++
++		if ( storedPassword.compareTo( credentials.getPassword() ) == 0 )
++			// Password is ok
++			return true;
++		else
++			// Password is wrong
++			return false;
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/authentication/PlainTextAuthenticationProvider.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java	2005-12-08 13:17:16 UTC (rev 327)
++++ trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java	2005-12-08 13:17:33 UTC (rev 328)
+@@ -0,0 +1,37 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.filter.authentication.scheme;
++
++/**
++ * Base interface for diverse authentication schemes such as &quot;Basic&quot;, &quot;Digest&quot;
++ * and possibly others.
++ * 
++ * @author Matteo Merli
++ */
++public interface AuthenticationScheme
++{
++
++	/**
++	 * @return the name of the authentication scheme.
++	 */
++	public String getName();
++	
++	public Credentials getCredentials( String authString );
++
++}
+\ No newline at end of file
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/authentication/scheme/AuthenticationScheme.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java	2005-12-08 13:17:16 UTC (rev 327)
++++ trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java	2005-12-08 13:17:33 UTC (rev 328)
+@@ -0,0 +1,67 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.filter.authentication.scheme;
++
++import org.apache.log4j.Logger;
++
++import rtspproxy.lib.Base64;
++
++/**
++ * Implementation of the Basic authentication scheme.
++ * 
++ * @author Matteo Merli
++ */
++public class BasicAuthentication implements AuthenticationScheme
++{
++
++	private static Logger log = Logger.getLogger( BasicAuthentication.class );
++
++	public String getName()
++	{
++		return &quot;Basic&quot;;
++	}
++
++	public Credentials getCredentials( String authString )
++	{
++		String username;
++		String password;
++
++		try {
++			// authString = Basic [base64 data]
++			authString = authString.split( &quot; &quot; )[1];
++			// Basic scheme credential are BASE64 encoded.
++			byte[] decBytes = Base64.decode( authString );
++			StringBuilder sb = new StringBuilder();
++			for ( byte b : decBytes )
++				sb.append( (char)b );
++			String auth = sb.toString();
++
++			log.debug( &quot;auth: &quot; + auth );
++			username = auth.split( &quot;:&quot;, 2 )[0];
++			password = auth.split( &quot;:&quot;, 2 )[1];
++			log.debug( &quot;username=&quot; + username + &quot; - password=&quot; + password );
++		} catch ( Exception e ) {
++			log.info( &quot;Malformed authString: &quot; + authString );
++			return null;
++		}
++
++		return new Credentials( username, password );
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/authentication/scheme/BasicAuthentication.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java	2005-12-08 13:17:16 UTC (rev 327)
++++ trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java	2005-12-08 13:17:33 UTC (rev 328)
+@@ -0,0 +1,71 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.filter.authentication.scheme;
++
++/**
++ * Holds the credentials (username and password) sent by the client.
++ * 
++ * @author Matteo Merli
++ */
++public class Credentials
++{
++
++	private String userName;
++	private String password;
++
++	public Credentials( String userName, String password )
++	{
++		this.userName = userName;
++		this.password = password;
++	}
++
++	/**
++	 * @return Returns the password.
++	 */
++	public String getPassword()
++	{
++		return password;
++	}
++
++	/**
++	 * @param password
++	 *        The password to set.
++	 */
++	public void setPassword( String password )
++	{
++		this.password = password;
++	}
++
++	/**
++	 * @return Returns the userName.
++	 */
++	public String getUserName()
++	{
++		return userName;
++	}
++
++	/**
++	 * @param userName
++	 *        The userName to set.
++	 */
++	public void setUserName( String userName )
++	{
++		this.userName = userName;
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/filter/authentication/scheme/Credentials.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000012.html">[Rtspproxy-devel] r327 - in trunk/src/main/java/rtspproxy/filter: . authentication
+</A></li>
+	<LI>Next message: <A HREF="000014.html">[Rtspproxy-devel] r329 - trunk/src/main/java/rtspproxy/filter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#13">[ date ]</a>
+              <a href="thread.html#13">[ thread ]</a>
+              <a href="subject.html#13">[ subject ]</a>
+              <a href="author.html#13">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

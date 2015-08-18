@@ -1,0 +1,85 @@
+From andy at bluewire.net.nz  Mon May 24 05:48:03 2010
+From: andy at bluewire.net.nz (Andy Savage)
+Date: Mon, 24 May 2010 11:48:03 +0800
+Subject: [Rtspproxy-devel] RTSP question for RTPProxy
+Message-ID: <AANLkTinrbtfsjhJsSzLGGXgb19LdUFSIRx1VIEtGnPzg@mail.gmail.com>
+
+Hi there,
+
+I am extremely interested in using this product but I had a few questions on
+whether it would meet my requirements. I couldn't quite figure it out from
+the project web page so I would really appreciate anybody taking the time
+here to help me.
+
+I am interested in taking an RTP stream and wrapping it via RTSP.
+
+For example:
+Client A sends RTP to Proxy
+Proxy provides RTSP stream for Client B to access
+
+I notice some configuration settings in regards to RTSP but it wasn't clear
+whether this was for client or server.
+
+If somebody could let me know whether this is possible that would be great.
+
+Kind regards,
+Andy Savage
+
+-- 
+"The greatest challenge to any thinker is stating the problem in a way that
+will allow a solution"
+- Bertrand Russell
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <https://lists.berlios.de/pipermail/rtspproxy-devel/attachments/20100524/b2b47d5e/attachment.html>
+
+From rsmazara at gmail.com  Mon May 24 14:04:42 2010
+From: rsmazara at gmail.com (Rupinder Mazara)
+Date: Mon, 24 May 2010 08:04:42 -0400
+Subject: [Rtspproxy-devel] RTSP question for RTPProxy
+In-Reply-To: <AANLkTinrbtfsjhJsSzLGGXgb19LdUFSIRx1VIEtGnPzg@mail.gmail.com>
+References: <AANLkTinrbtfsjhJsSzLGGXgb19LdUFSIRx1VIEtGnPzg@mail.gmail.com>
+Message-ID: <AANLkTilFUeBNGQryfl-RfqnMvWAjCN4LgGBGoTETW41f@mail.gmail.com>
+
+Hi Andy
+
+
+Not entirely sure if that is even possible in RTSP ;
+for instance who will setup client B to recieve the packets and do
+whatever it needs to do
+
+If you want to simpy redirect the RTP/UDP  to another device / machine
+then  simply look for the SETUP response in ProxyHandler and make you
+changes
+
+
+R
+
+On 23 May 2010 23:48, Andy Savage <andy at bluewire.net.nz> wrote:
+> Hi there,
+> I am extremely interested in using this product but I had a few questions on
+> whether it would meet my requirements. I couldn't quite figure it out from
+> the project web page so I would really appreciate anybody taking the time
+> here to help me.
+> I am interested in taking an RTP stream and wrapping it via RTSP.
+> For example:
+> Client A sends RTP to Proxy
+> Proxy provides RTSP stream for Client B to access
+> I notice some configuration settings in regards to RTSP but it wasn't clear
+> whether this was for client or server.
+> If somebody could let me know whether this is possible that would be great.
+> Kind regards,
+> Andy Savage
+> --
+> "The greatest challenge to any thinker is stating the problem in a way that
+> will allow a solution"
+> - Bertrand Russell
+>
+> _______________________________________________
+> Rtspproxy-devel mailing list
+> Rtspproxy-devel at lists.berlios.de
+> https://lists.berlios.de/mailman/listinfo/rtspproxy-devel
+>
+>
+
+

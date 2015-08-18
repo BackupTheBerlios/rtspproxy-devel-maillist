@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r370 - in trunk/src: main/java/rtspproxy/config resources/conf
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r370%20-%20in%20trunk/src%3A%20main/java/rtspproxy/config%20resources/conf&In-Reply-To=%3C200512280140.jBS1ekJP022810%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000054.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r370 - in trunk/src: main/java/rtspproxy/config resources/conf</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r370%20-%20in%20trunk/src%3A%20main/java/rtspproxy/config%20resources/conf&In-Reply-To=%3C200512280140.jBS1ekJP022810%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r370 - in trunk/src: main/java/rtspproxy/config resources/conf">rbieniek at berlios.de
+       </A><BR>
+    <I>Wed Dec 28 02:40:46 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000054.html">[Rtspproxy-devel] r369 - in trunk: . src/main/java/rtspproxy/config src/resources/conf
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#55">[ date ]</a>
+              <a href="thread.html#55">[ thread ]</a>
+              <a href="subject.html#55">[ subject ]</a>
+              <a href="author.html#55">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2005-12-28 02:39:17 +0100 (Wed, 28 Dec 2005)
+New Revision: 370
+
+Added:
+   trunk/src/main/java/rtspproxy/config/AAAConfig.java
+Modified:
+   trunk/src/main/java/rtspproxy/config/Config.java
+   trunk/src/main/java/rtspproxy/config/XMLConfigReader.java
+   trunk/src/resources/conf/rtspproxy.conf.xml
+Log:
+- added generic filter configuration support to XML based configuration file
+parsing.
+-- The generic filter information is not used yet while assembling the
+filter chains because it would break the property-based configuration
+mechanism.
+
+
+Added: trunk/src/main/java/rtspproxy/config/AAAConfig.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/AAAConfig.java	2005-12-27 00:37:27 UTC (rev 369)
++++ trunk/src/main/java/rtspproxy/config/AAAConfig.java	2005-12-28 01:39:17 UTC (rev 370)
+@@ -0,0 +1,39 @@
++/**
++ * 
++ */
++package rtspproxy.config;
++
++import java.util.List;
++
++import org.dom4j.Element;
++
++/**
++ * This class contains the configuration for an AAA filter.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at web.de</A>)
++ */
++public class AAAConfig {
++
++	// implementation class name
++	private String implClass;
++	
++	// list of configuration elements
++	private List&lt;Element&gt; configElements;
++	
++	/**
++	 * 
++	 */
++	AAAConfig(String implClass, List&lt;Element&gt; configElements) {
++		this.implClass = implClass;
++		this.configElements = configElements;
++	}
++
++	public final List&lt;Element&gt; getConfigElements() {
++		return configElements;
++	}
++
++	public final String getImplClass() {
++		return implClass;
++	}
++
++}
+
+Modified: trunk/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/Config.java	2005-12-27 00:37:27 UTC (rev 369)
++++ trunk/src/main/java/rtspproxy/config/Config.java	2005-12-28 01:39:17 UTC (rev 370)
+@@ -1,8 +1,11 @@
+ package rtspproxy.config;
+ 
+ import java.io.File;
++import java.util.ArrayList;
+ import java.util.Collection;
++import java.util.Collections;
+ import java.util.Date;
++import java.util.List;
+ import java.util.Map;
+ import java.util.Observable;
+ import java.util.Observer;
+@@ -339,7 +342,42 @@
+ 	private static Date startDate;
+ 
+ 	// /////////////////////////////////////////////////////////
++	
++	// filter configurations from XML
++	private static List&lt;AAAConfig&gt; authenticationFilters = new ArrayList&lt;AAAConfig&gt;();
+ 
++	// filter configurations from XML
++	private static List&lt;AAAConfig&gt; authorizationFilters = new ArrayList&lt;AAAConfig&gt;();
++
++	// filter configurations from XML
++	private static List&lt;AAAConfig&gt; accountingFilters = new ArrayList&lt;AAAConfig&gt;();
++
++	static void addAuthenticationFilter(AAAConfig config) {
++		authenticationFilters.add(config);
++	}
++	
++	static void addAuthorizationFilter(AAAConfig config) {
++		authorizationFilters.add(config);
++	}
++	
++	static void addAccountingFilter(AAAConfig config) {
++		accountingFilters.add(config);
++	}
++	
++	public static List&lt;AAAConfig&gt; getAuthenticationFilters() {
++		return Collections.unmodifiableList(authenticationFilters);
++	}
++	
++	public static List&lt;AAAConfig&gt; getAuthorizationFilters() {
++		return Collections.unmodifiableList(authorizationFilters);
++	}
++	
++	public static List&lt;AAAConfig&gt; getAccountingFilters() {
++		return Collections.unmodifiableList(accountingFilters);
++	}
++	
++	// /////////////////////////////////////////////////////////
++
+ 	public Config()
+ 	{
+ 		// Read home directory
+
+Modified: trunk/src/main/java/rtspproxy/config/XMLConfigReader.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/config/XMLConfigReader.java	2005-12-27 00:37:27 UTC (rev 369)
++++ trunk/src/main/java/rtspproxy/config/XMLConfigReader.java	2005-12-28 01:39:17 UTC (rev 370)
+@@ -94,5 +94,27 @@
+ 				}
+ 			}
+ 		}
++		
++		for(Node aaaNode : (List&lt;Node&gt;)doc.selectNodes(&quot;/rtspproxy/filters/*&quot;)) {
++			String name = aaaNode.getName();
++			String implClass = ((Element)aaaNode).attributeValue(&quot;implClass&quot;);
++			
++			logger.debug(&quot;element name=&quot; + name + &quot;, implClass=&quot; + implClass);
++			
++			if(implClass == null || implClass.length() == 0)
++				throw new IllegalArgumentException(&quot;no implementation class given&quot;);
++			
++			if(name.equals(&quot;authentication&quot;)) {
++				Config.addAuthenticationFilter(new AAAConfig(implClass, 
++						(List&lt;Element&gt;)((Element)aaaNode).elements()));
++			} else if(name.equals(&quot;authorization&quot;)) {
++				Config.addAuthorizationFilter(new AAAConfig(implClass, 
++						(List&lt;Element&gt;)((Element)aaaNode).elements()));
++			} else if(name.equals(&quot;accounting&quot;)) {
++				Config.addAccountingFilter(new AAAConfig(implClass, 
++						(List&lt;Element&gt;)((Element)aaaNode).elements()));				
++			} else
++				throw new IllegalArgumentException(&quot;invalid AAA element given, name=&quot; + name);
++		}
+ 	}
+ }
+
+Modified: trunk/src/resources/conf/rtspproxy.conf.xml
+===================================================================
+--- trunk/src/resources/conf/rtspproxy.conf.xml	2005-12-27 00:37:27 UTC (rev 369)
++++ trunk/src/resources/conf/rtspproxy.conf.xml	2005-12-28 01:39:17 UTC (rev 370)
+@@ -33,7 +33,7 @@
+       &lt;manageable&gt;true&lt;/manageable&gt;
+     &lt;/connectorService&gt;
+   &lt;/jmx&gt;
+-  &lt;aaa&gt;
++  &lt;filters&gt;
+     &lt;authentication implClass=&quot;rtspproxy.filter.authentication.PlainTextAuthenticationProvider&quot;&gt;
+       &lt;scheme&gt;Digest&lt;/scheme&gt;
+       &lt;user&gt;
+@@ -47,5 +47,8 @@
+       &lt;allow&gt;10.0.0.*&lt;/allow&gt;
+       &lt;allow&gt;*.some.domain&lt;/allow&gt;
+     &lt;/authorization&gt;
+-  &lt;/aaa&gt;
++    &lt;accounting implClass=&quot;rtspproxy.filter.accounting.PlainTextAccountingProvider&quot; &gt;
++      &lt;log&gt;/tmp/rtspproxy-access.log&lt;/log&gt;
++    &lt;/accounting&gt;
++  &lt;/filters&gt;
+ &lt;/rtspproxy&gt;
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000054.html">[Rtspproxy-devel] r369 - in trunk: . src/main/java/rtspproxy/config src/resources/conf
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#55">[ date ]</a>
+              <a href="thread.html#55">[ thread ]</a>
+              <a href="subject.html#55">[ subject ]</a>
+              <a href="author.html#55">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

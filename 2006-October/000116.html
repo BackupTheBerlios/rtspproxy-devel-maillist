@@ -1,0 +1,786 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r434 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r434%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy&In-Reply-To=%3C200610121612.k9CGCKS8008718%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000115.html">
+   <LINK REL="Next"  HREF="000117.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r434 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy</H1>
+    <B>merlimat at mail.berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r434%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy&In-Reply-To=%3C200610121612.k9CGCKS8008718%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r434 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy">merlimat at mail.berlios.de
+       </A><BR>
+    <I>Thu Oct 12 18:12:20 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000115.html">[Rtspproxy-devel] r433 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy
+</A></li>
+        <LI>Next message: <A HREF="000117.html">[Rtspproxy-devel] r435 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#116">[ date ]</a>
+              <a href="thread.html#116">[ thread ]</a>
+              <a href="subject.html#116">[ subject ]</a>
+              <a href="author.html#116">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-10-12 18:12:14 +0200 (Thu, 12 Oct 2006)
+New Revision: 434
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+Log:
+Unified sendRequest and sendResponse methods.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 15:17:32 UTC (rev 433)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-10-12 16:12:14 UTC (rev 434)
+@@ -71,23 +71,21 @@
+     /** Used to save a reference to this handler in the IoSession */
+     protected static final String ATTR = ProxyHandler.class.toString() + &quot;Attr&quot;;
+     
+-    protected static final String setupUrlATTR = ProxyHandler.class.toString()
+-            + &quot;setupUrlATTR&quot;;
++    protected static final String setupUrlATTR =
++            ProxyHandler.class.toString() + &quot;setupUrlATTR&quot;;
+     
+-    protected static final String clientPortsATTR = ProxyHandler.class
+-            .toString()
+-            + &quot;clientPortsATTR&quot;;
++    protected static final String clientPortsATTR =
++            ProxyHandler.class.toString() + &quot;clientPortsATTR&quot;;
+     
+-    protected static final String clientRdtPortATTR = ProxyHandler.class
+-            .toString()
+-            + &quot;clientRdtPortATTR&quot;;
++    protected static final String clientRdtPortATTR =
++            ProxyHandler.class.toString() + &quot;clientRdtPortATTR&quot;;
+     
+     private IoSession clientSession = null;
+     
+     private IoSession serverSession = null;
+     
+-    private ConcurrentHashMap&lt;String, Object&gt; sharedSessionObjects = 
+-                                    new ConcurrentHashMap&lt;String, Object&gt;();
++    private ConcurrentHashMap&lt;String, Object&gt; sharedSessionObjects =
++            new ConcurrentHashMap&lt;String, Object&gt;();
+     
+     /**
+      * Creates a new ProxyHandler from a client side protocol session.
+@@ -98,8 +96,8 @@
+     {
+         this.clientSession = clientSession;
+         this.clientSession.setAttribute(
+-                ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
+-                sharedSessionObjects );
++                                         ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
++                                         sharedSessionObjects );
+     }
+     
+     public void passToServer( RtspMessage message )
+@@ -107,20 +105,20 @@
+         log.debug( &quot;Pass to server&quot; );
+         if ( message.hasHeader( &quot;Session&quot; ) )
+         {
+-            ProxySession proxySession = ProxySession
+-                    .getByClientSessionID( message.getHeader( &quot;Session&quot; ) );
++            ProxySession proxySession =
++                    ProxySession.getByClientSessionID( message.getHeader( &quot;Session&quot; ) );
+             if ( proxySession != null )
+             {
+                 // Session is Ok
+-                message
+-                        .setHeader( &quot;Session&quot;, proxySession
+-                                .getServerSessionId() );
+-            } else
++                message.setHeader( &quot;Session&quot;, proxySession.getServerSessionId() );
++            }
++            else
+             {
+                 // Error. The client specified a session ID but it's
+                 // not valid
+-                sendResponse( clientSession, RtspResponse
+-                        .errorResponse( RtspCode.SessionNotFound ) );
++                sendMessage(
++                             clientSession,
++                             RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
+                 return;
+             }
+         }
+@@ -128,10 +126,11 @@
+         if ( serverSession == null
+                 &amp;&amp; message.getType() == RtspMessage.Type.TypeResponse )
+         {
+-            log
+-                    .error( &quot;We can't send a response message to an uninitialized serverSide&quot; );
++            log.error( &quot;We can't send a response message to &quot;
++                    + &quot;an uninitialized serverSide&quot; );
+             return;
+-        } else if ( serverSession == null )
++        }
++        else if ( serverSession == null )
+         {
+             RtspRequest request = (RtspRequest) message;
+             try
+@@ -144,8 +143,7 @@
+                 // closeAll();
+             } finally
+             {
+-                if ( serverSession == null )
+-                    return;
++                if ( serverSession == null ) return;
+             }
+         }
+         
+@@ -155,12 +153,12 @@
+         {
+         case TypeRequest:
+             serverSession.setAttribute( RtspMessage.lastRequestVerbATTR,
+-                    ((RtspRequest) message).getVerb() );
+-            sendRequest( serverSession, (RtspRequest) message );
++                                        ((RtspRequest) message).getVerb() );
++            sendMessage( serverSession, (RtspRequest) message );
+             break;
+         
+         case TypeResponse:
+-            sendResponse( serverSession, (RtspResponse) message );
++            sendMessage( serverSession, (RtspResponse) message );
+             break;
+         
+         default:
+@@ -173,15 +171,14 @@
+         log.debug( &quot;Pass to client&quot; );
+         if ( message.getHeader( &quot;Session&quot; ) != null )
+         {
+-            ProxySession proxySession = ProxySession
+-                    .getByServerSessionID( message.getHeader( &quot;Session&quot; ) );
++            ProxySession proxySession =
++                    ProxySession.getByServerSessionID( message.getHeader( &quot;Session&quot; ) );
+             if ( proxySession != null )
+             {
+                 // Session is Ok
+-                message
+-                        .setHeader( &quot;Session&quot;, proxySession
+-                                .getClientSessionId() );
+-            } else
++                message.setHeader( &quot;Session&quot;, proxySession.getClientSessionId() );
++            }
++            else
+             {
+                 if ( message.getType() == RtspMessage.Type.TypeResponse )
+                 {
+@@ -192,17 +189,18 @@
+                     // remote server
+                     proxySession = new ProxySession();
+                     
+-                    proxySession.setServerSessionId( message
+-                            .getHeader( &quot;Session&quot; ) );
+-                    message.setHeader( &quot;Session&quot;, proxySession
+-                            .getClientSessionId() );
++                    proxySession.setServerSessionId( message.getHeader( &quot;Session&quot; ) );
++                    message.setHeader( &quot;Session&quot;,
++                                       proxySession.getClientSessionId() );
+                     log.debug( &quot;Created a new proxy session on-the-fly.&quot; );
+-                } else
++                }
++                else
+                 {
+                     // Error. The client specified a session ID but it's
+                     // not valid
+-                    sendResponse( clientSession, RtspResponse
+-                            .errorResponse( RtspCode.SessionNotFound ) );
++                    sendMessage(
++                                 clientSession,
++                                 RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
+                     return;
+                 }
+             }
+@@ -212,12 +210,12 @@
+         {
+         case TypeRequest:
+             clientSession.setAttribute( RtspMessage.lastRequestVerbATTR,
+-                    ((RtspRequest) message).getVerb() );
+-            sendRequest( clientSession, (RtspRequest) message );
++                                        ((RtspRequest) message).getVerb() );
++            sendMessage( clientSession, (RtspRequest) message );
+             break;
+         
+         case TypeResponse:
+-            sendResponse( clientSession, (RtspResponse) message );
++            sendMessage( clientSession, (RtspResponse) message );
+             break;
+         
+         default:
+@@ -242,22 +240,22 @@
+         {
+             // The client already specified a session ID.
+             // Let's validate it
+-            proxySession = ProxySession.getByClientSessionID( request
+-                    .getHeader( &quot;Session&quot; ) );
++            proxySession =
++                    ProxySession.getByClientSessionID( request.getHeader( &quot;Session&quot; ) );
+             if ( proxySession != null )
+             {
+                 // Session ID is ok
+-                request
+-                        .setHeader( &quot;Session&quot;, proxySession
+-                                .getServerSessionId() );
+-            } else
++                request.setHeader( &quot;Session&quot;, proxySession.getServerSessionId() );
++            }
++            else
+             {
+                 // Error. The client specified a session ID but it's
+                 // not valid
+-                log.debug( &quot;Invalid sessionId: {}&quot;, request
+-                        .getHeader( &quot;Session&quot; ) );
+-                sendResponse( clientSession, RtspResponse
+-                        .errorResponse( RtspCode.SessionNotFound ) );
++                log.debug( &quot;Invalid sessionId: {}&quot;,
++                           request.getHeader( &quot;Session&quot; ) );
++                sendMessage(
++                             clientSession,
++                             RtspResponse.errorResponse( RtspCode.SessionNotFound ) );
+                 return;
+             }
+         }
+@@ -279,17 +277,16 @@
+                 // closeAll();
+             } finally
+             {
+-                if ( serverSession == null )
+-                    return;
++                if ( serverSession == null ) return;
+             }
+         }
+-        serverSession.setAttribute( RtspMessage.lastRequestVerbATTR, request
+-                .getVerb() );
++        serverSession.setAttribute( RtspMessage.lastRequestVerbATTR,
++                                    request.getVerb() );
+         
+         log.debug( &quot;Client Transport:{}&quot;, request.getHeader( &quot;Transport&quot; ) );
+         
+-        RtspTransportList rtspTransportList = new RtspTransportList( request
+-                .getHeader( &quot;Transport&quot; ) );
++        RtspTransportList rtspTransportList =
++                new RtspTransportList( request.getHeader( &quot;Transport&quot; ) );
+         log.debug( &quot;Parsed: [{}]&quot;, rtspTransportList );
+         
+         if ( rtspTransportList.count() == 0 )
+@@ -301,8 +298,9 @@
+              * transports set.
+              */
+             log.debug( &quot;No supported transport was found.&quot; );
+-            sendResponse( clientSession, RtspResponse
+-                    .errorResponse( RtspCode.UnsupportedTransport ) );
++            sendMessage(
++                         clientSession,
++                         RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
+             return;
+         }
+         
+@@ -318,17 +316,18 @@
+             if ( transport.getLowerTransport() == LowerTransport.TCP )
+             {
+                 log.debug( &quot;Transport is TCP based.&quot; );
+-            } else
++            }
++            else
+             {
+                 if ( transport.getTransportProtocol() == TransportProtocol.RTP )
+                 {
+                     
+-                    clientSession.setAttribute( clientPortsATTR, transport
+-                            .getClientPort() );
++                    clientSession.setAttribute( clientPortsATTR,
++                                                transport.getClientPort() );
+                     
+                     int proxyRtpPort = RtpServerService.getInstance().getPort();
+-                    int proxyRtcpPort = RtcpServerService.getInstance()
+-                            .getPort();
++                    int proxyRtcpPort =
++                            RtcpServerService.getInstance().getPort();
+                     
+                     if ( Config.proxyServerRtpMultiplePorts.getValue() )
+                     {
+@@ -336,46 +335,44 @@
+                         
+                         try
+                         {
+-                            portrangeRtpSession = PortrangeRtpServerSessionFactory
+-                                    .getInstance().getSession();
++                            portrangeRtpSession =
++                                    PortrangeRtpServerSessionFactory.getInstance().getSession();
+                             
+                             proxyRtpPort = portrangeRtpSession.getRtpPort();
+                             proxyRtcpPort = portrangeRtpSession.getRtcpPort();
+                             
+-                            log
+-                                    .debug(
+-                                            &quot;setting local server RTP/RTCP ports to {}/{}&quot;,
+-                                            proxyRtpPort, proxyRtcpPort );
++                            log.debug(
++                                       &quot;setting local server RTP/RTCP ports to {}/{}&quot;,
++                                       proxyRtpPort, proxyRtcpPort );
+                         } catch ( IOException ioe )
+                         {
+                             log.info(
+-                                    &quot;failed to allocate local RTP/RTCP ports&quot;,
+-                                    ioe );
++                                      &quot;failed to allocate local RTP/RTCP ports&quot;,
++                                      ioe );
+                             
+-                            sendResponse(
+-                                    clientSession,
+-                                    RtspResponse
+-                                            .errorResponse( RtspCode.InternalServerError ) );
++                            sendMessage(
++                                         clientSession,
++                                         RtspResponse.errorResponse( RtspCode.InternalServerError ) );
+                             return;
+                         }
+                     }
+                     transport.setClientPort( new int[] { proxyRtpPort,
+-                            proxyRtcpPort } );
++                                                        proxyRtcpPort } );
+                     
+                     // offer a distinguished SSRC to the remote server
+                     if ( Config.proxyRtspOfferSsrcToServer.getValue() )
+                     {
+-                        String ssrc = ProxySession.newServerSessionID()
+-                                .toHexString();
+-                        log
+-                                .debug(
+-                                        &quot;offering generated SSRC to remote server, ssrc={}&quot;,
+-                                        ssrc );
++                        String ssrc =
++                                ProxySession.newServerSessionID().toHexString();
++                        log.debug(
++                                   &quot;offering generated SSRC to remote server, ssrc={}&quot;,
++                                   ssrc );
+                         
+                         transport.setSSRC( ssrc );
+                     }
+                     
+-                } else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
++                }
++                else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
+                 {
+                     clientSession.setAttribute( clientRdtPortATTR, new Integer(
+                             transport.getClientPort()[0] ) );
+@@ -399,7 +396,7 @@
+         
+         log.debug( &quot;Sending SETUP request: \n{}&quot;, request );
+         
+-        sendRequest( serverSession, request );
++        sendMessage( serverSession, request );
+     }
+     
+     /**
+@@ -411,12 +408,12 @@
+     public void passSetupResponseToClient( RtspResponse response )
+     {
+         // If there isn't yet a proxySession, create a new one
+-        ProxySession proxySession = ProxySession.getByServerSessionID( response
+-                .getHeader( &quot;Session&quot; ) );
++        ProxySession proxySession =
++                ProxySession.getByServerSessionID( response.getHeader( &quot;Session&quot; ) );
+         if ( proxySession == null )
+         {
+-            proxySession = (ProxySession) clientSession
+-                    .getAttribute( ProxySession.ATTR );
++            proxySession =
++                    (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
+             if ( proxySession == null )
+             {
+                 proxySession = new ProxySession();
+@@ -430,8 +427,8 @@
+         }
+         
+         // Modify transport parameters for the client.
+-        RtspTransportList rtspTransportList = new RtspTransportList( response
+-                .getHeader( &quot;Transport&quot; ) );
++        RtspTransportList rtspTransportList =
++                new RtspTransportList( response.getHeader( &quot;Transport&quot; ) );
+         
+         RtspTransport transport = rtspTransportList.getList().get( 0 );
+         log.debug( &quot;Using Transport: {}&quot;, transport );
+@@ -440,8 +437,10 @@
+         {
+             
+             // Create a new Track object
+-            RtpTrack track = proxySession.addRtpTrack( (String) clientSession
+-                    .getAttribute( setupUrlATTR ), transport.getSSRC() );
++            RtpTrack track =
++                    proxySession.addRtpTrack(
++                                              (String) clientSession.getAttribute( setupUrlATTR ),
++                                              transport.getSSRC() );
+             
+             // Setting client and server info on the track
+             InetAddress serverAddress = null;
+@@ -449,78 +448,80 @@
+             {
+                 try
+                 {
+-                    serverAddress = InetAddress.getByName( transport
+-                            .getSource() );
++                    serverAddress =
++                            InetAddress.getByName( transport.getSource() );
+                 } catch ( UnknownHostException e )
+                 {
+                     log.warn( &quot;Unknown host: &quot; + transport.getSource() );
+                 }
+-            } else
++            }
++            else
+             {
+-                serverAddress = ((InetSocketAddress) serverSession
+-                        .getRemoteAddress()).getAddress();
++                serverAddress =
++                        ((InetSocketAddress) serverSession.getRemoteAddress()).getAddress();
+             }
+             int[] serverPorts = transport.getServerPort();
+             track.setServerAddress( serverAddress, serverPorts[0],
+-                    serverPorts[1] );
++                                    serverPorts[1] );
+             
+             InetAddress clientAddress = null;
+             try
+             {
+-                clientAddress = Inet4Address
+-                        .getByName( ((InetSocketAddress) clientSession
+-                                .getRemoteAddress()).getHostName() );
++                clientAddress =
++                        Inet4Address.getByName( ((InetSocketAddress) clientSession.getRemoteAddress()).getHostName() );
+             } catch ( UnknownHostException e )
+             {
+                 log.warn( &quot;Unknown host: &quot; + clientSession.getRemoteAddress() );
+             }
+-            int clientPorts[] = (int[]) clientSession
+-                    .getAttribute( clientPortsATTR );
++            int clientPorts[] =
++                    (int[]) clientSession.getAttribute( clientPortsATTR );
+             track.setClientAddress( clientAddress, clientPorts[0],
+-                    clientPorts[1] );
++                                    clientPorts[1] );
+             
+             if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP )
+             {
+                 log.debug( &quot;Transport is TCP based.&quot; );
+-            } else
++            }
++            else
+             {
+                 transport.setSSRC( track.getProxySSRC().toHexString() );
+                 int rtpPort = RtpClientService.getInstance().getPort();
+                 int rtcpPort = RtcpClientService.getInstance().getPort();
+                 transport.setServerPort( new int[] { rtpPort, rtcpPort } );
+-                transport.setSource( RtpClientService.getInstance()
+-                        .getAddress().getHostAddress() );
++                transport.setSource( RtpClientService.getInstance().getAddress().getHostAddress() );
+                 
+                 // Obtaing client specified ports
+-                int ports[] = (int[]) clientSession
+-                        .getAttribute( clientPortsATTR );
++                int ports[] =
++                        (int[]) clientSession.getAttribute( clientPortsATTR );
+                 transport.setClientPort( ports );
+                 
+                 log.debug( &quot;Transport Rewritten: {}&quot;, transport );
+             }
+             
+-        } else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
++        }
++        else if ( transport.getTransportProtocol() == TransportProtocol.RDT )
+         {
+             
+             // Create a new Track object
+-            RdtTrack track = proxySession.addRdtTrack( (String) clientSession
+-                    .getAttribute( setupUrlATTR ) );
++            RdtTrack track =
++                    proxySession.addRdtTrack( (String) clientSession.getAttribute( setupUrlATTR ) );
+             // Setting client and server info on the track
+             InetAddress serverAddress = null;
+             if ( transport.getSource() != null )
+             {
+                 try
+                 {
+-                    serverAddress = InetAddress.getByName( transport
+-                            .getSource() );
++                    serverAddress =
++                            InetAddress.getByName( transport.getSource() );
+                 } catch ( UnknownHostException e )
+                 {
+                     log.warn( &quot;Unknown host: &quot; + transport.getSource() );
+                 }
+-            } else
++            }
++            else
+             {
+-                serverAddress = ((InetSocketAddress) serverSession
+-                        .getRemoteAddress()).getAddress();
++                serverAddress =
++                        ((InetSocketAddress) serverSession.getRemoteAddress()).getAddress();
+             }
+             int[] serverPorts = transport.getServerPort();
+             track.setServerAddress( serverAddress, serverPorts[0] );
+@@ -528,21 +529,21 @@
+             InetAddress clientAddress = null;
+             try
+             {
+-                clientAddress = Inet4Address
+-                        .getByName( ((InetSocketAddress) clientSession
+-                                .getRemoteAddress()).getHostName() );
++                clientAddress =
++                        Inet4Address.getByName( ((InetSocketAddress) clientSession.getRemoteAddress()).getHostName() );
+             } catch ( UnknownHostException e )
+             {
+                 log.warn( &quot;Unknown host: &quot; + clientSession.getRemoteAddress() );
+             }
+-            int clientRdtPort = ((Integer) clientSession
+-                    .getAttribute( clientRdtPortATTR )).intValue();
++            int clientRdtPort =
++                    ((Integer) clientSession.getAttribute( clientRdtPortATTR )).intValue();
+             track.setClientAddress( clientAddress, clientRdtPort );
+             
+             if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP )
+             {
+                 log.debug( &quot;Transport is TCP based.&quot; );
+-            } else
++            }
++            else
+             {
+                 int rdtPort = RdtClientService.getInstance().getPort();
+                 transport.setServerPort( rdtPort );
+@@ -551,17 +552,19 @@
+                 // );
+                 
+                 // Obtaing client specified ports
+-                int port = ((Integer) clientSession
+-                        .getAttribute( clientRdtPortATTR )).intValue();
++                int port =
++                        ((Integer) clientSession.getAttribute( clientRdtPortATTR )).intValue();
+                 transport.setClientPort( port );
+                 
+                 log.debug( &quot;Transport Rewritten: {}&quot;, transport );
+             }
+             
+-        } else
++        }
++        else
+         {
+-            sendResponse( clientSession, RtspResponse
+-                    .errorResponse( RtspCode.UnsupportedTransport ) );
++            sendMessage(
++                         clientSession,
++                         RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
+             return;
+         }
+         
+@@ -570,7 +573,7 @@
+         
+         log.debug( &quot;SENDING RESPONSE TO CLIENT:\n{}&quot;, response );
+         
+-        sendResponse( clientSession, response );
++        sendMessage( clientSession, response );
+     }
+     
+     /**
+@@ -585,12 +588,12 @@
+         log.debug( &quot;Connect to Server url: {}&quot;, url );
+         String host = url.getHost();
+         int port = url.getPort();
+-        if ( port == -1 )
+-            port = url.getDefaultPort();
++        if ( port == -1 ) port = url.getDefaultPort();
+         
+         // Create TCP/IP connector.
+-        ExecutorExecutor executor = new ExecutorExecutor( ProxyServiceRegistry
+-                .getInstance().getExecutor() );
++        ExecutorExecutor executor =
++                new ExecutorExecutor(
++                        ProxyServiceRegistry.getInstance().getExecutor() );
+         SocketConnector connector = new SocketConnector( 1, executor );
+         connector.setFilterChainBuilder( new RtspServerFilters() );
+         
+@@ -599,8 +602,9 @@
+         if ( addr.isUnresolved() )
+         {
+             log.warn( &quot;Cannot resolve hostname: {}&quot;, host );
+-            sendResponse( clientSession, RtspResponse
+-                    .errorResponse( RtspCode.DestinationUnreachable ) );
++            sendMessage(
++                         clientSession,
++                         RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
+             clientSession.close();
+             return;
+         }
+@@ -624,10 +628,11 @@
+         
+         if ( !connectFuture.isConnected() )
+         {
+-            log.warn( &quot;Destination unreachable: {}&quot;, connectFuture.getSession()
+-                    .getRemoteAddress() );
+-            sendResponse( clientSession, RtspResponse
+-                    .errorResponse( RtspCode.DestinationUnreachable ) );
++            log.warn( &quot;Destination unreachable: {}&quot;,
++                      connectFuture.getSession().getRemoteAddress() );
++            sendMessage(
++                         clientSession,
++                         RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
+             clientSession.close();
+             return;
+         }
+@@ -638,8 +643,9 @@
+         
+         if ( Config.proxyRtspKeepAlive.getValue() )
+         {
+-            SocketSessionConfig config = (SocketSessionConfig) serverSession
+-                    .getConfig();
++            log.debug( &quot;Using keep-alive trick.&quot; );
++            SocketSessionConfig config =
++                    (SocketSessionConfig) serverSession.getConfig();
+             config.setKeepAlive( true );
+         }
+         
+@@ -647,8 +653,8 @@
+         serverSession.setAttribute( ProxyHandler.ATTR, this );
+         
+         serverSession.setAttribute(
+-                ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
+-                sharedSessionObjects );
++                                    ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE,
++                                    sharedSessionObjects );
+         
+         log.debug( &quot;Server session: {}&quot;, serverSession.getAttributeKeys() );
+     }
+@@ -660,8 +666,8 @@
+     public static void setSharedSessionAttribute( IoSession session,
+             String name, Object value )
+     {
+-        ConcurrentHashMap&lt;String, Object&gt; map = (ConcurrentHashMap&lt;String, Object&gt;) session
+-                .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
++        ConcurrentHashMap&lt;String, Object&gt; map =
++                (ConcurrentHashMap&lt;String, Object&gt;) session.getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+         
+         map.put( name, value );
+     }
+@@ -669,16 +675,16 @@
+     public static Object getSharedSessionAttribute( IoSession session,
+             String name )
+     {
+-        ConcurrentHashMap map = (ConcurrentHashMap) session
+-                .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
++        ConcurrentHashMap map =
++                (ConcurrentHashMap) session.getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+         return map.get( name );
+     }
+     
+     public static final boolean containsSharedSessionAttribute(
+             IoSession session, String name )
+     {
+-        HashMap map = (HashMap) session
+-                .getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
++        HashMap map =
++                (HashMap) session.getAttribute( ProxyConstants.RSTP_SHARED_SESSION_ATTRIBUTE );
+         return map.containsKey( name );
+     }
+     
+@@ -695,51 +701,30 @@
+         // Remove ProxySession and Track instances
+         if ( clientSession != null )
+         {
+-            ProxySession proxySession = (ProxySession) clientSession
+-                    .getAttribute( ProxySession.ATTR );
+-            if ( proxySession != null )
+-                proxySession.close();
++            ProxySession proxySession =
++                    (ProxySession) clientSession.getAttribute( ProxySession.ATTR );
++            if ( proxySession != null ) proxySession.close();
+         }
+     }
+     
+     /**
+-     * Sends an RTSP request message
++     * Sends an RTSP message
+      * 
+      * @param session
+      *            current IoSession
+      * @param request
+      *            the message
+      */
+-    private void sendRequest( IoSession session, RtspRequest request )
++    private void sendMessage( IoSession session, RtspMessage message )
+     {
+-        request.setCommonHeaders();
++        message.setCommonHeaders();
+         try
+         {
+-            session.write( request );
++            session.write( message );
+         } catch ( Exception e )
+         {
+-            log.error( &quot;exception sending request&quot;, e.getCause() );
++            log.error( &quot;exception sending RTSP message&quot;, e.getCause() );
+         }
+     }
+     
+-    /**
+-     * Sends an RTSP response message
+-     * 
+-     * @param session
+-     *            current IoSession
+-     * @param response
+-     *            the message
+-     */
+-    private void sendResponse( IoSession session, RtspResponse response )
+-    {
+-        response.setCommonHeaders();
+-        try
+-        {
+-            session.write( response );
+-        } catch ( Exception e )
+-        {
+-            log.error( &quot;exception sending response&quot;, e.getCause() );
+-        }
+-    }
+-    
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000115.html">[Rtspproxy-devel] r433 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy
+</A></li>
+	<LI>Next message: <A HREF="000117.html">[Rtspproxy-devel] r435 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#116">[ date ]</a>
+              <a href="thread.html#116">[ thread ]</a>
+              <a href="subject.html#116">[ subject ]</a>
+              <a href="author.html#116">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

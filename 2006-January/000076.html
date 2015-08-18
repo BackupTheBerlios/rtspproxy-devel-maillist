@@ -1,0 +1,384 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r392 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r392%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20rdt%20rtsp&In-Reply-To=%3C200601150120.k0F1KDg0011086%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000075.html">
+   <LINK REL="Next"  HREF="000077.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r392 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r392%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20rdt%20rtsp&In-Reply-To=%3C200601150120.k0F1KDg0011086%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r392 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp">rbieniek at berlios.de
+       </A><BR>
+    <I>Sun Jan 15 02:20:13 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000075.html">[Rtspproxy-devel] r391 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter/tracking proxy proxy/track rdt
+</A></li>
+        <LI>Next message: <A HREF="000077.html">[Rtspproxy-devel] r393 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy/rdt test/resources/rtspproxy/rdt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#76">[ date ]</a>
+              <a href="thread.html#76">[ thread ]</a>
+              <a href="subject.html#76">[ subject ]</a>
+              <a href="author.html#76">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-15 02:20:04 +0100 (Sun, 15 Jan 2006)
+New Revision: 392
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspDecoder.java
+Log:
+- Fixed bug6095 (Back-to-back RTSP packets)
+
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-13 23:37:40 UTC (rev 391)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-15 01:20:04 UTC (rev 392)
+@@ -261,8 +261,8 @@
+ 			if((i % 16) == 0)
+ 				buf.append('\n');
+ 			
+-			buf.append(digits[data[i] / 16]);
+-			buf.append(digits[data[i] % 16]);
++			buf.append(digits[(data[i] &amp; 0xff) / 16]);
++			buf.append(digits[(data[i] &amp; 0xff) % 16]);
+ 			if((i % 16) != 0)
+ 				buf.append(' ');
+ 		}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspDecoder.java	2006-01-13 23:37:40 UTC (rev 391)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspDecoder.java	2006-01-15 01:20:04 UTC (rev 392)
+@@ -14,6 +14,7 @@
+ import java.io.BufferedReader;
+ import java.io.IOException;
+ import java.io.InputStreamReader;
++import java.io.LineNumberReader;
+ import java.net.MalformedURLException;
+ import java.net.URL;
+ import java.nio.CharBuffer;
+@@ -87,127 +88,167 @@
+ 	{
+ 		BufferedReader reader = null;
+ 
+-		reader = new BufferedReader( new InputStreamReader( buffer.asInputStream(),
+-				asciiCharset ) );
++		reader = new BufferedReader(new InputStreamReader( buffer.asInputStream(),
++				asciiCharset ), 256 );
+ 
+ 		// Retrieve status from session
+ 		ReadState state = (ReadState) session.getAttribute( readStateATTR );
+-		if ( state == null )
+-			state = ReadState.Command;
+ 		RtspMessage rtspMessage = (RtspMessage) session.getAttribute( rtspMessageATTR );
+-
++		log.debug(&quot;entered RTSP decode, state=&quot; + state + &quot;, rtsp message in session=&quot; + rtspMessageATTR);
++		
+ 		try {
+ 
+ 			while ( true ) {
+-
++				/*
+ 				if ( state != ReadState.Command &amp;&amp; state != ReadState.Header )
+ 					// the &quot;while&quot; loop is only used to read commands and
+ 					// headers
+ 					break;
++					*/
+ 
++				reader.mark(256);
+ 				String line = reader.readLine();
+-				if ( line == null )
++				if ( line == null ) {
+ 					// there's no more data in the buffer
+-					break;
++					log.debug(&quot;seen end-of-message, leaving loop&quot;);
++					break;					
++				}
++				
++				if ( state == null ) {
++					log.debug(&quot;switching null-state to Command&quot;);
++					state = ReadState.Command;
++				}
+ 
+ 				if ( line.length() == 0 ) {
+ 					// This is the empty line that marks the end
+ 					// of the headers section
+-					state = ReadState.Body;
+-					break;
++					if(rtspMessage != null) {
++						log.debug(&quot;seen emtpy line, switching to Body&quot;);
++						state = ReadState.Body;
++					} else {
++						log.debug(&quot;seen emtpy line, switching to Sync&quot;);
++						state = ReadState.Sync;						
++					}
++					// break;
+ 				}
+ 
+-				switch ( state ) {
++				switch (state) {
++				case Sync:
++					log.debug(&quot;found empty line between command, switching to Command&quot;);
++					state = ReadState.Command;
++					break;
++				case Command:
++					log.debug(&quot;Command line: &quot; + line);
++					if (line.startsWith(&quot;RTSP&quot;)) {
++						// this is a RTSP response
++						Matcher m = rtspResponsePattern.matcher(line);
++						if (!m.matches())
++							throw new ProtocolDecoderException(
++									&quot;Malformed response line: &quot; + line);
+ 
+-					case Command:
+-						// log.debug( &quot;Command line: &quot; + line );
+-						if ( line.startsWith( &quot;RTSP&quot; ) ) {
+-							// this is a RTSP response
+-							Matcher m = rtspResponsePattern.matcher( line );
+-							if ( !m.matches() )
+-								throw new ProtocolDecoderException(
+-										&quot;Malformed response line: &quot; + line );
++						RtspCode code = RtspCode.fromString(m.group(1));
++						rtspMessage = new RtspResponse();
++						((RtspResponse) (rtspMessage)).setCode(code);
++						RtspRequest.Verb verb = (RtspRequest.Verb) session
++								.getAttribute(RtspMessage.lastRequestVerbATTR);
++						((RtspResponse) (rtspMessage)).setRequestVerb(verb);
+ 
+-							RtspCode code = RtspCode.fromString( m.group( 1 ) );
+-							rtspMessage = new RtspResponse();
+-							( (RtspResponse) ( rtspMessage ) ).setCode( code );
+-							RtspRequest.Verb verb = (RtspRequest.Verb) session.getAttribute( RtspMessage.lastRequestVerbATTR );
+-							( (RtspResponse) ( rtspMessage ) ).setRequestVerb( verb );
++					} else {
++						// this is a RTSP request
++						Matcher m = rtspRequestPattern.matcher(line);
++						if (!m.matches())
++							throw new ProtocolDecoderException(
++									&quot;Malformed request line: &quot; + line);
+ 
+-						} else {
+-							// this is a RTSP request
+-							Matcher m = rtspRequestPattern.matcher( line );
+-							if ( !m.matches() )
++						String verb = m.group(1);
++						String strUrl = m.group(2);
++						URL url = null;
++						if (!strUrl.equalsIgnoreCase(&quot;*&quot;)) {
++							try {
++								url = new URL(strUrl);
++							} catch (MalformedURLException e) {
++								log.info(&quot;malformed URL: &quot; + url, e);
++								url = null;
++								session.setAttribute(readStateATTR,
++										ReadState.Failed);
+ 								throw new ProtocolDecoderException(
+-										&quot;Malformed request line: &quot; + line );
+-
+-							String verb = m.group( 1 );
+-							String strUrl = m.group( 2 );
+-							URL url = null;
+-							if ( !strUrl.equalsIgnoreCase( &quot;*&quot; ) ) {
+-								try {
+-									url = new URL( strUrl );
+-								} catch ( MalformedURLException e ) {
+-									log.info( &quot;malformed URL: &quot; + url, e );
+-									url = null;
+-									session.setAttribute( readStateATTR, ReadState.Failed );
+-									throw new ProtocolDecoderException( &quot;Invalid URL&quot; );
+-								}
++										&quot;Invalid URL&quot;);
+ 							}
+-							rtspMessage = new RtspRequest();
+-							( (RtspRequest) rtspMessage ).setVerb( verb );
++						}
++						rtspMessage = new RtspRequest();
++						((RtspRequest) rtspMessage).setVerb(verb);
+ 
+-							if ( ( (RtspRequest) rtspMessage ).getVerb() == RtspRequest.Verb.None ) {
+-								session.setAttribute( readStateATTR, ReadState.Failed );
+-								throw new ProtocolDecoderException( &quot;Invalid method: &quot;
+-										+ verb );
+-							}
+-
+-							( (RtspRequest) rtspMessage ).setUrl( url );
++						if (((RtspRequest) rtspMessage).getVerb() == RtspRequest.Verb.None) {
++							session.setAttribute(readStateATTR,
++									ReadState.Failed);
++							throw new ProtocolDecoderException(
++									&quot;Invalid method: &quot; + verb);
+ 						}
+-						state = ReadState.Header;
+-						break;
+ 
+-					case Header:
+-						// this is an header
+-						Matcher m = rtspHeaderPattern.matcher( line );
++						((RtspRequest) rtspMessage).setUrl(url);
++					}
++					state = ReadState.Header;
++					log.debug(&quot;switching from Command to Header, message=&quot;
++							+ rtspMessage);
++					break;
+ 
+-						if ( !m.matches() )
+-							throw new ProtocolDecoderException( &quot;RTSP header not valid&quot; );
++				case Header:
++					// this is an header
++					log.debug(&quot;Header line: &quot; + line);
++					Matcher m = rtspHeaderPattern.matcher(line);
+ 
+-						rtspMessage.setHeader( m.group( 1 ), m.group( 2 ) );
+-						break;
++					if (!m.matches())
++						throw new ProtocolDecoderException(
++								&quot;RTSP header not valid&quot;);
+ 
+-				}
+-			}
++					rtspMessage.setHeader(m.group(1), m.group(2));
++					break;
++				case Body:
++					int bufferLen = Integer.parseInt(rtspMessage.getHeader(
++							&quot;Content-Length&quot;, &quot;0&quot;));
+ 
+-			if ( state == ReadState.Body ) {
+-				// Read the message body
+-				int bufferLen = Integer.parseInt( rtspMessage.getHeader(
+-						&quot;Content-Length&quot;, &quot;0&quot; ) );
+-				if ( bufferLen == 0 ) {
+-					// there's no buffer to be read
+-					state = ReadState.Dispatch;
++					if (bufferLen == 0) {
++						log.debug(&quot;no message body found, switching to Dispatch&quot;);
++						// there's no buffer to be read
++						state = ReadState.Dispatch;
+ 
+-				} else {
+-					// we have a content buffer to read
+-					int bytesToRead = bufferLen - rtspMessage.getBufferSize();
++					} else {
++						// we have a content buffer to read
++						int bytesToRead = bufferLen
++								- rtspMessage.getBufferSize();
+ 
+-					// if ( bytesToRead &lt; reader. decodeBuf.length() ) {
+-					// log.warn( &quot;We are reading more bytes than
+-					// Content-Length.&quot; );
+-					// }
++						// if ( bytesToRead &lt; reader. decodeBuf.length() ) {
++						// log.warn( &quot;We are reading more bytes than
++						// Content-Length.&quot; );
++						// }
+ 
+-					// read the content buffer
+-					CharBuffer bufferContent = CharBuffer.allocate( bytesToRead );
+-					reader.read( bufferContent );
+-					bufferContent.flip();
+-					rtspMessage.appendToBuffer( bufferContent );
+-					if ( rtspMessage.getBufferSize() &gt;= bufferLen ) {
+-						// The RTSP message parsing is completed
+-						state = ReadState.Dispatch;
++						// read the content buffer
++						CharBuffer bufferContent = CharBuffer
++								.allocate(bytesToRead);
++						reader.reset();
++						reader.read(bufferContent);
++						bufferContent.flip();
++						rtspMessage.appendToBuffer(bufferContent);
++						
++						if (rtspMessage.getBufferSize() &gt;= bufferLen) {
++							// The RTSP message parsing is completed
++							state = ReadState.Dispatch;
++						}
+ 					}
++					break;
+ 				}
++				if ( state == ReadState.Dispatch ) {
++					log.debug(&quot;sending decoded RTSP message&quot;);
++					// The message is already formed
++					// send it
++					session.removeAttribute( readStateATTR );
++					session.removeAttribute( rtspMessageATTR );
++					out.write( rtspMessage );
++					
++					state = null;
++					rtspMessage = null;
++				}
++
+ 			}
+ 		} catch ( IOException e ) {
+ 			/*
+@@ -216,7 +257,9 @@
+ 			 */
+ 			Exceptions.logStackTrace( e );
+ 			return;
+-
++		} catch( Throwable t) {
++			Exceptions.logStackTrace( t );
++			return;
+ 		} finally {
+ 			try {
+ 				reader.close();
+@@ -224,18 +267,10 @@
+ 			}
+ 		}
+ 
+-		if ( state == ReadState.Dispatch ) {
+-			// The message is already formed
+-			// send it
+-			session.removeAttribute( readStateATTR );
+-			session.removeAttribute( rtspMessageATTR );
+-			out.write( rtspMessage );
+-			return;
+-		}
+-
+ 		// log.debug( &quot;INCOMPLETE MESSAGE \n&quot; + rtspMessage );
+ 
+ 		// Save attributes in session
++		log.debug(&quot;leaving decode loop, state=&quot; + state + &quot;, message in session=&quot; + rtspMessage);
+ 		session.setAttribute( readStateATTR, state );
+ 		session.setAttribute( rtspMessageATTR, rtspMessage );
+ 	}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000075.html">[Rtspproxy-devel] r391 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter/tracking proxy proxy/track rdt
+</A></li>
+	<LI>Next message: <A HREF="000077.html">[Rtspproxy-devel] r393 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy/rdt test/resources/rtspproxy/rdt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#76">[ date ]</a>
+              <a href="thread.html#76">[ thread ]</a>
+              <a href="subject.html#76">[ subject ]</a>
+              <a href="author.html#76">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,626 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r391 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter/tracking proxy proxy/track rdt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r391%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20filter/tracking%20proxy%20proxy/track%20rdt&In-Reply-To=%3C200601132338.k0DNcBUP023866%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000074.html">
+   <LINK REL="Next"  HREF="000076.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r391 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter/tracking proxy proxy/track rdt</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r391%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20filter/tracking%20proxy%20proxy/track%20rdt&In-Reply-To=%3C200601132338.k0DNcBUP023866%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r391 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter/tracking proxy proxy/track rdt">rbieniek at berlios.de
+       </A><BR>
+    <I>Sat Jan 14 00:38:11 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000074.html">[Rtspproxy-devel] r390 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+        <LI>Next message: <A HREF="000076.html">[Rtspproxy-devel] r392 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#75">[ date ]</a>
+              <a href="thread.html#75">[ thread ]</a>
+              <a href="subject.html#75">[ subject ]</a>
+              <a href="author.html#75">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-14 00:37:40 +0100 (Sat, 14 Jan 2006)
+New Revision: 391
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/RdtSessionClientTrackingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/RdtSessionServerTrackingFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerSide.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtFilterChainBuilder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacket.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolEncoder.java
+Log:
+- continued work on RDT traffic handling.
+- Found serious bug in RTSP parsing code. RTSPDecoder cannot cope
+with back-to-back RTSP request packets (and, of course, RTSP response
+messages as well)
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -32,6 +32,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
++import org.apache.mina.filter.ThreadPoolFilter;
+ 
+ import rtspproxy.config.Parameter;
+ import rtspproxy.lib.Exceptions;
+@@ -266,4 +267,20 @@
+ 			throw new RuntimeException( e );
+ 		}
+ 	}
++
++	/**
++	 * service may provide their own ThreadPoolFilter instances.
++	 * @return a ThreadPoolFilter instance or null if the service wants to use the shared instance.
++	 * 
++	 */
++	public ThreadPoolFilter getThreadPoolFilter() {
++		return null;
++	}
++	
++	/**
++	 * flag if the service wants to use a ThreadPoolFilter at all
++	 */
++	public boolean wantThreadPoolFilter() {
++		return true;
++	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -58,7 +58,7 @@
+ 	public static final String threadPoolFilterNAME = &quot;threadPoolFilter&quot;;
+ 
+ 	/** Thread pool instance that will be added to all acceptors. */
+-	private final ThreadPoolFilter threadPoolFilter = new ThreadPoolFilter();
++	private final ThreadPoolFilter threadPoolFilter = new ThreadPoolFilter(&quot;sharedThreadPoolFilter&quot;);
+ 
+ 	/** All the services, mapped by name. */
+ 	private final ConcurrentMap&lt;String, ProxyService&gt; services = new ConcurrentHashMap&lt;String, ProxyService&gt;();
+@@ -273,11 +273,17 @@
+ 	}
+ 
+ 	/**
++	 * @param service 
++	 * @param service 
+ 	 * @return the shared thread pool filter instance
+ 	 */
+-	public IoFilter getThreadPoolFilterInstance()
++	public IoFilter getThreadPoolFilterInstance(ProxyService service)
+ 	{
+-		return threadPoolFilter;
++		ThreadPoolFilter filter = service.getThreadPoolFilter();
++
++		if(filter == null)
++			filter = threadPoolFilter;
++		return filter;
+ 	}
+ 
+ 	/**
+@@ -312,9 +318,11 @@
+ 		{
+ 			chain.getSession().setAttribute( ProxyService.SERVICE, service );
+ 
+-			IoFilter threadPoolFilter = ProxyServiceRegistry.getInstance()
+-					.getThreadPoolFilterInstance();
+-			chain.addFirst( threadPoolFilterNAME, threadPoolFilter );
++			if(service.wantThreadPoolFilter()) {
++				IoFilter threadPoolFilter = ProxyServiceRegistry.getInstance()
++				.getThreadPoolFilterInstance(service);
++				chain.addFirst( threadPoolFilterNAME, threadPoolFilter );
++			}
+ 			originalBuilder.buildFilterChain( chain );
+ 		}
+ 	}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -24,6 +24,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
++import org.apache.mina.filter.ThreadPoolFilter;
+ 
+ import rtspproxy.config.Config;
+ import rtspproxy.config.Parameter;
+@@ -113,4 +114,22 @@
+ 		return this.filterChainBuilder;
+ 	}
+ 
++	/* (non-Javadoc)
++	 * @see rtspproxy.ProxyService#getThreadPoolFilter()
++	 */
++	@Override
++	public ThreadPoolFilter getThreadPoolFilter() {
++		ThreadPoolFilter filter = new ThreadPoolFilter(&quot;rdtClientThreadPoolFilter&quot;);
++		
++		filter.setMaximumPoolSize(5);
++		return filter;
++	}
++
++	/**
++	 * flag if the service wants to use a ThreadPoolFilter at all
++	 */
++	public boolean wantThreadPoolFilter() {
++		return false;
++	}
++
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -24,6 +24,7 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
++import org.apache.mina.filter.ThreadPoolFilter;
+ 
+ import rtspproxy.config.Config;
+ import rtspproxy.config.Parameter;
+@@ -110,4 +111,22 @@
+ 		return this.filterChainBuilder;
+ 	}
+ 
++	/* (non-Javadoc)
++	 * @see rtspproxy.ProxyService#getThreadPoolFilter()
++	 */
++	@Override
++	public ThreadPoolFilter getThreadPoolFilter() {
++		ThreadPoolFilter filter = new ThreadPoolFilter(&quot;rdtServerThreadPoolFilter&quot;);
++		
++		filter.setMaximumPoolSize(5);
++		return filter;
++	}
++
++	/**
++	 * flag if the service wants to use a ThreadPoolFilter at all
++	 */
++	public boolean wantThreadPoolFilter() {
++		return false;
++	}
++
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/RdtSessionClientTrackingFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/RdtSessionClientTrackingFilter.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/RdtSessionClientTrackingFilter.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -11,6 +11,7 @@
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
++import rtspproxy.proxy.ProxyHandler;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.rtsp.RtspRequest;
+ import rtspproxy.rtsp.RtspTransport;
+@@ -42,6 +43,8 @@
+ 	public void messageSent(NextFilter nextFilter, IoSession session, Object message) throws Exception {
+ 		handleMessage(session, message);
+ 		
++		logger.debug(&quot;sending response to client: &quot; + message);
++		
+ 		nextFilter.messageSent(session, message);
+ 	}
+ 
+@@ -75,34 +78,34 @@
+ 	protected void handleTransportRdtUdpUnicast(IoSession session, RtspTransport transport) {
+ 		logger.debug(&quot;handling client-side RDT/UDP/unicast header, header=&quot; + transport);
+ 		
+-		if(session.containsAttribute(RdtSessionToken.SessionAttribute)) {
+-			RdtSessionToken token = (RdtSessionToken)session.getAttribute(RdtSessionToken.SessionAttribute);
++		try {
++			if(ProxyHandler.containsSharedSessionAttribute(session, RdtSessionToken.SessionAttribute)) {
++				RdtSessionToken token = (RdtSessionToken)ProxyHandler.getSharedSessionAttribute(session, 
++						RdtSessionToken.SessionAttribute);
+ 
+-			logger.debug(&quot;have session token, server_addr=&quot; + token.getRemoteServer() + &quot;, server_port=&quot;
+-					+ token.getRemotePort() + &quot;, client_addr=&quot; + session.getRemoteAddress() + 
+-					&quot;, client_port=&quot; + transport.getClientPort()[0]);
+-			
+-			// now we can create and initialise 
+-			URL url = (URL)session.getAttribute(SessionAttribute);
+-			
+-			InetSocketAddress serverAddr = 
+-				new InetSocketAddress(((InetSocketAddress)token.getRemoteServer()).getAddress(), token.getRemotePort());
+-			
+-			RdtTrack track;
+-			if((track = (RdtTrack)RdtTrack.getByServerAddress(serverAddr)) ==  null) {
+-				logger.debug(&quot;creating new RdtTrack&quot;);
++				logger.debug(&quot;have session token, server_addr=&quot; + token.getRemoteServer() + &quot;, server_port=&quot;
++						+ token.getRemotePort() + &quot;, client_addr=&quot; + session.getRemoteAddress() + 
++						&quot;, client_port=&quot; + transport.getClientPort()[0]);
+ 				
+-				track = new RdtTrack(url.toString());
+-			
+-				track.setClientAddress(((InetSocketAddress)session.getRemoteAddress()).getAddress(), 
+-						transport.getClientPort()[0]);
+-				track.setServerAddress(serverAddr.getAddress(), serverAddr.getPort());
+-			} /*else {
+-				logger.debug(&quot;patching client parameter into existing track&quot;);
+-
+-				track.setClientAddress(((InetSocketAddress)session.getRemoteAddress()).getAddress(), 
+-						transport.getClientPort()[0]);
+-			} */
++				// now we can create and initialise 
++				URL url = (URL)session.getAttribute(SessionAttribute);
++				
++				InetSocketAddress serverAddr = 
++					new InetSocketAddress(((InetSocketAddress)token.getRemoteServer()).getAddress(), token.getRemotePort());
++				
++				RdtTrack track;
++				if((track = (RdtTrack)RdtTrack.getByServerAddress(serverAddr)) ==  null) {
++					logger.debug(&quot;creating new RdtTrack&quot;);
++					
++					track = new RdtTrack(url.toString());
++				
++					track.setClientAddress(((InetSocketAddress)session.getRemoteAddress()).getAddress(), 
++							transport.getClientPort()[0]);
++					track.setServerAddress(serverAddr.getAddress(), serverAddr.getPort());
++				}
++			}
++		} catch (Throwable t) {
++			logger.error(&quot;runtime exception in RDP session handling code&quot;, t);
+ 		}
+ 	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/RdtSessionServerTrackingFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/RdtSessionServerTrackingFilter.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/RdtSessionServerTrackingFilter.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -7,6 +7,7 @@
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
++import rtspproxy.proxy.ProxyHandler;
+ import rtspproxy.rtsp.RtspTransport;
+ 
+ /**
+@@ -15,7 +16,7 @@
+  */
+ public class RdtSessionServerTrackingFilter extends RdtSessionTrackingFilter {
+ 
+-	private static Logger logger = LoggerFactory.getLogger(RdtSessionClientTrackingFilter.class);
++	private static Logger logger = LoggerFactory.getLogger(RdtSessionServerTrackingFilter.class);
+ 	
+ 	/**
+ 	 * @param typeName
+@@ -38,7 +39,8 @@
+ 	protected void handleTransportRdtUdpUnicast(IoSession session, RtspTransport transport) {
+ 		logger.debug(&quot;handling server-side RDT/UDP/unicast header, header=&quot; + transport);
+ 		
+-		session.setAttribute(RdtSessionToken.SessionAttribute, new RdtSessionToken(session.getRemoteAddress(),
++		ProxyHandler.setSharedSessionAttribute(session, RdtSessionToken.SessionAttribute, 
++				new RdtSessionToken(session.getRemoteAddress(),
+ 				transport.getServerPort()[0]));
+ 	}
+ 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -75,6 +75,10 @@
+ 
+ 	private IoSession serverSession = null;
+ 
++	private HashMap&lt;String, Object&gt; sharedSessionObjects = new HashMap&lt;String, Object&gt;();
++	
++	private static final String sharedSessionAttribute = &quot;__SharedSessionArttributes&quot;;
++	
+ 	/**
+ 	 * Creates a new ProxyHandler from a client side protocol session.
+ 	 * 
+@@ -83,6 +87,7 @@
+ 	public ProxyHandler( IoSession clientSession )
+ 	{
+ 		this.clientSession = clientSession;
++		this.clientSession.setAttribute(sharedSessionAttribute, sharedSessionObjects);
+ 	}
+ 
+ 	public void passToServer( RtspMessage message )
+@@ -280,8 +285,7 @@
+ 	 * @param response
+ 	 *            Setup response message
+ 	 */
+-	public void passSetupResponseToClient( RtspResponse response, 
+-			HashMap&lt;String, Object&gt; passAlongAttrs )
++	public void passSetupResponseToClient( RtspResponse response )
+ 	{
+ 		// If there isn't yet a proxySession, create a new one
+ 		ProxySession proxySession = ProxySession.getByServerSessionID( response
+@@ -297,12 +301,6 @@
+ 		if ( proxySession.getServerSessionId() == null ) {
+ 			proxySession.setServerSessionId( response.getHeader( &quot;Session&quot; ) );
+ 		}
+-
+-		// enter assed along attributes into session
+-		for(String attr : passAlongAttrs.keySet()) {
+-			log.debug(&quot;passing attribute &quot; + attr + &quot; into client session&quot;);
+-			clientSession.setAttribute(attr, passAlongAttrs.get(attr));
+-		}
+ 		
+ 		// Modify transport parameters for the client.
+ 		RtspTransportList rtspTransportList = new RtspTransportList( response
+@@ -468,10 +466,46 @@
+ 		// Save current ProxyHandler into the ProtocolSession
+ 		serverSession.setAttribute( ProxyHandler.ATTR, this );
+ 
++		serverSession.setAttribute(sharedSessionAttribute, sharedSessionObjects);
++		
+ 		log.debug( &quot;Server session: &quot; + serverSession.getAttributeKeys() );
+ 	}
+ 
+ 	/**
++	 * set an object in the shared objects map
++	 */
++	public static void setSharedSessionAttribute(IoSession session, String name, Object value) {
++		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(sharedSessionAttribute);
++		
++		synchronized (map) {
++			map.put(name, value);
++		}
++	}
++	
++	public static Object getSharedSessionAttribute(IoSession session, String name) {
++		Object v = null;
++		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(sharedSessionAttribute);
++		
++		synchronized (map) {
++			v = map.get(name);
++		}
++		
++		return v;
++	}
++	
++	public static final boolean containsSharedSessionAttribute(IoSession session, String name) {
++		boolean v = false;
++		HashMap&lt;String, Object&gt; map = (HashMap&lt;String, Object&gt;)session.getAttribute(sharedSessionAttribute);
++		
++		synchronized (map) {
++			v = map.containsKey(name);
++		}
++		
++		return v;
++		
++	}
++	
++	/**
+ 	 * Closes both sides of communication.
+ 	 */
+ 	public synchronized void closeAll()
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerSide.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerSide.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerSide.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -179,15 +179,14 @@
+ 		proxyHandler.passToClient( response );
+ 	}
+ 
+-	public void onResponseSetup( ProxyHandler proxyHandler, RtspResponse response, 
+-			HashMap&lt;String, Object&gt; passAlongAttrs )
++	public void onResponseSetup( ProxyHandler proxyHandler, RtspResponse response )
+ 	{
+ 		log.debug( &quot;RESPONSE SETUP&quot; );
+ 		if ( response.getCode() != RtspCode.OK )
+ 			// Report the error to the client
+ 			proxyHandler.passToClient( response );
+ 		else
+-			proxyHandler.passSetupResponseToClient( response, passAlongAttrs );
++			proxyHandler.passSetupResponseToClient( response );
+ 	}
+ 
+ 	public void onResponseTeardown( ProxyHandler proxyHandler, RtspResponse response )
+@@ -281,7 +280,7 @@
+ 						onResponseSetParam( proxyHandler, response );
+ 						break;
+ 					case SETUP:
+-						onResponseSetup( proxyHandler, response, buildPassAlongAttrs(session) );
++						onResponseSetup( proxyHandler, response );
+ 						break;
+ 					case TEARDOWN:
+ 						onResponseTeardown( proxyHandler, response );
+@@ -294,16 +293,4 @@
+ 				break;
+ 		}
+ 	}
+-	
+-	private HashMap&lt;String, Object&gt; buildPassAlongAttrs(IoSession session) {
+-		HashMap&lt;String, Object&gt; map = new HashMap&lt;String, Object&gt;();
+-		
+-		if(session.containsAttribute(RdtSessionToken.SessionAttribute)) {
+-			log.debug(&quot;passing session attribute &quot; + RdtSessionToken.SessionAttribute);
+-			map.put(RdtSessionToken.SessionAttribute, 
+-					session.getAttribute(RdtSessionToken.SessionAttribute));
+-		}
+-		
+-		return map;
+-	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -84,6 +84,7 @@
+ 		// packet.reset();
+ 		// log.debug(&quot;Packet: &quot; + packet );
+ 		// log.debug( &quot;Written bytes1: &quot; + rdtServerSession.getWrittenBytes() );
++		
+ 		rdtServerSession.write( packet );
+ 		// log.debug( &quot;Written bytes2: &quot; + rdtServerSession.getWrittenBytes() );
+ 	}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtFilterChainBuilder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtFilterChainBuilder.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtFilterChainBuilder.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -7,6 +7,8 @@
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.filter.codec.ProtocolCodecFilter;
+ 
++import rtspproxy.ProxyServiceRegistry;
++
+ /**
+  * Builds filter chain operating on RDT connection.
+  * 
+@@ -32,7 +34,6 @@
+ 	 * @see org.apache.mina.common.IoFilterChainBuilder#buildFilterChain(org.apache.mina.common.IoFilterChain)
+ 	 */
+ 	public void buildFilterChain(IoFilterChain chain) throws Exception {
+-		
+ 		chain.addLast(rdtCODEC, codecFilter);
+ 	}
+ 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacket.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacket.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -76,6 +76,9 @@
+ 		}
+ 	};
+ 	
++	// id field
++	private int id = IdDispenser.nextId();
++	
+ 	// type field
+ 	private Type type = Type.None;
+ 	
+@@ -187,7 +190,7 @@
+ 	public final String toString() {
+ 		StringBuffer buf = new StringBuffer();
+ 
+-		buf.append(&quot;packet[type=&quot; + type);
++		buf.append(&quot;packet[id=&quot; + id +&quot; type=&quot; + type);
+ 		buf.append(&quot; needReliable=&quot; + this.needReliable);
+ 		buf.append(&quot; streamId=&quot; + this.streamId);
+ 		toStringHelper(buf);
+@@ -261,4 +264,22 @@
+ 		return buf;
+ 	}
+ 	
++	/**
++	 * Simple ID counter
++	 */
++	private static class IdDispenser {
++		private int curId = 0;
++		
++		private static IdDispenser instance = new IdDispenser();
++		
++		private IdDispenser() {}
++		
++		public static final int nextId() {
++			return instance.getNextId();
++		}
++		
++		private synchronized int getNextId() {
++			return curId++;
++		}
++	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -65,6 +65,7 @@
+ 		seqHi = data[ind++];
+ 		seqLo = data[ind++];
+ 		sequence = decodeShort(seqHi, seqLo);
++		logger.debug(&quot;decoded sequence: &quot; + Integer.toHexString(sequence));
+ 		
+ 		if(seqHi &lt; 0 ) {
+ 			logger.debug(&quot;decoding control packet&quot;);
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -33,7 +33,7 @@
+ 		RdtPacket rdtPacket = RdtPacketDecoder.decode(buffer);
+ 	
+ 		if(logger.isDebugEnabled())
+-			logger.debug(&quot;received RDT packet: &quot; + rdtPacket);
++			logger.debug(&quot;received RDT packet: &quot; + rdtPacket + &quot; from client &quot; + ioSession.getRemoteAddress());
+ 
+ 		if(rdtPacket == null)
+ 			throw new IllegalStateException(&quot;RDT network packet cannot be decoded&quot;);
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolEncoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolEncoder.java	2006-01-12 22:49:33 UTC (rev 390)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolEncoder.java	2006-01-13 23:37:40 UTC (rev 391)
+@@ -31,10 +31,10 @@
+ 		RdtPacket rdtPacket = (RdtPacket)packet;
+ 
+ 		if(logger.isDebugEnabled())
+-			logger.debug(&quot;sending RDP packet: &quot; + rdtPacket);
++			logger.debug(&quot;sending RDP packet: &quot; + rdtPacket + &quot; to client &quot; + ioSession.getRemoteAddress());
+ 		
+ 		out.write(rdtPacket.toByteBuffer());
+-		out.flush();
++		// out.flush();
+ 	}
+ 
+ 	/* (non-Javadoc)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000074.html">[Rtspproxy-devel] r390 - trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+	<LI>Next message: <A HREF="000076.html">[Rtspproxy-devel] r392 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#75">[ date ]</a>
+              <a href="thread.html#75">[ thread ]</a>
+              <a href="subject.html#75">[ subject ]</a>
+              <a href="author.html#75">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

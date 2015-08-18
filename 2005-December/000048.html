@@ -1,0 +1,963 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r363 - in trunk: . src/main/java/rtspproxy src/main/java/rtspproxy/jmx
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r363%20-%20in%20trunk%3A%20.%20src/main/java/rtspproxy%20src/main/java/rtspproxy/jmx&In-Reply-To=%3C200512260850.jBQ8oPAQ031476%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000047.html">
+   <LINK REL="Next"  HREF="000049.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r363 - in trunk: . src/main/java/rtspproxy src/main/java/rtspproxy/jmx</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r363%20-%20in%20trunk%3A%20.%20src/main/java/rtspproxy%20src/main/java/rtspproxy/jmx&In-Reply-To=%3C200512260850.jBQ8oPAQ031476%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r363 - in trunk: . src/main/java/rtspproxy src/main/java/rtspproxy/jmx">merlimat at berlios.de
+       </A><BR>
+    <I>Mon Dec 26 09:50:25 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000047.html">[Rtspproxy-devel] r362 - trunk/src/main/java/rtspproxy/filter/authentication
+</A></li>
+        <LI>Next message: <A HREF="000049.html">[Rtspproxy-devel] r364 - trunk/src/site/xdoc
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#48">[ date ]</a>
+              <a href="thread.html#48">[ thread ]</a>
+              <a href="subject.html#48">[ subject ]</a>
+              <a href="author.html#48">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-26 09:50:05 +0100 (Mon, 26 Dec 2005)
+New Revision: 363
+
+Added:
+   trunk/src/main/java/rtspproxy/jmx/
+   trunk/src/main/java/rtspproxy/jmx/Authenticator.java
+   trunk/src/main/java/rtspproxy/jmx/Info.java
+   trunk/src/main/java/rtspproxy/jmx/InfoMBean.java
+   trunk/src/main/java/rtspproxy/jmx/JmxAgent.java
+   trunk/src/main/java/rtspproxy/jmx/MBeansFactory.java
+   trunk/src/main/java/rtspproxy/jmx/ParametersMBean.java
+   trunk/src/main/java/rtspproxy/jmx/Service.java
+   trunk/src/main/java/rtspproxy/jmx/ServiceMBean.java
+Modified:
+   trunk/pom.xml
+Log:
+Initial implementation of JMX features.
+
+Modified: trunk/pom.xml
+===================================================================
+--- trunk/pom.xml	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/pom.xml	2005-12-26 08:50:05 UTC (rev 363)
+@@ -94,6 +94,12 @@
+ 			&lt;artifactId&gt;mina&lt;/artifactId&gt;
+ 			&lt;version&gt;0.9.0&lt;/version&gt;
+ 		&lt;/dependency&gt;
++		
++		&lt;dependency&gt;
++			&lt;groupId&gt;mx4j&lt;/groupId&gt;
++			&lt;artifactId&gt;mx4j-tools&lt;/artifactId&gt;
++			&lt;version&gt;2.1.1&lt;/version&gt;
++		&lt;/dependency&gt;
+ 
+ 		&lt;dependency&gt;
+ 			&lt;groupId&gt;junit&lt;/groupId&gt;
+
+Added: trunk/src/main/java/rtspproxy/jmx/Authenticator.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/jmx/Authenticator.java	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/src/main/java/rtspproxy/jmx/Authenticator.java	2005-12-26 08:50:05 UTC (rev 363)
+@@ -0,0 +1,83 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx;
++
++import java.util.Collections;
++import java.util.HashSet;
++import java.util.Set;
++
++import javax.management.remote.JMXAuthenticator;
++import javax.management.remote.JMXPrincipal;
++import javax.security.auth.Subject;
++
++import org.apache.log4j.Logger;
++
++import rtspproxy.config.Config;
++
++/**
++ * Authenticator for JMX connector server that reads data from configuration
++ * parameters.
++ * 
++ * @author Matteo Merli
++ */
++public class Authenticator implements JMXAuthenticator
++{
++
++	private static Logger log = Logger.getLogger( Authenticator.class );
++
++	public Subject authenticate( Object credentials ) throws SecurityException
++	{
++		if ( !( credentials instanceof String[] ) )
++			throw new SecurityException( &quot;Bad credentials&quot; );
++
++		String[] creds = (String[]) credentials;
++		if ( creds.length != 2 )
++			throw new SecurityException( &quot;Bad credentials&quot; );
++
++		String user = creds[0];
++		String password = creds[1];
++
++		if ( user == null ) {
++			log.info( &quot;Authentication failed: null username&quot; );
++			throw new SecurityException( &quot;Bad user name&quot; );
++		}
++
++		if ( password == null ) {
++			log.info( &quot;Authentication failed for user &quot; + user + &quot; null password.&quot; );
++			throw new SecurityException( &quot;Bad password&quot; );
++		}
++
++		// Expected values
++		String adminUser = Config.proxyManagementUser.getValue();
++		String adminPassword = Config.proxyManagementPassword.getValue();
++
++		if ( !user.equals( adminUser ) || !password.equals( adminPassword ) ) {
++			log.info( &quot;Authentication failed for user &quot; + user
++					+ &quot;. Invalid username or password.&quot; );
++			throw new SecurityException( &quot;Invalid username or password.&quot; );
++		}
++
++		log.debug( &quot;Successful Authentication for user &quot; + user );
++		Set&lt;JMXPrincipal&gt; principals = new HashSet&lt;JMXPrincipal&gt;();
++		principals.add( new JMXPrincipal( user ) );
++		Subject subject = new Subject( true, principals, Collections.EMPTY_SET,
++				Collections.EMPTY_SET );
++		return subject;
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/jmx/Authenticator.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/jmx/Info.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/jmx/Info.java	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/src/main/java/rtspproxy/jmx/Info.java	2005-12-26 08:50:05 UTC (rev 363)
+@@ -0,0 +1,86 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++package rtspproxy.jmx;
++
++import java.util.Date;
++
++import rtspproxy.config.Config;
++
++public class Info implements InfoMBean
++{
++
++	public String getName()
++	{
++		return Config.getName();
++	}
++
++	public String getVersion()
++	{
++		return Config.getVersion();
++	}
++
++	public Date getStartDate()
++	{
++		return Config.getStartDate();
++	}
++
++	public String getOSInfo()
++	{
++		StringBuilder sb = new StringBuilder();
++		sb.append( System.getProperty( &quot;os.name&quot; ) );
++		sb.append( &quot; / &quot; ).append( System.getProperty( &quot;os.version&quot; ) );
++		sb.append( &quot; / &quot; ).append( System.getProperty( &quot;os.arch&quot; ) );
++		return sb.toString();
++	}
++
++	public String getJVMInfo()
++	{
++		StringBuilder sb = new StringBuilder();
++		sb.append( System.getProperty( &quot;java.vm.vendor&quot; ) );
++		sb.append( &quot; / &quot; );
++		sb.append( System.getProperty( &quot;java.vm.version&quot; ) );
++		return sb.toString();
++	}
++
++	public double getFreeMemoryMB()
++	{
++		double mb = (double) Runtime.getRuntime().freeMemory() / (1024 * 1024);
++		return mb;
++		// Formatter f = new Formatter();
++		// return f.format( &quot;%1$.2f MB&quot;, mb ).toString();
++	}
++
++	public double getTotalMemoryMB()
++	{
++		double mb = (double) Runtime.getRuntime().totalMemory() / (1024 * 1024);
++		return mb;
++		//Formatter f = new Formatter();
++		//return f.format( &quot;%1$.2f MB&quot;, mb ).toString();
++	}
++
++	public void runGarbageCollector()
++	{
++		Runtime.getRuntime().gc();
++	}
++
++	public int getActiveThreadsNumber()
++	{
++		return Thread.activeCount();
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/jmx/Info.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/jmx/InfoMBean.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/jmx/InfoMBean.java	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/src/main/java/rtspproxy/jmx/InfoMBean.java	2005-12-26 08:50:05 UTC (rev 363)
+@@ -0,0 +1,50 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx;
++
++import java.util.Date;
++
++/**
++ * MBean interface for exposing basic proxy informations.
++ * 
++ * @author Matteo Merli
++ */
++public interface InfoMBean
++{
++
++	/** 
++	 * @return the name of the application
++	 */
++	public String getName();
++	public String getVersion();
++	public Date getStartDate();
++	
++	public String getOSInfo();
++	public String getJVMInfo();
++	
++	public double getFreeMemoryMB();
++	public double getTotalMemoryMB();
++	
++	public int getActiveThreadsNumber();
++	
++	// Actions
++	
++	public void runGarbageCollector();
++	
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/jmx/InfoMBean.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/jmx/JmxAgent.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/jmx/JmxAgent.java	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/src/main/java/rtspproxy/jmx/JmxAgent.java	2005-12-26 08:50:05 UTC (rev 363)
+@@ -0,0 +1,182 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx;
++
++import java.util.HashMap;
++import java.util.Map;
++
++import javax.management.MBeanServer;
++import javax.management.MBeanServerFactory;
++import javax.management.ObjectName;
++import javax.management.remote.JMXAuthenticator;
++import javax.management.remote.JMXConnectorServer;
++import javax.management.remote.JMXConnectorServerFactory;
++import javax.management.remote.JMXServiceURL;
++
++import mx4j.log.Log;
++import mx4j.log.Log4JLogger;
++import mx4j.tools.adaptor.http.HttpAdaptor;
++import mx4j.tools.adaptor.http.XSLTProcessor;
++import mx4j.tools.naming.NamingService;
++
++import org.apache.log4j.Logger;
++
++import rtspproxy.ProxyService;
++import rtspproxy.RdtClientService;
++import rtspproxy.RdtServerService;
++import rtspproxy.Reactor;
++import rtspproxy.RtcpClientService;
++import rtspproxy.RtcpServerService;
++import rtspproxy.RtpClientService;
++import rtspproxy.RtpServerService;
++import rtspproxy.RtspService;
++import rtspproxy.config.Config;
++
++/**
++ * Entry point class for all the JMX interface.
++ * 
++ * @author Matteo Merli
++ */
++public class JmxAgent
++{
++
++	private static Logger log = Logger.getLogger( JmxAgent.class );
++
++	private static final String DOMAIN = &quot;RtspProxy&quot;;
++
++	private MBeanServer mbeanServer = null;
++
++	/**
++	 * Creates a MBean server and attach all the MBeans to it. Also starts, if
++	 * needed, the web console and the JMX connector server.
++	 */
++	public JmxAgent()
++	{
++		// Silent mx4j info messages
++		System.setProperty( &quot;mx4j.log.priority&quot;, &quot;warn&quot; );
++
++		// Redirect mx4j messages to our own logger
++		Log.redirectTo( new Log4JLogger() );
++
++		mbeanServer = MBeanServerFactory.createMBeanServer();
++
++		try {
++
++			// Basic Info
++			Object infoMBean = new Info();
++			ObjectName infoName = ObjectName.getInstance( DOMAIN + &quot;:name=Info&quot; );
++			mbeanServer.registerMBean( infoMBean, infoName );
++
++			// Parameters
++			Object parametersMBean = mbeanServer.instantiate( ParametersMBean.class.getName() );
++			ObjectName parametersName = ObjectName.getInstance( DOMAIN
++					+ &quot;:name=Parameters&quot; );
++			mbeanServer.registerMBean( parametersMBean, parametersName );
++
++			// Proxy Services
++			ProxyService[] proxyServices = { RtspService.getInstance(),
++					RdtClientService.getInstance(), RdtServerService.getInstance(),
++					RtcpClientService.getInstance(), RtcpServerService.getInstance(),
++					RtpClientService.getInstance(), RtpServerService.getInstance() };
++			ObjectName objectName;
++			for ( ProxyService proxyService : proxyServices ) {
++				objectName = ObjectName.getInstance( DOMAIN + &quot;:name=&quot;
++						+ proxyService.getName() );
++				mbeanServer.registerMBean( new Service( proxyService ), objectName );
++			}
++
++			startWebConsole();
++			startConnectorServer();
++
++		} catch ( Exception e ) {
++			log.fatal( &quot;Exception: &quot;, e );
++			Reactor.stop();
++		}
++	}
++
++	public void stop()
++	{
++		// TODO: Handle the shutdown of the JMX agent
++	}
++
++	private void startWebConsole() throws Exception
++	{
++		boolean enabled = Config.proxyManagementWebEnable.getValue();
++		if ( !enabled )
++			return;
++
++		String host = Config.proxyManagementHost.getValue();
++		int port = Config.proxyManagementWebPort.getValue();
++		String user = Config.proxyManagementUser.getValue();
++		String password = Config.proxyManagementPassword.getValue();
++
++		HttpAdaptor adaptor = new HttpAdaptor();
++		ObjectName name = new ObjectName( &quot;Server:name=HttpAdaptor&quot; );
++		mbeanServer.registerMBean( adaptor, name );
++		adaptor.setHost( host );
++		adaptor.setPort( port );
++		// MX4J HTTP adaptor only supports Basic authentication
++		adaptor.setAuthenticationMethod( &quot;basic&quot; );
++		adaptor.addAuthorization( user, password );
++		adaptor.start();
++
++		XSLTProcessor processor = new XSLTProcessor();
++		processor.setUseCache( true );
++		adaptor.setProcessor( processor );
++
++		String url = &quot;<A HREF="http://">http://</A>&quot; + host + &quot;:&quot; + port + &quot;/&quot;;
++		log.info( &quot;Started web console. Accepting connections on &quot; + url );
++	}
++
++	@SuppressWarnings(&quot;unchecked&quot;)
++	private void startConnectorServer() throws Exception
++	{
++		boolean enabled = Config.proxyManagementRemoteEnable.getValue();
++		if ( !enabled )
++			return;
++
++		// Register and start the rmiregistry MBean, needed by JSR 160
++		// RMIConnectorServer
++		ObjectName namingName = ObjectName.getInstance( &quot;naming:type=rmiregistry&quot; );
++		NamingService namingService = new NamingService();
++		mbeanServer.registerMBean( namingService, namingName );
++		namingService.start();
++		int namingPort = ( (Integer) mbeanServer.getAttribute( namingName, &quot;Port&quot; ) ).intValue();
++
++		String jndiPath = &quot;/rtspproxy&quot;;
++		String host = Config.proxyManagementHost.getValue();
++		String uri = &quot;service:jmx:<A HREF="rmi://">rmi://</A>&quot; + host + &quot;/jndi/<A HREF="rmi://">rmi://</A>&quot; + host + &quot;:&quot;
++				+ namingPort + jndiPath;
++
++		JMXServiceURL url = new JMXServiceURL( uri );
++
++		// Remote Authentication
++		JMXAuthenticator authenticator = new Authenticator();
++		Map&lt;String, JMXAuthenticator&gt; environment = new HashMap&lt;String, JMXAuthenticator&gt;();
++		environment.put( JMXConnectorServer.AUTHENTICATOR, authenticator );
++
++		// Create and start the RMIConnectorServer
++		JMXConnectorServer connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(
++				url, environment, mbeanServer );
++		connectorServer.start();
++
++		log.info( &quot;Started JMX connector server. Service url: &quot; + uri );
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/jmx/JmxAgent.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/jmx/MBeansFactory.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/jmx/MBeansFactory.java	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/src/main/java/rtspproxy/jmx/MBeansFactory.java	2005-12-26 08:50:05 UTC (rev 363)
+@@ -0,0 +1,51 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx;
++
++import javax.management.MBeanAttributeInfo;
++
++import rtspproxy.config.Parameter;
++
++/**
++ * 
++ * @author Matteo Merli
++ */
++public class MBeansFactory
++{
++
++	/** 
++	 * Creates Attribute Info that wraps Config parameters.
++	 * @param parameter 
++	 * @return
++	 */
++	public static MBeanAttributeInfo createAttribute( Parameter parameter )
++	{
++		return new MBeanAttributeInfo( //
++				parameter.getName(), // name
++				parameter.getType(), // type
++				parameter.getDescription(), // description
++				true, // readable
++				parameter.isMutable(), // writable
++				false // isIs
++		);
++	}
++	
++	
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/jmx/MBeansFactory.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/jmx/ParametersMBean.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/jmx/ParametersMBean.java	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/src/main/java/rtspproxy/jmx/ParametersMBean.java	2005-12-26 08:50:05 UTC (rev 363)
+@@ -0,0 +1,176 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx;
++
++import java.lang.reflect.Constructor;
++
++import javax.management.Attribute;
++import javax.management.AttributeList;
++import javax.management.AttributeNotFoundException;
++import javax.management.DynamicMBean;
++import javax.management.InvalidAttributeValueException;
++import javax.management.MBeanAttributeInfo;
++import javax.management.MBeanConstructorInfo;
++import javax.management.MBeanException;
++import javax.management.MBeanInfo;
++import javax.management.ReflectionException;
++
++import rtspproxy.config.Config;
++import rtspproxy.config.Parameter;
++
++/**
++ * MBeans that lets monitor and adjust the application parameters that can be
++ * found on &lt;code&gt;rtspproxy.config.Config&lt;/code&gt;
++ * 
++ * @author Matteo Merli
++ */
++public class ParametersMBean implements DynamicMBean
++{
++
++	private static final String DESCRIPTION = &quot;MBeans that lets monitor and adjust the application parameters &quot;
++			+ &quot;that can befound on rtspproxy.config.Config&quot;;
++
++	private MBeanInfo mbeanInfo;
++
++	public ParametersMBean()
++	{
++		// Attributes
++		int size = Config.getAllParameters().size();
++		MBeanAttributeInfo[] attributeInfo = new MBeanAttributeInfo[size];
++		int i = 0;
++		for ( Parameter parameter : Config.getAllParameters() ) {
++			attributeInfo[i++] = MBeansFactory.createAttribute( parameter );
++		}
++
++		/* Constructors. */
++		Constructor[] constructors = this.getClass().getConstructors();
++		MBeanConstructorInfo[] constructorInfo = new MBeanConstructorInfo[constructors.length];
++		for ( i = 0; i &lt; constructors.length; i++ ) {
++			constructorInfo[i] = new MBeanConstructorInfo( this.getClass().getName(),
++					constructors[i] );
++		}
++
++		/* Generate the MBean description. */
++		mbeanInfo = new MBeanInfo( this.getClass().getName(), // name
++				DESCRIPTION, //
++				attributeInfo, // parameters
++				constructorInfo, // constructors
++				null, // operationInfo,
++				null // notificationInfo
++		);
++	}
++
++	/*
++	 * @see javax.management.DynamicMBean#getAttribute(java.lang.String)
++	 */
++	public Object getAttribute( String attributeName ) throws AttributeNotFoundException,
++			MBeanException, ReflectionException
++	{
++		Parameter parameter = Config.getParameter( attributeName );
++		if ( parameter == null )
++			throw new AttributeNotFoundException();
++
++		return parameter.getObjectValue();
++	}
++
++	/*
++	 * @see javax.management.DynamicMBean#getAttributes(java.lang.String[])
++	 */
++	public AttributeList getAttributes( String[] attributes )
++	{
++		AttributeList results = new AttributeList( attributes.length );
++		Attribute attr;
++		Parameter parameter;
++
++		for ( String name : attributes ) {
++			parameter = Config.getParameter( name );
++			if ( parameter == null )
++				continue;
++
++			attr = new Attribute( parameter.getName(), parameter.getObjectValue() );
++			results.add( attr );
++		}
++		return results;
++	}
++
++	/*
++	 * @see javax.management.DynamicMBean#getMBeanInfo()
++	 */
++	public MBeanInfo getMBeanInfo()
++	{
++		return mbeanInfo;
++	}
++
++	/*
++	 * @see javax.management.DynamicMBean#invoke(java.lang.String,
++	 *      java.lang.Object[], java.lang.String[])
++	 */
++	public Object invoke( String actionName, Object[] params, String[] signature )
++			throws MBeanException, ReflectionException
++	{
++		throw new ReflectionException( new NoSuchMethodException( &quot;Method not found: &quot;
++				+ actionName ) );
++	}
++
++	/*
++	 * @see javax.management.DynamicMBean#setAttribute(javax.management.Attribute)
++	 */
++	public void setAttribute( Attribute attribute ) throws AttributeNotFoundException,
++			InvalidAttributeValueException, MBeanException, ReflectionException
++	{
++		Parameter parameter = Config.getParameter( attribute.getName() );
++		if ( parameter == null )
++			throw new AttributeNotFoundException();
++
++		try {
++			parameter.setObjectValue( attribute.getValue() );
++		} catch ( IllegalArgumentException e ) {
++			throw new InvalidAttributeValueException( e.getMessage() );
++		}
++	}
++
++	/*
++	 * @see javax.management.DynamicMBean#setAttributes(javax.management.AttributeList)
++	 */
++	public AttributeList setAttributes( AttributeList attributes )
++	{
++		AttributeList results = new AttributeList();
++		Parameter parameter;
++		Attribute attr;
++
++		for ( Object obj : attributes ) {
++
++			attr = (Attribute) obj;
++			parameter = Config.getParameter( ((Attribute) attr).getName() );
++			if ( parameter == null )
++				continue;
++
++			try {
++				parameter.setObjectValue( attr.getValue() );
++			} catch ( IllegalArgumentException e ) {
++				continue;
++			}
++
++			attr = new Attribute( parameter.getName(), parameter.getObjectValue() );
++			results.add( attr );
++		}
++
++		return results;
++	}
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/jmx/ParametersMBean.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/jmx/Service.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/jmx/Service.java	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/src/main/java/rtspproxy/jmx/Service.java	2005-12-26 08:50:05 UTC (rev 363)
+@@ -0,0 +1,95 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx;
++
++import javax.management.MBeanException;
++
++import rtspproxy.ProxyService;
++import rtspproxy.config.IntegerParameter;
++import rtspproxy.config.Parameter;
++
++/**
++ * Service MBean implementations
++ * 
++ * @author Matteo Merli
++ */
++public class Service implements ServiceMBean
++{
++
++	ProxyService proxyService;
++
++	public Service( ProxyService proxyService )
++	{
++		this.proxyService = proxyService;
++	}
++
++	public String getNetworkInterface()
++	{
++		return proxyService.getNetworkInterfaceParameter().getStringValue();
++	}
++
++	public int getPort()
++	{
++		Parameter parameter = proxyService.getPortParameter();
++		return ((IntegerParameter) parameter).getValue();
++	}
++
++	public void setPort( int port ) throws MBeanException
++	{
++		Parameter parameter = proxyService.getPortParameter();
++		try {
++			parameter.setObjectValue( new Integer( port ) );
++		} catch ( Exception e ) {
++			throw new MBeanException( e );
++		}
++	}
++
++	public boolean isRunning()
++	{
++		return proxyService.isRunning();
++	}
++
++	public void start() throws MBeanException
++	{
++		try {
++			proxyService.start();
++		} catch ( Exception e ) {
++			throw new MBeanException( e );
++		}
++	}
++
++	public void stop() throws MBeanException
++	{
++		try {
++			proxyService.stop();
++		} catch ( Exception e ) {
++			throw new MBeanException( e );
++		}
++	}
++
++	public void restart() throws MBeanException
++	{
++		try {
++			proxyService.restart();
++		} catch ( Exception e ) {
++			throw new MBeanException( e );
++		}
++	}
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/jmx/Service.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+Added: trunk/src/main/java/rtspproxy/jmx/ServiceMBean.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/jmx/ServiceMBean.java	2005-12-24 10:11:20 UTC (rev 362)
++++ trunk/src/main/java/rtspproxy/jmx/ServiceMBean.java	2005-12-26 08:50:05 UTC (rev 363)
+@@ -0,0 +1,46 @@
++/***************************************************************************
++ *                                                                         *
++ *   This program is free software; you can redistribute it and/or modify  *
++ *   it under the terms of the GNU General Public License as published by  *
++ *   the Free Software Foundation; either version 2 of the License, or     *
++ *   (at your option) any later version.                                   *
++ *                                                                         *
++ *   Copyright (C) 2005 - Matteo Merli - <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>            *
++ *                                                                         *
++ ***************************************************************************/
++
++/*
++ * $Id$
++ * 
++ * $URL$
++ * 
++ */
++
++package rtspproxy.jmx;
++
++import javax.management.MBeanException;
++
++/**
++ * @author Matteo Merli
++ */
++public interface ServiceMBean
++{
++	/* Attributes */
++
++	public String getNetworkInterface();
++
++	public int getPort();
++
++	public void setPort( int port ) throws MBeanException;
++
++	public boolean isRunning();
++
++	/* Actions */
++
++	public void start() throws MBeanException;
++
++	public void stop() throws MBeanException;
++
++	public void restart() throws MBeanException;
++
++}
+
+
+Property changes on: trunk/src/main/java/rtspproxy/jmx/ServiceMBean.java
+___________________________________________________________________
+Name: svn:keywords
+   + Id URL Rev
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000047.html">[Rtspproxy-devel] r362 - trunk/src/main/java/rtspproxy/filter/authentication
+</A></li>
+	<LI>Next message: <A HREF="000049.html">[Rtspproxy-devel] r364 - trunk/src/site/xdoc
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#48">[ date ]</a>
+              <a href="thread.html#48">[ thread ]</a>
+              <a href="subject.html#48">[ subject ]</a>
+              <a href="author.html#48">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

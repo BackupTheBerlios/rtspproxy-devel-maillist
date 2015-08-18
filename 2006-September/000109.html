@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r426 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r426%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number&In-Reply-To=%3C200609042327.k84NRXiD019047%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r426 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number</H1>
+    <B>merlimat at mail.berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r426%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number&In-Reply-To=%3C200609042327.k84NRXiD019047%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r426 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number">merlimat at mail.berlios.de
+       </A><BR>
+    <I>Tue Sep  5 01:27:33 CEST 2006</I>
+    <P><UL>
+        
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#109">[ date ]</a>
+              <a href="thread.html#109">[ thread ]</a>
+              <a href="subject.html#109">[ subject ]</a>
+              <a href="author.html#109">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-09-05 01:26:18 +0200 (Tue, 05 Sep 2006)
+New Revision: 426
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedByte.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedInt.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedLong.java
+Log:
+Removed some unnecessaries casts.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedByte.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedByte.java	2006-05-02 15:40:29 UTC (rev 425)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedByte.java	2006-09-04 23:26:18 UTC (rev 426)
+@@ -75,12 +75,12 @@
+ 
+ 	@Override
+ 	public double doubleValue() {
+-		return (double) value;
++		return value;
+ 	}
+ 
+ 	@Override
+ 	public float floatValue() {
+-		return (float) value;
++		return value;
+ 	}
+ 
+ 	@Override
+@@ -121,7 +121,7 @@
+ 	
+ 	@Override
+ 	public int hashCode() { 
+-		return (int)value;
++		return value;
+ 	}
+ 
+ 	@Override
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedInt.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedInt.java	2006-05-02 15:40:29 UTC (rev 425)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedInt.java	2006-09-04 23:26:18 UTC (rev 426)
+@@ -82,12 +82,12 @@
+ 
+ 	@Override
+ 	public double doubleValue() {
+-		return (double) value;
++		return value;
+ 	}
+ 
+ 	@Override
+ 	public float floatValue() {
+-		return (float) value;
++		return value;
+ 	}
+ 
+ 	@Override
+@@ -129,7 +129,7 @@
+ 
+ 	@Override
+ 	public String toString() {
+-		return Long.toString((long) value &amp; 0xFFFFFFFFL);
++		return Long.toString( value &amp; 0xFFFFFFFFL);
+ 	}
+ 	
+ 	@Override
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedLong.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedLong.java	2006-05-02 15:40:29 UTC (rev 425)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/lib/number/UnsignedLong.java	2006-09-04 23:26:18 UTC (rev 426)
+@@ -142,8 +142,8 @@
+     @Override
+     public int intValue()
+     {
+-        return (((int) value[4] &lt;&lt; 24) &amp; 0xFF000000 | ((int) value[5] &lt;&lt; 16) &amp; 0xFF0000
+-                | ((int) value[6] &lt;&lt; 8) &amp; 0xFF00 | ((int) value[7] &amp; 0xFF));
++        return ((value[4] &lt;&lt; 24) &amp; 0xFF000000 | (value[5] &lt;&lt; 16) &amp; 0xFF0000
++                | (value[6] &lt;&lt; 8) &amp; 0xFF00 | (value[7] &amp; 0xFF));
+     }
+ 
+     @Override
+@@ -153,7 +153,7 @@
+                 &amp; 0xFF000000000000L | ((long) value[2] &lt;&lt; 40) &amp; 0xFF0000000000L
+                 | ((long) value[3] &lt;&lt; 32) &amp; 0xFF00000000L | ((long) value[4] &lt;&lt; 24)
+                 &amp; 0xFF000000L | ((long) value[5] &lt;&lt; 16) &amp; 0xFF0000L
+-                | ((long) value[6] &lt;&lt; 8) &amp; 0xFF00L | ((long) (value[7]) &amp; 0xFFL));
++                | ((long) value[6] &lt;&lt; 8) &amp; 0xFF00L | (value[7] &amp; 0xFFL));
+     }
+ 
+     @Override
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#109">[ date ]</a>
+              <a href="thread.html#109">[ thread ]</a>
+              <a href="subject.html#109">[ subject ]</a>
+              <a href="author.html#109">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

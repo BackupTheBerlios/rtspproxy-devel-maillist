@@ -1,0 +1,315 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r383 - in trunk: RTSPProxy-App/src/resources/conf RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/rtsp RTSPProxy-Core/src/test/java/rtspproxy/rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r383%20-%20in%20trunk%3A%20RTSPProxy-App/src/resources/conf%20RTSPProxy-Core/src/main/java/rtspproxy/config%20RTSPProxy-Core/src/main/java/rtspproxy/rtsp%20RTSPProxy-Core/src/test/java/rtspproxy/rtsp&In-Reply-To=%3C200601090005.k09056dt013128%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000065.html">
+   <LINK REL="Next"  HREF="000068.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r383 - in trunk: RTSPProxy-App/src/resources/conf RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/rtsp RTSPProxy-Core/src/test/java/rtspproxy/rtsp</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r383%20-%20in%20trunk%3A%20RTSPProxy-App/src/resources/conf%20RTSPProxy-Core/src/main/java/rtspproxy/config%20RTSPProxy-Core/src/main/java/rtspproxy/rtsp%20RTSPProxy-Core/src/test/java/rtspproxy/rtsp&In-Reply-To=%3C200601090005.k09056dt013128%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r383 - in trunk: RTSPProxy-App/src/resources/conf RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/rtsp RTSPProxy-Core/src/test/java/rtspproxy/rtsp">rbieniek at berlios.de
+       </A><BR>
+    <I>Mon Jan  9 01:05:06 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000065.html">[Rtspproxy-devel] r381 - in trunk: RTSPProxy-App RTSPProxy-Core RTSPProxy-OSGi src/site
+</A></li>
+        <LI>Next message: <A HREF="000068.html">[Rtspproxy-devel] r384 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . proxy rdt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#67">[ date ]</a>
+              <a href="thread.html#67">[ thread ]</a>
+              <a href="subject.html#67">[ subject ]</a>
+              <a href="author.html#67">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-09 01:04:58 +0100 (Mon, 09 Jan 2006)
+New Revision: 383
+
+Modified:
+   trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransport.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransportList.java
+   trunk/RTSPProxy-Core/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java
+Log:
+- made RTSP transport mode filed conformant to RFC2326
+- added the ability to disable transport protocol on an adminstrative way.
+- added hack to suppress the lower transport in the header field.
+
+
+Modified: trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml	2006-01-08 02:32:52 UTC (rev 382)
++++ trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml	2006-01-09 00:04:58 UTC (rev 383)
+@@ -14,6 +14,13 @@
+       &lt;rdtPort&gt;6972&lt;/rdtPort&gt;
+       &lt;interface&gt;10.0.0.23&lt;/interface&gt;
+     &lt;/client&gt;
++	&lt;transport&gt;
++		&lt;rtp&gt;true&lt;/rtp&gt;
++		&lt;rdt&gt;true&lt;/rdt&gt;
++		&lt;hacks&gt;
++			&lt;lowerTransportSuppress&gt;false&lt;/lowerTransportSuppress&gt;
++		&lt;/hacks&gt;
++	&lt;/transport&gt;
+   &lt;/proxy&gt;
+   &lt;jmx&gt;
+     &lt;manageable&gt;true&lt;/manageable&gt;
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-01-08 02:32:52 UTC (rev 382)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-01-09 00:04:58 UTC (rev 383)
+@@ -142,6 +142,32 @@
+ 			&quot;/rtspproxy/proxy/client/rdtPort&quot; // xpathExpr
+ 			);
+ 
++	public static final BooleanParameter proxyTransportRtpEnable = new BooleanParameter(
++			&quot;proxy.transport.rtp.enable&quot;, // name
++			true, // default value
++			false, // mutable
++			&quot;Enables the UDP/AVP/RTP transport.&quot;,
++			&quot;/rtspproxy/proxy/transport/rtp&quot; // xpathExpr
++			);
++	
++
++	public static final BooleanParameter proxyTransportRdtEnable = new BooleanParameter(
++			&quot;proxy.transport.rdt.enable&quot;, // name
++			true, // default value
++			false, // mutable
++			&quot;Enables the x-udp-rdt transport.&quot;,
++			&quot;/rtspproxy/proxy/transport/rdt&quot; // xpathExpr
++			);	
++	
++
++	public static final BooleanParameter proxyLowerTransportSuppress = new BooleanParameter(
++			&quot;proxy.transport.rtp.protocol.disable&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;Enables the x-udp-rdt transport.&quot;,
++			&quot;/rtspproxy/proxy/transport/hacks/lowerTransportSuppress&quot; // xpathExpr
++			);	
++	
+ 	// /////////////////////////////////////////////////////////
+ 
+ 	// JMX
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransport.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransport.java	2006-01-08 02:32:52 UTC (rev 382)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransport.java	2006-01-09 00:04:58 UTC (rev 383)
+@@ -18,6 +18,12 @@
+ 
+ package rtspproxy.rtsp;
+ 
++import org.apache.commons.collections.functors.NonePredicate;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import rtspproxy.config.Config;
++
+ /**
+  * Parse the RTSP Transport header field. Reference Grammar:
+  * 
+@@ -56,6 +62,8 @@
+ public class RtspTransport
+ {
+ 
++	private static Logger logger = LoggerFactory.getLogger(RtspTransport.class);
++	
+ 	/** Transport Protocol */
+ 	public enum TransportProtocol {
+ 		None,
+@@ -113,6 +121,22 @@
+ 		None, unicast, multicast
+ 	}
+ 
++	/** mode */
++	public enum Mode {
++		None, PLAY, RECORD;
++		
++		public static Mode fromString ( String modeName ) {
++			if( &quot;PLAY&quot;.equalsIgnoreCase( modeName ))
++				return PLAY;
++			else if( &quot;RECORD&quot;.equalsIgnoreCase( modeName ))
++				return RECORD;
++			else {
++				logger.debug(&quot;unknown mode string passed (ignored): &quot; + modeName);
++				return None;
++			}
++		}
++	}
++	
+ 	TransportProtocol transportProtocol = null;
+ 	Profile profile = null;
+ 	LowerTransport lowerTransport = null;
+@@ -127,7 +151,7 @@
+ 	int[] client_port = new int[2];
+ 	int[] server_port = new int[2];
+ 	String ssrc;
+-	String mode;
++	Mode mode = Mode.None;
+ 	String source;
+ 
+ 	/**
+@@ -152,7 +176,7 @@
+ 		server_port[0] = 0;
+ 		server_port[1] = 0;
+ 		ssrc = null;
+-		mode = null;
++		mode = Mode.None;
+ 		source = null;
+ 
+ 		parseTransport( transport );
+@@ -218,7 +242,7 @@
+ 														setSSRC( _getStrValue( tok ) );
+ 													else
+ 														if ( tok.startsWith( &quot;mode&quot; ) )
+-															setMode( _getStrValue( tok ) );
++															setMode( Mode.fromString( _getStrValue( tok ) ) );
+ 														else
+ 															if ( tok.startsWith( &quot;source&quot; ) )
+ 																setSource( _getStrValue( tok ) );
+@@ -258,7 +282,8 @@
+ 			sb.append( transportProtocol );
+ 			if ( profile != Profile.None ) {
+ 				sb.append( &quot;/&quot; ).append( profile );
+-				if ( lowerTransport != LowerTransport.None )
++				if ( !Config.proxyLowerTransportSuppress.getValue() 
++						&amp;&amp; lowerTransport != LowerTransport.None )
+ 					sb.append( &quot;/&quot; ).append( lowerTransport );
+ 			}
+ 			if ( deliveryType != DeliveryType.None )
+@@ -293,8 +318,8 @@
+ 			sb.append( &quot;;ssrc=&quot; ).append( ssrc );
+ 		if ( source != null )
+ 			sb.append( &quot;;source=&quot; ).append( source );
+-		if ( mode != null )
+-			sb.append( &quot;;mode=&quot; ).append( mode );
++		if ( mode != Mode.None )
++			sb.append( &quot;;mode=\&quot;&quot; ).append( mode ) . append(&quot;\&quot;&quot;);
+ 		return sb.toString();
+ 	}
+ 
+@@ -309,12 +334,14 @@
+ 		 * At now, the only transport supported by the server is
+ 		 * &quot;RTP/AVP/UDP;unicast&quot;
+ 		 */
+-		if ( transportProtocol == TransportProtocol.RTP &amp;&amp; profile == Profile.AVP
++		if ( Config.proxyTransportRtpEnable.getValue()
++				&amp;&amp; transportProtocol == TransportProtocol.RTP &amp;&amp; profile == Profile.AVP
+ 				&amp;&amp; lowerTransport == LowerTransport.UDP
+ 				&amp;&amp; deliveryType == DeliveryType.unicast )
+ 			return true;
+ 		else
+-			if ( transportProtocol == TransportProtocol.RDT
++			if ( Config.proxyTransportRdtEnable.getValue()
++					&amp;&amp; transportProtocol == TransportProtocol.RDT
+ 					&amp;&amp; lowerTransport == LowerTransport.UDP
+ 					&amp;&amp; deliveryType == DeliveryType.unicast )
+ 				return true;
+@@ -453,16 +480,17 @@
+ 	/**
+ 	 * @return Returns the mode.
+ 	 */
+-	public String getMode()
++	public Mode getMode()
+ 	{
+ 		return mode;
+ 	}
+ 
+ 	/**
++	 * Set the mode. The 
+ 	 * @param mode
+ 	 *        The mode to set.
+ 	 */
+-	public void setMode( String mode )
++	public void setMode( Mode mode )
+ 	{
+ 		this.mode = mode;
+ 	}
+@@ -610,11 +638,17 @@
+ 	 */
+ 	private static String _getStrValue( String str )
+ 	{
++		String val = null;
++		
+ 		String[] list = str.split( &quot;=&quot; );
+ 		if ( list.length != 2 )
+ 			return null;
+ 
+-		return list[1];
++		val = list[1];
++		if(val.startsWith(&quot;\&quot;&quot;) &amp;&amp; val.endsWith(&quot;\&quot;&quot;))
++			val = val.substring(1, val.length()-2);
++		
++		return val;
+ 	}
+ 
+ 	/**
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransportList.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransportList.java	2006-01-08 02:32:52 UTC (rev 382)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransportList.java	2006-01-09 00:04:58 UTC (rev 383)
+@@ -73,5 +73,4 @@
+ 		}
+ 		return buf.toString();
+ 	}
+-
+ }
+
+Modified: trunk/RTSPProxy-Core/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java	2006-01-08 02:32:52 UTC (rev 382)
++++ trunk/RTSPProxy-Core/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java	2006-01-09 00:04:58 UTC (rev 383)
+@@ -48,8 +48,8 @@
+ 
+ 	public void testToString()
+ 	{
+-		String expected = &quot;x-real-rdt/udp;client_port=6972;mode=play,&quot;
+-				+ &quot;RTP/AVP/UDP;unicast;client_port=6972-6973;mode=play&quot;;
++		String expected = &quot;x-real-rdt/udp;client_port=6972;mode=\&quot;PLAY\&quot;,&quot;
++				+ &quot;RTP/AVP/UDP;unicast;client_port=6972-6973;mode=\&quot;PLAY\&quot;&quot;;
+ 		assertEquals( expected, transportList.toString() );
+ 	}
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000065.html">[Rtspproxy-devel] r381 - in trunk: RTSPProxy-App RTSPProxy-Core RTSPProxy-OSGi src/site
+</A></li>
+	<LI>Next message: <A HREF="000068.html">[Rtspproxy-devel] r384 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . proxy rdt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#67">[ date ]</a>
+              <a href="thread.html#67">[ thread ]</a>
+              <a href="subject.html#67">[ subject ]</a>
+              <a href="author.html#67">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

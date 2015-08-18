@@ -1,0 +1,435 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r343 - in trunk/src/main/java/rtspproxy: proxy rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r343%20-%20in%20trunk/src/main/java/rtspproxy%3A%20proxy%20rtsp&In-Reply-To=%3C200512132142.jBDLgv1P002676%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000027.html">
+   <LINK REL="Next"  HREF="000029.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r343 - in trunk/src/main/java/rtspproxy: proxy rtsp</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r343%20-%20in%20trunk/src/main/java/rtspproxy%3A%20proxy%20rtsp&In-Reply-To=%3C200512132142.jBDLgv1P002676%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r343 - in trunk/src/main/java/rtspproxy: proxy rtsp">merlimat at berlios.de
+       </A><BR>
+    <I>Tue Dec 13 22:42:57 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000027.html">[Rtspproxy-devel] r342 - in trunk: . src/site src/site/xdoc
+</A></li>
+        <LI>Next message: <A HREF="000029.html">[Rtspproxy-devel] r344 - in trunk/src: main/java/rtspproxy/rtsp test/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#28">[ date ]</a>
+              <a href="thread.html#28">[ thread ]</a>
+              <a href="subject.html#28">[ subject ]</a>
+              <a href="author.html#28">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-13 22:42:36 +0100 (Tue, 13 Dec 2005)
+New Revision: 343
+
+Modified:
+   trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/src/main/java/rtspproxy/proxy/ProxySession.java
+   trunk/src/main/java/rtspproxy/proxy/ServerSide.java
+   trunk/src/main/java/rtspproxy/proxy/Track.java
+   trunk/src/main/java/rtspproxy/rtsp/RtspDecoder.java
+   trunk/src/main/java/rtspproxy/rtsp/RtspMessage.java
+Log:
+Using fixed names for IoSession attributes
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-09 00:12:05 UTC (rev 342)
++++ trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-13 21:42:36 UTC (rev 343)
+@@ -51,6 +51,8 @@
+ 
+ 	/** Used to save a reference to this handler in the IoSession */
+ 	protected static final String ATTR = ProxyHandler.class.toString() + &quot;Attr&quot;;
++	protected static final String setupUrlATTR = &quot;setupUrlATTR&quot;;
++	protected static final String clientPortsATTR = &quot;clientPortsATTR&quot;;
+ 
+ 	private IoSession clientSession = null;
+ 	private IoSession serverSession = null;
+@@ -101,7 +103,7 @@
+ 
+ 		switch ( message.getType() ) {
+ 			case TypeRequest:
+-				serverSession.setAttribute( &quot;lastRequestVerb&quot;,
++				serverSession.setAttribute( RtspMessage.lastRequestVerbATTR,
+ 						( (RtspRequest) message ).getVerb() );
+ 				sendRequest( serverSession, (RtspRequest) message );
+ 				break;
+@@ -146,7 +148,7 @@
+ 		}
+ 		switch ( message.getType() ) {
+ 			case TypeRequest:
+-				clientSession.setAttribute( &quot;lastRequestVerb&quot;,
++				clientSession.setAttribute( RtspMessage.lastRequestVerbATTR,
+ 						( (RtspRequest) message ).getVerb() );
+ 				sendRequest( clientSession, (RtspRequest) message );
+ 				break;
+@@ -188,7 +190,7 @@
+ 				return;
+ 			}
+ 		}
+-		serverSession.setAttribute( &quot;lastRequestVerb&quot;, request.getVerb() );
++		serverSession.setAttribute( RtspMessage.lastRequestVerbATTR, request.getVerb() );
+ 
+ 		log.debug( &quot;Client Transport:&quot; + request.getHeader( &quot;Transport&quot; ) );
+ 
+@@ -196,6 +198,18 @@
+ 				request.getHeader( &quot;Transport&quot; ) );
+ 		log.debug( &quot;Parsed:&quot; + rtspTransportList.toString() );
+ 
++		if ( rtspTransportList.count() == 0 ) {
++			/**
++			 * If no one of the client specified transports is acceptable by the
++			 * proxy, direct reply with an unsupported transport error. Then the
++			 * client will have the chance to reformule the request with another
++			 * transports set.
++			 */
++			sendResponse( clientSession,
++					RtspResponse.errorResponse( RtspCode.UnsupportedTransport ) );
++			return;
++		}
++
+ 		int proxyRtpPort = Config.getInt( &quot;proxy.server.rtp.port&quot;, -1 );
+ 		int proxyRtcpPort = Config.getInt( &quot;proxy.server.rtcp.port&quot;, -1 );
+ 
+@@ -203,8 +217,8 @@
+ 		// because I will need to know which port the client will
+ 		// use for RTP/RTCP connections.
+ 		int[] clientPorts = rtspTransportList.get( 0 ).getClientPort();
+-		clientSession.setAttribute( &quot;clientPorts&quot;, clientPorts );
+-		clientSession.setAttribute( &quot;setupURL&quot;, request.getUrl().toString() );
++		clientSession.setAttribute( clientPortsATTR, clientPorts );
++		clientSession.setAttribute( setupUrlATTR, request.getUrl().toString() );
+ 
+ 		for ( RtspTransport transport : rtspTransportList.getList() ) {
+ 			log.debug( &quot;Transport:&quot; + transport );
+@@ -266,7 +280,7 @@
+ 
+ 		// Create a new Track object
+ 		Track track = proxySession.addTrack(
+-				(String) clientSession.getAttribute( &quot;setupURL&quot; ), transport.getSSRC() );
++				(String) clientSession.getAttribute( setupUrlATTR ), transport.getSSRC() );
+ 
+ 		// Setting client and server info on the track
+ 		InetAddress serverAddress = null;
+@@ -288,7 +302,7 @@
+ 		} catch ( UnknownHostException e ) {
+ 			log.warn( &quot;Unknown host: &quot; + clientSession.getRemoteAddress() );
+ 		}
+-		int clientPorts[] = (int[]) clientSession.getAttribute( &quot;clientPorts&quot; );
++		int clientPorts[] = (int[]) clientSession.getAttribute( clientPortsATTR );
+ 		track.setClientAddress( clientAddress, clientPorts[0], clientPorts[1] );
+ 
+ 		if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP ) {
+@@ -305,7 +319,7 @@
+ 			}
+ 
+ 			// Obtaing client specified ports
+-			int ports[] = (int[]) clientSession.getAttribute( &quot;clientPorts&quot; );
++			int ports[] = (int[]) clientSession.getAttribute( clientPortsATTR );
+ 			transport.setClientPort( ports );
+ 
+ 			log.debug( &quot;Transport Rewritten: &quot; + transport );
+@@ -356,6 +370,7 @@
+ 			log.warn( &quot;Destination unreachable: &quot; + host + &quot;:&quot; + port );
+ 			sendResponse( clientSession,
+ 					RtspResponse.errorResponse( RtspCode.DestinationUnreachable ) );
++			clientSession.close();
+ 			return;
+ 		}
+ 
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ProxySession.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ProxySession.java	2005-12-09 00:12:05 UTC (rev 342)
++++ trunk/src/main/java/rtspproxy/proxy/ProxySession.java	2005-12-13 21:42:36 UTC (rev 343)
+@@ -54,7 +54,10 @@
+ 	 */
+ 	public static ProxySession getByClientSessionID( String clientSessionId )
+ 	{
+-		return clientSessionIds.get( clientSessionId );
++		if ( clientSessionId == null )
++			return null;
++		else
++			return clientSessionIds.get( clientSessionId );
+ 	}
+ 
+ 	/**
+@@ -67,7 +70,10 @@
+ 	 */
+ 	public static ProxySession getByServerSessionID( String serverSessionId )
+ 	{
+-		return serverSessionIds.get( serverSessionId );
++		if ( serverSessionId == null )
++			return null;
++		else
++			return serverSessionIds.get( serverSessionId );
+ 	}
+ 
+ 	/**
+@@ -158,7 +164,8 @@
+ 	public synchronized void setServerSessionId( String serverSessionId )
+ 	{
+ 		this.serverSessionId = serverSessionId;
+-		serverSessionIds.put( serverSessionId, this );
++		if ( serverSessionId != null )
++			serverSessionIds.put( serverSessionId, this );
+ 	}
+ 
+ 	/**
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ServerSide.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ServerSide.java	2005-12-09 00:12:05 UTC (rev 342)
++++ trunk/src/main/java/rtspproxy/proxy/ServerSide.java	2005-12-13 21:42:36 UTC (rev 343)
+@@ -18,6 +18,7 @@
+ import org.apache.mina.common.IoSession;
+ 
+ import rtspproxy.lib.Exceptions;
++import rtspproxy.rtsp.RtspCode;
+ import rtspproxy.rtsp.RtspMessage;
+ import rtspproxy.rtsp.RtspRequest;
+ import rtspproxy.rtsp.RtspResponse;
+@@ -50,7 +51,7 @@
+ 		// close all: same as sessionClosed()
+ 		log.info( &quot;Exception: &quot; + cause );
+ 		Exceptions.logStackTrace( cause );
+-		
++
+ 		sessionClosed( session );
+ 	}
+ 
+@@ -177,7 +178,11 @@
+ 	public void onResponseSetup( ProxyHandler proxyHandler, RtspResponse response )
+ 	{
+ 		log.debug( &quot;RESPONSE SETUP&quot; );
+-		proxyHandler.passSetupResponseToClient( response );
++		if ( response.getCode() != RtspCode.OK )
++			// Report the error to the client
++			proxyHandler.passToClient( response );
++		else
++			proxyHandler.passSetupResponseToClient( response );
+ 	}
+ 
+ 	public void onResponseTeardown( ProxyHandler proxyHandler, RtspResponse response )
+
+Modified: trunk/src/main/java/rtspproxy/proxy/Track.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/Track.java	2005-12-09 00:12:05 UTC (rev 342)
++++ trunk/src/main/java/rtspproxy/proxy/Track.java	2005-12-13 21:42:36 UTC (rev 343)
+@@ -51,6 +51,8 @@
+ 
+ 	private static Logger log = Logger.getLogger( Track.class );
+ 
++	protected static final String ATTR = Track.class.toString() + &quot;Attr&quot;;
++
+ 	/** Maps a server SSRC id to a Track */
+ 	private static Map&lt;UnsignedInt, Track&gt; serverSsrcMap = new ConcurrentHashMap&lt;UnsignedInt, Track&gt;();
+ 
+
+Modified: trunk/src/main/java/rtspproxy/rtsp/RtspDecoder.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/rtsp/RtspDecoder.java	2005-12-09 00:12:05 UTC (rev 342)
++++ trunk/src/main/java/rtspproxy/rtsp/RtspDecoder.java	2005-12-13 21:42:36 UTC (rev 343)
+@@ -36,6 +36,9 @@
+ public class RtspDecoder implements ProtocolDecoder
+ {
+ 
++	private static final String readStateATTR = RtspDecoder.class.toString() + &quot;readState&quot;;
++	private static final String rtspMessageATTR = RtspDecoder.class.toString() + &quot;rtspMessage&quot;;
++
+ 	/**
+ 	 * State enumerator that indicates the reached state in the RTSP message
+ 	 * decoding process.
+@@ -85,10 +88,10 @@
+ 		}
+ 
+ 		// Retrieve status from session
+-		ReadState state = (ReadState) session.getAttribute( &quot;state&quot; );
++		ReadState state = (ReadState) session.getAttribute( readStateATTR );
+ 		if ( state == null )
+ 			state = ReadState.Command;
+-		RtspMessage rtspMessage = (RtspMessage) session.getAttribute( &quot;rtspMessage&quot; );
++		RtspMessage rtspMessage = (RtspMessage) session.getAttribute( rtspMessageATTR );
+ 
+ 		try {
+ 
+@@ -125,7 +128,7 @@
+ 							RtspCode code = RtspCode.fromString( m.group( 1 ) );
+ 							rtspMessage = new RtspResponse();
+ 							( (RtspResponse) ( rtspMessage ) ).setCode( code );
+-							RtspRequest.Verb verb = (RtspRequest.Verb) session.getAttribute( &quot;lastRequestVerb&quot; );
++							RtspRequest.Verb verb = (RtspRequest.Verb) session.getAttribute( RtspMessage.lastRequestVerbATTR );
+ 							( (RtspResponse) ( rtspMessage ) ).setRequestVerb( verb );
+ 
+ 						} else {
+@@ -144,7 +147,7 @@
+ 								} catch ( MalformedURLException e ) {
+ 									log.info( e );
+ 									url = null;
+-									session.setAttribute( &quot;state&quot;, ReadState.Failed );
++									session.setAttribute( readStateATTR, ReadState.Failed );
+ 									throw new ProtocolDecoderException( &quot;Invalid URL&quot; );
+ 								}
+ 							}
+@@ -152,7 +155,7 @@
+ 							( (RtspRequest) rtspMessage ).setVerb( verb );
+ 
+ 							if ( ( (RtspRequest) rtspMessage ).getVerb() == RtspRequest.Verb.None ) {
+-								session.setAttribute( &quot;state&quot;, ReadState.Failed );
++								session.setAttribute( readStateATTR, ReadState.Failed );
+ 								throw new ProtocolDecoderException( &quot;Invalid method: &quot;
+ 										+ verb );
+ 							}
+@@ -221,8 +224,8 @@
+ 		if ( state == ReadState.Dispatch ) {
+ 			// The message is already formed
+ 			// send it
+-			session.removeAttribute( &quot;state&quot; );
+-			session.removeAttribute( &quot;rtspMessage&quot; );
++			session.removeAttribute( readStateATTR );
++			session.removeAttribute( rtspMessageATTR );
+ 			out.write( rtspMessage );
+ 			return;
+ 		}
+@@ -230,8 +233,8 @@
+ 		// log.debug( &quot;INCOMPLETE MESSAGE \n&quot; + rtspMessage );
+ 
+ 		// Save attributes in session
+-		session.setAttribute( &quot;state&quot;, state );
+-		session.setAttribute( &quot;rtspMessage&quot;, rtspMessage );
++		session.setAttribute( readStateATTR, state );
++		session.setAttribute( rtspMessageATTR, rtspMessage );
+ 	}
+ 
+ 	/*
+
+Modified: trunk/src/main/java/rtspproxy/rtsp/RtspMessage.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/rtsp/RtspMessage.java	2005-12-09 00:12:05 UTC (rev 342)
++++ trunk/src/main/java/rtspproxy/rtsp/RtspMessage.java	2005-12-13 21:42:36 UTC (rev 343)
+@@ -24,13 +24,16 @@
+ import rtspproxy.Config;
+ 
+ /**
+- * Base abstract class for RTSP messages. 
++ * Base abstract class for RTSP messages.
+  * 
+  * @author mat
+  */
+ public abstract class RtspMessage
+ {
+ 
++	public static final String lastRequestVerbATTR = RtspMessage.class.toString()
++			+ &quot;lastRequestVerb&quot;;
++
+ 	/**
+ 	 * RTSP Message Type
+ 	 */
+@@ -94,7 +97,6 @@
+ 	}
+ 
+ 	/**
+-	 * 
+ 	 * @param key
+ 	 *        Header name
+ 	 * @param defaultValue
+@@ -126,9 +128,9 @@
+ 	 * Formats all the headers into a string ready to be sent in a RTSP message.
+ 	 * 
+ 	 * &lt;pre&gt;
+-	 * Header1: Value1
+-	 * Header2: value 2
+-	 * ... 
++	 *  Header1: Value1
++	 *  Header2: value 2
++	 *  ... 
+ 	 * &lt;/pre&gt;
+ 	 * 
+ 	 * @return a string containing the serialzed headers
+@@ -144,7 +146,6 @@
+ 	}
+ 
+ 	/**
+-	 * 
+ 	 * @return the number of headers owned by the message
+ 	 */
+ 	public int getHeadersCount()
+@@ -165,8 +166,8 @@
+ 	}
+ 
+ 	/**
+-	 * 
+-	 * @param buffer StringBuffer containing the contents
++	 * @param buffer
++	 *        StringBuffer containing the contents
+ 	 */
+ 	public void setBuffer( StringBuffer buffer )
+ 	{
+@@ -174,19 +175,21 @@
+ 	}
+ 
+ 	/**
+-	 * @param other buffer with content to be appended
++	 * @param other
++	 *        buffer with content to be appended
+ 	 */
+ 	public void appendToBuffer( StringBuffer other )
+ 	{
+ 		this.buffer.append( other );
+ 	}
+-	
++
+ 	/**
+-	 * @param other buffer with content to be appended
++	 * @param other
++	 *        buffer with content to be appended
+ 	 */
+ 	public void appendToBuffer( CharBuffer other )
+ 	{
+-		this.buffer.append(other);
++		this.buffer.append( other );
+ 	}
+ 
+ 	/**
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000027.html">[Rtspproxy-devel] r342 - in trunk: . src/site src/site/xdoc
+</A></li>
+	<LI>Next message: <A HREF="000029.html">[Rtspproxy-devel] r344 - in trunk/src: main/java/rtspproxy/rtsp test/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#28">[ date ]</a>
+              <a href="thread.html#28">[ thread ]</a>
+              <a href="subject.html#28">[ subject ]</a>
+              <a href="author.html#28">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

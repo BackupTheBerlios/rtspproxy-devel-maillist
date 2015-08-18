@@ -1,0 +1,735 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r406 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config filter filter/control proxy rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r406%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20config%20filter%20filter/control%20proxy%20rtsp&In-Reply-To=%3C200601270029.k0R0Tlb9011045%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000089.html">
+   <LINK REL="Next"  HREF="000091.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r406 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config filter filter/control proxy rtsp</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r406%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20config%20filter%20filter/control%20proxy%20rtsp&In-Reply-To=%3C200601270029.k0R0Tlb9011045%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r406 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config filter filter/control proxy rtsp">rbieniek at berlios.de
+       </A><BR>
+    <I>Fri Jan 27 01:29:47 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000089.html">[Rtspproxy-devel] r405 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: lib proxy rtsp
+</A></li>
+        <LI>Next message: <A HREF="000091.html">[Rtspproxy-devel] r407 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#90">[ date ]</a>
+              <a href="thread.html#90">[ thread ]</a>
+              <a href="subject.html#90">[ subject ]</a>
+              <a href="author.html#90">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-27 01:28:56 +0100 (Fri, 27 Jan 2006)
+New Revision: 406
+
+Added:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ClientControlFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlFilter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlProvider.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlProviderAdapter.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ServerControlFilter.java
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/XMLConfigReader.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterRegistry.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransport.java
+Log:
+- Introduced a lot of UGLY transport related hacks to cope with
+  certain broken mobile handset clients:
+-- turn TCP keep-alive on when connecting the remote server
+-- suppress the output of SSRC transport header attribute
+-- suppress the output of Source transport header attribute
+- Fixed Via-Header (this time correctly)
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -167,7 +167,31 @@
+ 			&quot;Enables the x-udp-rdt transport.&quot;,
+ 			&quot;/rtspproxy/proxy/transport/hacks/lowerTransportSuppress&quot; // xpathExpr
+ 			);	
+-	
++
++	public static final BooleanParameter proxyRtspTransportSsrcDisable = new BooleanParameter(
++			&quot;proxy.transport.rtsp.transport.ssrc.disable&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;disable the output of the SSRC transport attribute&quot;,
++			&quot;/rtspproxy/proxy/transport/hacks/rtspTransportSsrcDisable&quot; // xpathExpr
++			);	
++
++	public static final BooleanParameter proxyRtspTransportSourceDisable = new BooleanParameter(
++			&quot;proxy.transport.rtsp.transport.source.disable&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;disable the output of the SOURCE transport attribute&quot;,
++			&quot;/rtspproxy/proxy/transport/hacks/rtspTransportSourceDisable&quot; // xpathExpr
++			);	
++
++	public static final BooleanParameter proxyRtspKeepAlive = new BooleanParameter(
++			&quot;proxy.transport.rtsp.keepAlive.enable&quot;, // name
++			false, // default value
++			false, // mutable
++			&quot;Enable keep-alive on RTSP connections to remote servers.&quot;,
++			&quot;/rtspproxy/proxy/transport/hacks/rtspKeepAlive&quot; // xpathExpr
++			);
++
+ 	// /////////////////////////////////////////////////////////
+ 
+ 	// JMX
+@@ -257,6 +281,8 @@
+ 	// filter configurations from XML
+ 	private static List&lt;AAAConfig&gt; urlRewritingFilters = new ArrayList&lt;AAAConfig&gt;();
+ 
++	private static List&lt;AAAConfig&gt; controlFilters = new ArrayList&lt;AAAConfig&gt;();
++	
+ 	static void addAuthenticationFilter(AAAConfig config) {
+ 		authenticationFilters.add(config);
+ 	}
+@@ -272,7 +298,11 @@
+ 	static void addUrlRewritingFilter(AAAConfig config) {
+ 		urlRewritingFilters.add(config);
+ 	}
+-	
++
++	public static void addControlFilter(AAAConfig aaa) {
++		controlFilters.add(aaa);
++	}
++
+ 	public static List&lt;AAAConfig&gt; getAuthenticationFilters() {
+ 		return Collections.unmodifiableList(authenticationFilters);
+ 	}
+@@ -289,6 +319,10 @@
+ 		return Collections.unmodifiableList(urlRewritingFilters);
+ 	}
+ 	
++	public static List&lt;AAAConfig&gt; getControlFilters() {
++		return Collections.unmodifiableList(controlFilters);
++	}
++ 	
+ 	// /////////////////////////////////////////////////////////
+ 
+ 	public Config()
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/XMLConfigReader.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/XMLConfigReader.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/XMLConfigReader.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -128,7 +128,12 @@
+ 			} else if(name.equals(&quot;accounting&quot;)) {
+ 				Config.addAccountingFilter(aaa);				
+ 			} else if(name.equals(&quot;rewriting&quot;)) {
+-				Config.addUrlRewritingFilter(aaa);				
++				Config.addUrlRewritingFilter(aaa);
++			} else if(name.equals(&quot;control&quot;)) {
++				if(side == Side.Client || side == Side.Server) 
++					Config.addControlFilter(aaa);
++				else
++					throw new IllegalArgumentException(&quot;control filters can be only applied to either client or server side, not both&quot;);
+ 			} else
+ 				throw new IllegalArgumentException(&quot;invalid AAA element given, name=&quot; + name);
+ 		}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterRegistry.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/FilterRegistry.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -15,6 +15,9 @@
+ import rtspproxy.config.Config;
+ import rtspproxy.filter.accounting.AccountingFilter;
+ import rtspproxy.filter.authentication.AuthenticationFilter;
++import rtspproxy.filter.control.ClientControlFilter;
++import rtspproxy.filter.control.ControlFilter;
++import rtspproxy.filter.control.ServerControlFilter;
+ import rtspproxy.filter.ipaddress.IpAddressFilter;
+ import rtspproxy.filter.rewrite.ClientUrlRewritingFilter;
+ import rtspproxy.filter.rewrite.ServerUrlRewritingFilter;
+@@ -53,6 +56,12 @@
+ 	// server side rewriting filters
+ 	private LinkedList&lt;UrlRewritingFilter&gt; serverUrlRewritingFilters = new LinkedList&lt;UrlRewritingFilter&gt;();
+ 	
++	// client side control traffic filters
++	private LinkedList&lt;ClientControlFilter&gt; clientControlFilters = new LinkedList&lt;ClientControlFilter&gt;();
++	
++	// client side control traffic filters
++	private LinkedList&lt;ServerControlFilter&gt; serverControlFilters = new LinkedList&lt;ServerControlFilter&gt;();
++	
+ 	/**
+ 	 * 
+ 	 */
+@@ -142,8 +151,26 @@
+ 				this.serverUrlRewritingFilters.add(urlRewritingFilter);
+ 			}
+ 
++			for(AAAConfig filterConfig : Config.getControlFilters()) {
++				if(filterConfig.getSide() == Side.Client) {
++					ClientControlFilter filter = new ClientControlFilter(filterConfig.getImplClass(),
++							filterConfig.getConfigElements());
++					
++					filter.setSide(Side.Client);
++					registerFilterMBean(filter);
++					this.clientControlFilters.add(filter);
++				} else {
++					ServerControlFilter filter = new ServerControlFilter(filterConfig.getImplClass(),
++							filterConfig.getConfigElements());
++					
++					filter.setSide(Side.Client);
++					registerFilterMBean(filter);
++					this.serverControlFilters.add(filter);
++				}
++			}
++			
+ 		} catch (Throwable t) {
+-			logger.error(&quot;failed to populate filter registry&quot;, t);
++			logger.error(&quot;failed to populate filter registry&quot;, t);	
+ 			
+ 			Reactor.stop();
+ 			System.exit(-1);
+@@ -199,5 +226,19 @@
+ 	public List&lt;UrlRewritingFilter&gt; getServerUrlRewritingFilters() {
+ 		return Collections.unmodifiableList(serverUrlRewritingFilters);
+ 	}
++
++	/**
++	 * @return Returns the clientControlFilters.
++	 */
++	public List&lt;ClientControlFilter&gt; getClientControlFilters() {
++		return Collections.unmodifiableList(clientControlFilters);
++	}
++
++	/**
++	 * @return Returns the serverControlFilters.
++	 */
++	public List&lt;ServerControlFilter&gt; getServerControlFilters() {
++		return Collections.unmodifiableList(serverControlFilters);
++	}
+ 	
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -37,6 +37,7 @@
+ 		addAuthenticationFilter( chain );
+ 		addRewriteFilter( chain, Side.Client );
+ 		addAccountingFilter( chain, Side.Client );
++		addControlFilter( chain, Side.Client );
+ 	}
+ 
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -31,6 +31,9 @@
+ import rtspproxy.ProxyServiceRegistry;
+ import rtspproxy.filter.accounting.AccountingFilter;
+ import rtspproxy.filter.authentication.AuthenticationFilter;
++import rtspproxy.filter.control.ClientControlFilter;
++import rtspproxy.filter.control.ControlFilter;
++import rtspproxy.filter.control.ServerControlFilter;
+ import rtspproxy.filter.ipaddress.IpAddressFilter;
+ import rtspproxy.filter.rewrite.UrlRewritingFilter;
+ import rtspproxy.lib.Side;
+@@ -176,4 +179,19 @@
+ 		}
+ 	}
+ 
++	protected void addControlFilter ( IoFilterChain chain, Side side) {
++		if(side == Side.Client) {
++			List&lt;ClientControlFilter&gt; filters = FilterRegistry.getInstance().getClientControlFilters();
++
++			for(ControlFilter controlFilter : filters) {
++				chain.addAfter( rtspCodecNAME, controlFilter.getChainName(), controlFilter);
++			}
++		} else {
++			List&lt;ServerControlFilter&gt; filters = FilterRegistry.getInstance().getServerControlFilters();
++		
++			for(ControlFilter controlFilter : filters) {
++				chain.addAfter( rtspCodecNAME, controlFilter.getChainName(), controlFilter);
++			}
++		}
++	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -36,6 +36,7 @@
+ 		addRtspCodecFilter( chain );
+ 		addRewriteFilter( chain, Side.Server );
+ 		addAccountingFilter( chain, Side.Server );
++		addControlFilter ( chain, Side.Server );
+ 	}
+ 
+ }
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ClientControlFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ClientControlFilter.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ClientControlFilter.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -0,0 +1,68 @@
++/**
++ * 
++ */
++package rtspproxy.filter.control;
++
++import java.util.List;
++
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoFilter.NextFilter;
++import org.dom4j.Element;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import rtspproxy.rtsp.RtspRequest;
++import rtspproxy.rtsp.RtspResponse;
++
++/**
++ * control filter to be applied on the client side.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class ClientControlFilter extends ControlFilter {
++
++	private static Logger log = LoggerFactory.getLogger(ClientControlFilter.class);
++
++	/**
++	 * @param className
++	 * @param configElements
++	 * @param typeName
++	 */
++	public ClientControlFilter(String className, List&lt;Element&gt; configElements) {
++		super(className, configElements, &quot;clientControl&quot;);
++	}
++
++	@Override
++	public void messageReceived( NextFilter nextFilter, IoSession session, Object message )
++			throws Exception
++	{
++		if ( provider != null &amp;&amp; isRunning()) {
++			if ( message instanceof RtspRequest )
++				provider.processRequest(session, (RtspRequest)message);
++			else
++				log.error( &quot;Expecting a RtspRequest. Received a &quot;
++						+ message.getClass().getName() );
++		}
++
++		// Forward message
++		nextFilter.messageReceived( session, message );
++	}
++
++	@Override
++	public void messageSent( NextFilter nextFilter, IoSession session, Object message )
++			throws Exception
++	{
++		if ( provider != null  &amp;&amp; isRunning()) {
++			if(message instanceof RtspResponse)
++				provider.processResponse(session, (RtspResponse)message);
++			else
++				log.error( &quot;Expecting a RtspResponse. Received a &quot;
++						+ message.getClass().getName() );
++		}
++		
++		// Forward message
++		nextFilter.messageSent( session, message );
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlFilter.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlFilter.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -0,0 +1,65 @@
++/**
++ * 
++ */
++package rtspproxy.filter.control;
++
++import java.util.List;
++
++import org.apache.mina.common.IdleStatus;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoFilter.NextFilter;
++import org.dom4j.Element;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import rtspproxy.filter.FilterBase;
++import rtspproxy.rtsp.RtspMessage;
++import rtspproxy.rtsp.RtspRequest;
++import rtspproxy.rtsp.RtspResponse;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class ControlFilter extends FilterBase {
++
++	private static Logger log = LoggerFactory.getLogger(ControlFilter.class);
++	
++	public static final String FilterNAME = &quot;controlFilter&quot;;
++
++	protected ControlProvider provider;
++	
++	/**
++	 * @param filterName
++	 * @param className
++	 * @param typeName
++	 */
++	protected ControlFilter(String className, List&lt;Element&gt; configElements, String typeName) {
++		super(FilterNAME, className, typeName);
++		
++		this.provider = (ControlProvider)loadConfigInitProvider(className, ControlProvider.class, configElements);
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.common.IoFilterAdapter#sessionClosed(org.apache.mina.common.IoFilter.NextFilter, org.apache.mina.common.IoSession)
++	 */
++	@Override
++	public void sessionClosed(NextFilter nextFilter, IoSession session) throws Exception {
++		if ( provider != null  &amp;&amp; isRunning())
++			provider.sessionClosed( session );
++
++		nextFilter.sessionClosed(session);
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.common.IoFilterAdapter#sessionOpened(org.apache.mina.common.IoFilter.NextFilter, org.apache.mina.common.IoSession)
++	 */
++	@Override
++	public void sessionOpened(NextFilter nextFilter, IoSession session) throws Exception {
++		if ( provider != null &amp;&amp; isRunning() )
++			provider.sessionOpened( session );
++
++		nextFilter.sessionOpened(session);
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlProvider.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlProvider.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlProvider.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -0,0 +1,45 @@
++/**
++ * 
++ */
++package rtspproxy.filter.control;
++
++import org.apache.mina.common.IoSession;
++
++import rtspproxy.filter.GenericProvider;
++import rtspproxy.rtsp.RtspRequest;
++import rtspproxy.rtsp.RtspResponse;
++
++/**
++ * definition of a generic message filter applyable on the RTSP filter
++ * chain.
++ * This filter is intended as a generic way of modifying RTSP requests / responses
++ * either in the client- or server-side filter chain. Typical use-cases are
++ * adding / modifying header values before passing the message over to the upstream
++ * server. 
++ * The filter is intentionally not desiged to modify the overall message flow.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public interface ControlProvider extends GenericProvider {
++
++	/**
++	 * process a request
++	 */
++	public void processRequest(IoSession session, RtspRequest request);
++	
++	/**
++	 * process a response
++	 */
++	public void processResponse(IoSession session, RtspResponse response);
++	
++	/**
++	 * session gets opened
++	 */
++	public void sessionOpened(IoSession session);
++	
++	/**
++	 * session gets closed
++	 */
++	public void sessionClosed(IoSession session);
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlProviderAdapter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlProviderAdapter.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ControlProviderAdapter.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -0,0 +1,68 @@
++/**
++ * 
++ */
++package rtspproxy.filter.control;
++
++import org.apache.mina.common.IoSession;
++
++import rtspproxy.rtsp.RtspRequest;
++import rtspproxy.rtsp.RtspResponse;
++
++/**
++ * Default implementation of the ControlProvider interface. All method bodies are empty and
++ * do nothing. 
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class ControlProviderAdapter implements ControlProvider {
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.filter.control.ControlProvider#processRequest(org.apache.mina.common.IoSession, rtspproxy.rtsp.RtspRequest)
++	 */
++	public void processRequest(IoSession session, RtspRequest request) {
++		// TODO Auto-generated method stub
++
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.filter.control.ControlProvider#processResponse(org.apache.mina.common.IoSession, rtspproxy.rtsp.RtspResponse)
++	 */
++	public void processResponse(IoSession session, RtspResponse response) {
++		// TODO Auto-generated method stub
++
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.filter.control.ControlProvider#sessionOpened(org.apache.mina.common.IoSession)
++	 */
++	public void sessionOpened(IoSession session) {
++		// TODO Auto-generated method stub
++
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.filter.control.ControlProvider#sessionClosed(org.apache.mina.common.IoSession)
++	 */
++	public void sessionClosed(IoSession session) {
++		// TODO Auto-generated method stub
++
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.filter.GenericProvider#init()
++	 */
++	public void init() throws Exception {
++		// TODO Auto-generated method stub
++
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.filter.GenericProvider#shutdown()
++	 */
++	public void shutdown() {
++		// TODO Auto-generated method stub
++
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ServerControlFilter.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ServerControlFilter.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/control/ServerControlFilter.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -0,0 +1,66 @@
++/**
++ * 
++ */
++package rtspproxy.filter.control;
++
++import java.util.List;
++
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoFilter.NextFilter;
++import org.dom4j.Element;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import rtspproxy.rtsp.RtspRequest;
++import rtspproxy.rtsp.RtspResponse;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class ServerControlFilter extends ControlFilter {
++
++	private static Logger log = LoggerFactory.getLogger(ClientControlFilter.class);
++
++	/**
++	 * @param className
++	 * @param configElements
++	 * @param typeName
++	 */
++	public ServerControlFilter(String className, List&lt;Element&gt; configElements) {
++		super(className, configElements, &quot;serverControl&quot;);
++	}
++
++	@Override
++	public void messageReceived( NextFilter nextFilter, IoSession session, Object message )
++			throws Exception
++	{
++		if ( provider != null &amp;&amp; isRunning()) {
++			if(message instanceof RtspResponse)
++				provider.processResponse(session, (RtspResponse)message);
++			else
++				log.error( &quot;Expecting a RtspResponse. Received a &quot;
++						+ message.getClass().getName() );
++		}
++
++		// Forward message
++		nextFilter.messageReceived( session, message );
++	}
++
++	@Override
++	public void messageSent( NextFilter nextFilter, IoSession session, Object message )
++			throws Exception
++	{
++		if ( provider != null  &amp;&amp; isRunning()) {
++			if ( message instanceof RtspRequest )
++				provider.processRequest(session, (RtspRequest)message);
++			else
++				log.error( &quot;Expecting a Rtsprequest. Received a &quot;
++						+ message.getClass().getName() );
++		}
++		
++		// Forward message
++		nextFilter.messageSent( session, message );
++	}
++
++}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -32,6 +32,7 @@
+ import org.apache.mina.common.ConnectFuture;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.transport.socket.nio.SocketConnector;
++import org.apache.mina.transport.socket.nio.SocketSession;
+ 
+ import rtspproxy.RdtClientService;
+ import rtspproxy.RdtServerService;
+@@ -39,6 +40,7 @@
+ import rtspproxy.RtcpServerService;
+ import rtspproxy.RtpClientService;
+ import rtspproxy.RtpServerService;
++import rtspproxy.config.Config;
+ import rtspproxy.filter.RtspServerFilters;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.proxy.track.RtpTrack;
+@@ -469,6 +471,8 @@
+ 			future.join();
+ 			serverSession = future.getSession();
+ 
++			if(Config.proxyRtspKeepAlive.getValue())
++				((SocketSession)serverSession).setKeepAlive(true);
+ 		} catch ( UnresolvedAddressException e ) {
+ 			log.warn( &quot;Destination unreachable: &quot; + host + &quot;:&quot; + port );
+ 			sendResponse( clientSession, RtspResponse
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -174,13 +174,14 @@
+ 	public void setCommonHeaders()
+ 	{
+ 		String proxy = Config.getProxySignature();
+-		if ( getHeader( &quot;Server&quot; ) != null )
++		if ( getHeader( &quot;Server&quot; ) == null )
+ 			setHeader( &quot;Server&quot;, proxy );
+ 		
+ 		String via = getHeader(&quot;Via&quot;);
+ 		StringBuffer newVia = new StringBuffer();
+ 		
+-		if(via != null) {
++		if(via != null &amp;&amp; via.length() &gt; 0) {
++			newVia.append(via);
+ 			newVia.append(&quot;, &quot;);
+ 		}
+ 		newVia.append(&quot;RTSP/1.0 &quot;);
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransport.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransport.java	2006-01-26 19:53:43 UTC (rev 405)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspTransport.java	2006-01-27 00:28:56 UTC (rev 406)
+@@ -313,10 +313,14 @@
+ 			if ( server_port[1] &gt; 0 )
+ 				sb.append( &quot;-&quot; ).append( server_port[1] );
+ 		}
+-		if ( ssrc != null )
+-			sb.append( &quot;;ssrc=&quot; ).append( ssrc );
+-		if ( source != null )
+-			sb.append( &quot;;source=&quot; ).append( source );
++		
++		if(!Config.proxyRtspTransportSsrcDisable.getValue())
++			if ( ssrc != null )
++				sb.append( &quot;;ssrc=&quot; ).append( ssrc );
++		if(!Config.proxyRtspTransportSourceDisable.getValue())
++			if ( source != null )
++				sb.append( &quot;;source=&quot; ).append( source );
++		
+ 		if ( mode != Mode.None )
+ 			sb.append( &quot;;mode=\&quot;&quot; ).append( mode ) . append(&quot;\&quot;&quot;);
+ 		return sb.toString();
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000089.html">[Rtspproxy-devel] r405 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: lib proxy rtsp
+</A></li>
+	<LI>Next message: <A HREF="000091.html">[Rtspproxy-devel] r407 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#90">[ date ]</a>
+              <a href="thread.html#90">[ thread ]</a>
+              <a href="subject.html#90">[ subject ]</a>
+              <a href="author.html#90">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

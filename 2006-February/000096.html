@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r412 - trunk/RTSPProxy-App/src/resources/conf
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r412%20-%20trunk/RTSPProxy-App/src/resources/conf&In-Reply-To=%3C200602061954.k16JsI0K003120%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000095.html">
+   <LINK REL="Next"  HREF="000097.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r412 - trunk/RTSPProxy-App/src/resources/conf</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r412%20-%20trunk/RTSPProxy-App/src/resources/conf&In-Reply-To=%3C200602061954.k16JsI0K003120%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r412 - trunk/RTSPProxy-App/src/resources/conf">rbieniek at berlios.de
+       </A><BR>
+    <I>Mon Feb  6 20:54:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000095.html">[Rtspproxy-devel] r411 - in trunk: RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+        <LI>Next message: <A HREF="000097.html">[Rtspproxy-devel] r413 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config proxy proxy/track rtp rtp/range
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#96">[ date ]</a>
+              <a href="thread.html#96">[ thread ]</a>
+              <a href="subject.html#96">[ subject ]</a>
+              <a href="author.html#96">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-02-06 20:54:09 +0100 (Mon, 06 Feb 2006)
+New Revision: 412
+
+Modified:
+   trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml
+Log:
+- Preparation for server RTP port range handling (used for
+compatibility with broken server applications)
+
+Modified: trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml
+===================================================================
+--- trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml	2006-02-06 17:48:54 UTC (rev 411)
++++ trunk/RTSPProxy-App/src/resources/conf/rtspproxy.conf.xml	2006-02-06 19:54:09 UTC (rev 412)
+@@ -8,6 +8,9 @@
+       &lt;rdtPort&gt;6972&lt;/rdtPort&gt;
+       &lt;address&gt;10.0.0.24&lt;/address&gt;
+       &lt;!-- interface&gt;eth0&lt;/interface --&gt;
++      &lt;rtpMinPort&gt;9000&lt;/rtpMinPort&gt;
++      &lt;rtpMaxPort&gt;9100&lt;/rtpMaxPort&gt;
++	  &lt;rtpUsePortrange&gt;false&lt;/rtpUsePortrange&gt;
+     &lt;/server&gt;
+     &lt;client&gt;
+       &lt;rtpPort&gt;6970&lt;/rtpPort&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000095.html">[Rtspproxy-devel] r411 - in trunk: RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+	<LI>Next message: <A HREF="000097.html">[Rtspproxy-devel] r413 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: config proxy proxy/track rtp rtp/range
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#96">[ date ]</a>
+              <a href="thread.html#96">[ thread ]</a>
+              <a href="subject.html#96">[ subject ]</a>
+              <a href="author.html#96">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

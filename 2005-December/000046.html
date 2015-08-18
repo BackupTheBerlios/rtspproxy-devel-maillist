@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r361 - trunk/src/main/java/rtspproxy/filter/authentication/scheme
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r361%20-%20trunk/src/main/java/rtspproxy/filter/authentication/scheme&In-Reply-To=%3C200512240956.jBO9uVUt021087%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000045.html">
+   <LINK REL="Next"  HREF="000047.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r361 - trunk/src/main/java/rtspproxy/filter/authentication/scheme</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r361%20-%20trunk/src/main/java/rtspproxy/filter/authentication/scheme&In-Reply-To=%3C200512240956.jBO9uVUt021087%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r361 - trunk/src/main/java/rtspproxy/filter/authentication/scheme">merlimat at berlios.de
+       </A><BR>
+    <I>Sat Dec 24 10:56:31 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000045.html">[Rtspproxy-devel] r360 - trunk/src/main/java/rtspproxy
+</A></li>
+        <LI>Next message: <A HREF="000047.html">[Rtspproxy-devel] r362 - trunk/src/main/java/rtspproxy/filter/authentication
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#46">[ date ]</a>
+              <a href="thread.html#46">[ thread ]</a>
+              <a href="subject.html#46">[ subject ]</a>
+              <a href="author.html#46">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-24 10:56:24 +0100 (Sat, 24 Dec 2005)
+New Revision: 361
+
+Modified:
+   trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java
+Log:
+Minor fixes to DigestAuthentication.getChallenge() method.
+
+Modified: trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java	2005-12-24 09:54:24 UTC (rev 360)
++++ trunk/src/main/java/rtspproxy/filter/authentication/scheme/DigestAuthentication.java	2005-12-24 09:56:24 UTC (rev 361)
+@@ -77,7 +77,7 @@
+ 		long timestamp = Long.valueOf( sTimeStamp, 16 );
+ 		long current = System.currentTimeMillis();
+ 		long diff = current - timestamp;
+-		log.debug( &quot;Time diff: &quot; + ((float)diff / 1000) + &quot; sec&quot; );
++		log.debug( &quot;Time diff: &quot; + ((float) diff / 1000 ) + &quot; sec&quot; );
+ 		if ( diff &lt; 0 || diff &gt; NONCE_TIMEOUT * 1000 )
+ 			// Timeout excedeed
+ 			return null;
+@@ -88,7 +88,7 @@
+ 		credentials.setRealm( realm );
+ 		credentials.setNonce( nonce );
+ 		credentials.setUri( uri );
+-		credentials.setMethod( ((RtspRequest) message).getVerbString() );
++		credentials.setMethod( ( (RtspRequest) message ).getVerbString() );
+ 		credentials.setCnonce( cnonce );
+ 		credentials.setNc( nc );
+ 
+@@ -99,9 +99,9 @@
+ 	{
+ 		StringBuilder challenge = new StringBuilder();
+ 		challenge.append( realm ).append( &quot;,&quot; );
+-		challenge.append( &quot;nonce=&quot; ).append( quote( newNonce() ) );
++		challenge.append( &quot;nonce=&quot; ).append( quote( newNonce() ) ).append( &quot;,&quot; );
+ 		challenge.append( &quot;qop=auth,&quot; );
+-		challenge.append( &quot;algorithm=MD5&quot; );
++		challenge.append( &quot;algorithm=&quot; ).append( quote(&quot;MD5&quot;) );
+ 		return challenge.toString();
+ 	}
+ 
+@@ -130,7 +130,7 @@
+ 
+ 	public boolean computeAuthentication( Credentials credentials, String storedPassword )
+ 	{
+-		if ( !(credentials instanceof DigestCredentials) )
++		if ( !( credentials instanceof DigestCredentials ) )
+ 			return false;
+ 
+ 		// response = KD ( H(A1), unq(nonce-value) &quot;:&quot; H(A2) )
+@@ -176,6 +176,7 @@
+ 	 */
+ 	private static class DigestCredentials extends Credentials
+ 	{
++
+ 		private String response;
+ 
+ 		private String realm;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000045.html">[Rtspproxy-devel] r360 - trunk/src/main/java/rtspproxy
+</A></li>
+	<LI>Next message: <A HREF="000047.html">[Rtspproxy-devel] r362 - trunk/src/main/java/rtspproxy/filter/authentication
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#46">[ date ]</a>
+              <a href="thread.html#46">[ thread ]</a>
+              <a href="subject.html#46">[ subject ]</a>
+              <a href="author.html#46">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

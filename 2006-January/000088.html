@@ -1,0 +1,853 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r404 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter jmx/mbeans proxy proxy/track transport/socket/nio transport/socket/nio/support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r404%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20filter%20jmx/mbeans%20proxy%20proxy/track%20transport/socket/nio%20transport/socket/nio/support&In-Reply-To=%3C200601250000.k0P00ppC006224%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000087.html">
+   <LINK REL="Next"  HREF="000089.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r404 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter jmx/mbeans proxy proxy/track transport/socket/nio transport/socket/nio/support</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r404%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20filter%20jmx/mbeans%20proxy%20proxy/track%20transport/socket/nio%20transport/socket/nio/support&In-Reply-To=%3C200601250000.k0P00ppC006224%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r404 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter jmx/mbeans proxy proxy/track transport/socket/nio transport/socket/nio/support">rbieniek at berlios.de
+       </A><BR>
+    <I>Wed Jan 25 01:00:51 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000087.html">[Rtspproxy-devel] r403 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support
+</A></li>
+        <LI>Next message: <A HREF="000089.html">[Rtspproxy-devel] r405 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: lib proxy rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#88">[ date ]</a>
+              <a href="thread.html#88">[ thread ]</a>
+              <a href="subject.html#88">[ subject ]</a>
+              <a href="author.html#88">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-25 01:00:25 +0100 (Wed, 25 Jan 2006)
+New Revision: 404
+
+Added:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/ConnectionlessSessionTracker.java
+Removed:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/tracking/
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacade.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerSide.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/SessionAwareDatagramAcceptor.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramAcceptorDelegate.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionFilterChain.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionImpl.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionManager.java
+Log:
+- SessionAwareDatagramAcceptor works up to the extend that it does
+  not handle timed-out session correctly. Session timeout is not 
+  implemented at all.
+- Removed RDT session tracking filters. Their purpose, namely 
+  spying on the RDT port numbers, is put back into the RTSP
+  transport modification when passing response from remote server
+  to client.
+- Fixed bug in the JMX instantiation of ProxySessions.
+- TODO: expose RDT / RTP tracks in JMX
+- TODO: couple RDT / RTP track lifetime to proxy session lifetime.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -28,6 +28,7 @@
+ 
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
++import org.apache.mina.common.IoAcceptor;
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+@@ -38,6 +39,7 @@
+ import rtspproxy.lib.Exceptions;
+ import rtspproxy.lib.NetworkInterface;
+ import rtspproxy.lib.Singleton;
++import rtspproxy.transport.socket.nio.ConnectionlessSessionTracker;
+ 
+ /**
+  * ProxyService is the base abstract class for all the &quot;Services&quot; that can be
+@@ -233,10 +235,18 @@
+ 	 *            the address of the remote host to connect to.
+ 	 * @return the newly created IoSession
+ 	 */
+-	public IoSession newSession( SocketAddress remoteAddress )
++	public synchronized IoSession newSession( SocketAddress remoteAddress )
+ 	{
+-		return Reactor.getRegistry().getAcceptor( this ).newSession( remoteAddress,
+-				socketAddress );
++		IoSession session = null;
++		IoAcceptor acceptor = Reactor.getRegistry().getAcceptor( this );
++		
++		if(acceptor instanceof ConnectionlessSessionTracker)
++			session = ((ConnectionlessSessionTracker)acceptor).getSession(socketAddress, remoteAddress);
++		
++		if(session == null) 
++		 session = acceptor.newSession( remoteAddress, socketAddress );
++		
++		return session;
+ 	}
+ 
+ 	/**
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -43,6 +43,7 @@
+ import rtspproxy.config.Parameter;
+ import rtspproxy.lib.Singleton;
+ import rtspproxy.transport.socket.nio.DatagramAcceptor;
++import rtspproxy.transport.socket.nio.SessionAwareDatagramAcceptor;
+ 
+ /**
+  * Custom implementation of the ServiceRegistry interface. Creates an acceptor
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -37,7 +37,6 @@
+ 		addAuthenticationFilter( chain );
+ 		addRewriteFilter( chain, Side.Client );
+ 		addAccountingFilter( chain, Side.Client );
+-		addRdtSessionTrackingFilter( chain, Side.Client );
+ 	}
+ 
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -29,15 +29,10 @@
+ import org.apache.mina.filter.codec.ProtocolEncoder;
+ 
+ import rtspproxy.ProxyServiceRegistry;
+-import rtspproxy.Reactor;
+-import rtspproxy.config.Config;
+ import rtspproxy.filter.accounting.AccountingFilter;
+ import rtspproxy.filter.authentication.AuthenticationFilter;
+ import rtspproxy.filter.ipaddress.IpAddressFilter;
+ import rtspproxy.filter.rewrite.UrlRewritingFilter;
+-import rtspproxy.filter.tracking.RdtSessionClientTrackingFilter;
+-import rtspproxy.filter.tracking.RdtSessionServerTrackingFilter;
+-import rtspproxy.filter.tracking.RdtSessionTrackingFilter;
+ import rtspproxy.lib.Side;
+ import rtspproxy.rtsp.RtspDecoder;
+ import rtspproxy.rtsp.RtspEncoder;
+@@ -73,12 +68,6 @@
+ 
+ 	public static final String rtspCodecNAME = &quot;rtspCodec&quot;;
+ 
+-	private static final RdtSessionClientTrackingFilter rdtClientTrackingFilter = 
+-		new RdtSessionClientTrackingFilter();
+-	
+-	private static final RdtSessionServerTrackingFilter rdtServerTrackingFilter = 
+-		new RdtSessionServerTrackingFilter();
+-	
+ 	/**
+ 	 * IP Address filter.
+ 	 * &lt;p&gt;
+@@ -187,14 +176,4 @@
+ 		}
+ 	}
+ 
+-	protected void addRdtSessionTrackingFilter( IoFilterChain chain, Side side )
+-	{
+-		RdtSessionTrackingFilter filter = null;
+-		if(side == Side.Client)
+-			filter = rdtClientTrackingFilter;
+-		else
+-			filter = rdtServerTrackingFilter;
+-		
+-		chain.addAfter(rtspCodecNAME, filter.getChainName(), filter);
+-	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -36,7 +36,6 @@
+ 		addRtspCodecFilter( chain );
+ 		addRewriteFilter( chain, Side.Server );
+ 		addAccountingFilter( chain, Side.Server );
+-		addRdtSessionTrackingFilter( chain, Side.Server);
+ 	}
+ 
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacade.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacade.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/jmx/mbeans/ProxySessionFacade.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -52,8 +52,14 @@
+ 		Hashtable&lt;String, String&gt; parts = new Hashtable&lt;String, String&gt;();
+ 		
+ 		parts.put(&quot;clientID&quot;, this.session.getClientSessionId());
+-		parts.put(&quot;serverID&quot;, this.session.getServerSessionId());
+ 		
++		String serverID = this.session.getServerSessionId();
++		int ind = serverID.indexOf(';');
++		
++		if(ind &gt; 0)
++			serverID = serverID.substring(0, ind);
++		parts.put(&quot;serverID&quot;, serverID);
++		
+ 		return ObjectName.getInstance(JmxAgent.PROXY_SESSION_DOMAIN, parts);
+ 	}
+ 	
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ProxyHandler.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -360,10 +360,8 @@
+ 		} else if ( transport.getTransportProtocol() == TransportProtocol.RDT ) {
+ 
+ 			// Create a new Track object
+-			/*
+ 			RdtTrack track = proxySession.addRdtTrack( (String) clientSession
+ 					.getAttribute( setupUrlATTR ) );
+-					*/
+ 			// Setting client and server info on the track
+ 			InetAddress serverAddress = null;
+ 			if ( transport.getSource() != null ) {
+@@ -377,7 +375,7 @@
+ 						.getAddress();
+ 			}
+ 			int[] serverPorts = transport.getServerPort();
+-			// track.setServerAddress( serverAddress, serverPorts[0] );
++			track.setServerAddress( serverAddress, serverPorts[0] );
+ 
+ 			InetAddress clientAddress = null;
+ 			try {
+@@ -389,7 +387,7 @@
+ 			}
+ 			int clientRdtPort = ((Integer) clientSession.getAttribute( clientRdtPortATTR ))
+ 					.intValue();
+-			// track.setClientAddress( clientAddress, clientRdtPort );
++			track.setClientAddress( clientAddress, clientRdtPort );
+ 
+ 			if ( transport.getLowerTransport() == RtspTransport.LowerTransport.TCP ) {
+ 				log.debug( &quot;Transport is TCP based.&quot; );
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerSide.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerSide.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerSide.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -20,7 +20,6 @@
+ import org.apache.mina.common.IoHandlerAdapter;
+ import org.apache.mina.common.IoSession;
+ 
+-import rtspproxy.filter.tracking.RdtSessionToken;
+ import rtspproxy.lib.Exceptions;
+ import rtspproxy.rtsp.RtspCode;
+ import rtspproxy.rtsp.RtspMessage;
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -105,7 +105,14 @@
+ 		this.clientAddress = clientAddress;
+ 		this.clientRdtPort = rdtPort;
+ 
+-		clientAddressMap.put( new InetSocketAddress( clientAddress, rdtPort ), this );
++		InetSocketAddress clientAddr = new InetSocketAddress( clientAddress, rdtPort );
++
++		/*
++		log.debug( &quot;Creating RDT server session to: &quot; + clientAddr );
++		rdtClientSession = RdtClientService.getInstance().newSession( clientAddr );
++		*/
++		
++		clientAddressMap.put( clientAddr , this );
+ 	}
+ 
+ 	/**
+@@ -121,7 +128,15 @@
+ 		this.serverAddress = serverAddress;
+ 		this.serverRdtPort = rdtPort;
+ 
+-		serverAddressMap.put( new InetSocketAddress( serverAddress, rdtPort ), this );
++		InetSocketAddress remoteAddress = new InetSocketAddress( serverAddress,
++				serverRdtPort );
++		
++		/*
++		log.debug( &quot;Creating RDT server session to: &quot; + remoteAddress );
++		rdtServerSession = RdtServerService.getInstance().newSession( remoteAddress );
++		*/
++		
++		serverAddressMap.put( remoteAddress, this );
+ 	}
+ 
+ 	public synchronized void close()
+@@ -129,6 +144,7 @@
+ 		serverAddressMap.remove( new InetSocketAddress( serverAddress, serverRdtPort ) );
+ 		clientAddressMap.remove( new InetSocketAddress( clientAddress, clientRdtPort ) );
+ 
++		
+ 		log.debug( &quot;Closed track &quot; + url );
+ 	}
+ }
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/ConnectionlessSessionTracker.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/ConnectionlessSessionTracker.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/ConnectionlessSessionTracker.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -0,0 +1,30 @@
++/*
++ *   @(#) $Id: DatagramAcceptor.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio;
++
++import java.net.SocketAddress;
++
++import org.apache.mina.common.IoSession;
++
++public interface ConnectionlessSessionTracker {
++    /** 
++     * @return null if no session is found 
++     */ 
++    IoSession getSession( SocketAddress localAddress, SocketAddress remoteAddress ); 
++}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/SessionAwareDatagramAcceptor.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/SessionAwareDatagramAcceptor.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/SessionAwareDatagramAcceptor.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -18,6 +18,9 @@
+  */
+ package rtspproxy.transport.socket.nio;
+ 
++import java.net.SocketAddress;
++
++import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.support.DelegatedIoAcceptor;
+ 
+ import rtspproxy.transport.socket.nio.support.SessionAwareDatagramAcceptorDelegate;
+@@ -26,11 +29,17 @@
+  * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
+  *
+  */
+-public class SessionAwareDatagramAcceptor extends DelegatedIoAcceptor {
++public class SessionAwareDatagramAcceptor extends DelegatedIoAcceptor implements ConnectionlessSessionTracker  {
++	
++	private SessionAwareDatagramAcceptorDelegate delegate = new SessionAwareDatagramAcceptorDelegate();
+ 	/**
+ 	 * create an instance
+ 	 */
+ 	public SessionAwareDatagramAcceptor() {
+-		init( new SessionAwareDatagramAcceptorDelegate() );
++		init( this.delegate );
+ 	}
++
++	public IoSession getSession(SocketAddress localAddress, SocketAddress remoteAddress) {
++		return this.delegate.getSession(localAddress, remoteAddress);
++	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramAcceptorDelegate.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramAcceptorDelegate.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramAcceptorDelegate.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -25,10 +25,15 @@
+ import org.apache.mina.common.DefaultIoFilterChainBuilder;
+ import org.apache.mina.common.IoAcceptor;
+ import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.common.IoFuture;
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
++import org.apache.mina.common.WriteFuture;
++import org.apache.mina.common.IoFilter.WriteRequest;
+ import org.apache.mina.common.support.BaseIoAcceptor;
++import org.apache.mina.transport.socket.nio.DatagramSession;
+ 
++import rtspproxy.transport.socket.nio.ConnectionlessSessionTracker;
+ import rtspproxy.transport.socket.nio.DatagramAcceptor;
+ 
+ /**
+@@ -36,12 +41,41 @@
+  * 
+  */
+ public class SessionAwareDatagramAcceptorDelegate extends BaseIoAcceptor implements
+-		IoAcceptor {
++		IoAcceptor, ConnectionlessSessionTracker {
+ 
++	
++	private static class HandlerInfo {
++		private DatagramAcceptor acceptor;
++		private SessionAwareDatagramHandler handler;
++		
++		private HandlerInfo(DatagramAcceptor acceptor, SessionAwareDatagramHandler handler) {
++			this.acceptor = acceptor;
++			this.handler = handler;
++		}
++	}
++
++	private class WriteCallback implements IoFuture.Callback {
++
++		private WriteFuture notify;
++		private DatagramSession session;
++		
++		private WriteCallback(WriteFuture notify, DatagramSession session) {
++			this.notify = notify;
++			this.session = session;
++		}
++		
++		public void operationComplete(IoFuture future) {
++			notify.setWritten(true);
++			session.close();
++		}
++
++	}
++
+ 	private DatagramAcceptor acceptor;
+ 	private HashMap&lt;SocketAddress, HandlerInfo&gt; acceptors = new HashMap&lt;SocketAddress, HandlerInfo&gt;();
+-	private StatefulDatagramSessionManager sessionManager = new StatefulDatagramSessionManager();
+-	
++	private StatefulDatagramSessionManager sessionManager;
++	private SessionAwareDatagramHandler sessionHandler;
++
+ 	/**
+ 	 * create an instance
+ 	 */
+@@ -50,11 +84,12 @@
+ 
+ 	public void bind(SocketAddress addr, IoHandler handler,
+ 			IoFilterChainBuilder chainBuilder) throws IOException {
+-		SessionAwareDatagramHandler sessionHandler = new SessionAwareDatagramHandler(addr, handler, chainBuilder,
++		this.sessionManager = new StatefulDatagramSessionManager(this);
++		this.sessionHandler = new SessionAwareDatagramHandler(addr, handler, chainBuilder,
+ 				sessionManager);
+ 		
+-		acceptor = new DatagramAcceptor();
+-		acceptor.bind(addr, sessionHandler, null);
++		this.acceptor = new DatagramAcceptor();
++		this.acceptor.bind(addr, sessionHandler, null);
+ 		synchronized (acceptors) {
+ 			acceptors.put(addr, new HandlerInfo(acceptor, sessionHandler));
+ 		}
+@@ -72,16 +107,11 @@
+ 		}
+ 	}
+ 
+-	private static class HandlerInfo {
+-		private DatagramAcceptor acceptor;
+-		private SessionAwareDatagramHandler handler;
+-		
+-		private HandlerInfo(DatagramAcceptor acceptor, SessionAwareDatagramHandler handler) {
+-			this.acceptor = acceptor;
+-			this.handler = handler;
+-		}
++
++	public IoSession getSession(SocketAddress localAddress, SocketAddress remoteAddress) {
++		return this.sessionManager.getSession(localAddress,remoteAddress);
+ 	}
+-
++	
+ 	@Override
+ 	public IoFilterChainBuilder getFilterChainBuilder() {
+ 		return this.sessionManager.getFilterChainBuilder();
+@@ -113,4 +143,29 @@
+ 			}
+ 		}
+ 	}
++	
++	/**
++	 * write a message to the underlying datagram acceptor
++	 */
++	void doWrite(StatefulDatagramSessionImpl session, WriteRequest req) throws Exception {
++		DatagramSession dSession = (DatagramSession)this.acceptor.newSession(session.getRemoteAddress(), session.getLocalAddress());
++		WriteFuture future;
++		
++		dSession.setReuseAddress(true);
++		dSession.setWriteTimeout(session.getWriteTimeout());
++		future = dSession.write(req.getMessage());
++		
++		/*
++		if(!future.isWritten()) {
++			future.setCallback(new WriteCallback(req.getFuture(), dSession));
++			if(session.getWriteTimeout() &gt; 0)
++				future.join(session.getWriteTimeout());
++			else
++				future.join();
++		} else {
++			req.getFuture().setWritten(true);
++			dSession.close();
++		}
++		*/
++	}	
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramHandler.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/SessionAwareDatagramHandler.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -50,25 +50,19 @@
+ 	public void exceptionCaught(IoSession session, Throwable t) throws Exception {
+ 		StatefulDatagramSessionImpl relay = this.sessionManager.getSession(localAddress, session.getRemoteAddress(),
+ 				this.wrapped, this.chainBuilder);
+-		
+-		relay.setDownsideSession(session);
+-		this.wrapped.exceptionCaught(relay, t);
++
++		relay.fireExceptionCaught(t);
++		// this.wrapped.exceptionCaught(relay, t);
+ 	}
+ 
+ 	public void messageReceived(IoSession session, Object message) throws Exception {
+ 		StatefulDatagramSessionImpl relay = this.sessionManager.getSession(localAddress, session.getRemoteAddress(),
+ 				this.wrapped, this.chainBuilder);
+ 		
+-		relay.setDownsideSession(session);
+-		this.wrapped.messageReceived(relay, message);
++		relay.fireMessageReceived(message);
++		// this.wrapped.messageReceived(relay, message);
+ 	}
+ 
+-	public void messageSent(IoSession session, Object message) throws Exception {
+-		StatefulDatagramSessionImpl relay = (StatefulDatagramSessionImpl)session;
+-		
+-		relay.getDownsideSession().write(message);
+-	}
+-
+ 	IoFilterChainBuilder getFilterChainBuilder() {
+ 		return this.chainBuilder;
+ 	}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionFilterChain.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionFilterChain.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionFilterChain.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -26,17 +26,23 @@
+ 
+ class StatefulDatagramSessionFilterChain extends AbstractIoFilterChain
+ 		implements IoFilterChain {
+-
+-	StatefulDatagramSessionFilterChain(IoSession session) {
++	
++	StatefulDatagramSessionFilterChain(StatefulDatagramSessionImpl session) {
+ 		super(session);
+ 	}
+ 
+ 	@Override
+ 	protected void doWrite(IoSession session, WriteRequest writeReq) throws Exception {
++		StatefulDatagramSessionImpl ssession = (StatefulDatagramSessionImpl)session;
++		
++		ssession.getDelegate().doWrite(ssession, writeReq);
+ 	}
+ 
+ 	@Override
+ 	protected void doClose(IoSession session, CloseFuture closeFuture) throws Exception {
++		StatefulDatagramSessionImpl ssession = (StatefulDatagramSessionImpl)session;
++		
++		ssession.doClose(closeFuture);
+ 	}
+ 
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionImpl.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionImpl.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionImpl.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -20,24 +20,44 @@
+ 
+ import java.net.SocketAddress;
+ 
++import org.apache.mina.common.ByteBuffer;
++import org.apache.mina.common.ByteBufferProxy;
++import org.apache.mina.common.CloseFuture;
+ import org.apache.mina.common.IoFilterChain;
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.IoSessionManager;
+ import org.apache.mina.common.TransportType;
++import org.apache.mina.common.IoFilter.WriteRequest;
+ import org.apache.mina.common.support.BaseIoSession;
++import org.apache.mina.util.ByteBufferUtil;
+ 
+ import rtspproxy.transport.socket.nio.StatefulDatagramSession;
+ 
+ class StatefulDatagramSessionImpl extends BaseIoSession implements
+ 		StatefulDatagramSession {
++	
++	private static class DecoupledByteBuffer extends ByteBufferProxy {
+ 
++		protected DecoupledByteBuffer(ByteBuffer buffer) {
++			super(buffer);
++		}
++
++		@Override
++		public void acquire() {
++		}
++
++		@Override
++		public void release() {
++		}
++	}
++
+ 	private SocketAddress localAddr;
+ 	private SocketAddress remoteAddr;
+ 	private IoHandler handler;
+ 	private StatefulDatagramSessionManager sessionManager;
+-	private IoSession downsideSession;
+ 	private StatefulDatagramSessionFilterChain filterChain;
++	private SessionAwareDatagramAcceptorDelegate delegate;
+ 	
+ 	/**
+ 	 * only constructable from within this package
+@@ -48,6 +68,7 @@
+ 		this.localAddr = localAddr;
+ 		this.remoteAddr = remoteAddr;
+ 		this.sessionManager = sessionManager;
++		this.delegate = sessionManager.getDelegate();
+ 		
+ 		this.filterChain = new StatefulDatagramSessionFilterChain(this);
+ 	}
+@@ -71,20 +92,19 @@
+ 	}
+ 
+ 	public TransportType getTransportType() {
+-		// TODO Auto-generated method stub
+-		return null;
++		return TransportType.DATAGRAM;
+ 	}
+ 
+ 	public SocketAddress getRemoteAddress() {
+-		return this.localAddr;
++		return this.remoteAddr;
+ 	}
+ 
+ 	public SocketAddress getLocalAddress() {
+-		return this.remoteAddr;
++		return this.localAddr;
+ 	}
+ 
+ 	public int getScheduledWriteRequests() {
+-		return this.getDownsideSession().getScheduledWriteRequests();
++		return 0;
+ 	}
+ 
+ 	public void setSessionTimeout(int timeout) {
+@@ -97,12 +117,35 @@
+ 		return 0;
+ 	}
+ 
+-	IoSession getDownsideSession() {
+-		return downsideSession;
++	SessionAwareDatagramAcceptorDelegate getDelegate() {
++		return delegate;
+ 	}
+ 
+-	void setDownsideSession(IoSession downsideSession) {
+-		this.downsideSession = downsideSession;
++	public void doClose(CloseFuture closeFuture) {
++		this.sessionManager.closeSession(this, handler);
++		
++		closeFuture.setClosed();
+ 	}
+ 
++	void fireExceptionCaught(Throwable t) throws Exception {
++		this.filterChain.exceptionCaught(this, t);
++	}
++
++	void fireMessageReceived(Object message) {
++		ByteBufferProxy proxy = new DecoupledByteBuffer((ByteBuffer)message);
++		
++		this.filterChain.messageReceived(this, proxy);
++	}
++
++	@Override
++	protected void write0(WriteRequest wrReq) {
++		this.filterChain.filterWrite(this, wrReq);
++	}
++
++	@Override
++	protected void close0(CloseFuture arg0) {
++		this.sessionManager.closeSession(this, this.handler);
++		
++		super.close0(arg0);
++	}
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionManager.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionManager.java	2006-01-23 12:54:34 UTC (rev 403)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/StatefulDatagramSessionManager.java	2006-01-25 00:00:25 UTC (rev 404)
+@@ -32,8 +32,10 @@
+ 		implements IoSessionManager {
+ 
+ 	private HashMap&lt;SocketAddress, LocalSessionsHolder&gt; sessions = new HashMap&lt;SocketAddress, LocalSessionsHolder&gt;();
++	private SessionAwareDatagramAcceptorDelegate delegate;
+ 	
+-	StatefulDatagramSessionManager() {
++	StatefulDatagramSessionManager(SessionAwareDatagramAcceptorDelegate delegate) {
++		this.delegate = delegate;
+ 	}
+ 
+ 	/**
+@@ -58,6 +60,28 @@
+ 	}
+ 
+ 	/**
++	 * obtain a session for a (local, remote) address pair.
++	 * @param localAddr the local address
++	 * @param remoteAddr the remote address
++	 * @return the session or null no such session exists.
++	 * @exception Exception session creation or initialization failed
++	 */
++	StatefulDatagramSessionImpl getSession(SocketAddress localAddr, SocketAddress remoteAddr) {
++		StatefulDatagramSessionImpl session = null;
++		
++		synchronized (sessions) {
++			LocalSessionsHolder holder = this.sessions.get(localAddr);
++			
++			if(holder != null)
++				session = holder.getSession(remoteAddr);
++		}
++		
++		return session;
++	}
++
++	
++	
++	/**
+ 	 * obtain a new session for a (local, remote) address pair.
+ 	 * @param localAddr the local address
+ 	 * @param remoteAddr the remote address
+@@ -87,6 +111,19 @@
+ 		}
+ 	}
+ 
++	SessionAwareDatagramAcceptorDelegate getDelegate() {
++		return delegate;
++	}
++
++	public void closeSession(StatefulDatagramSessionImpl impl, IoHandler handler) {
++		synchronized (this.sessions) {
++			LocalSessionsHolder holder = this.sessions.get(impl.getLocalAddress());
++			
++			if(holder != null)
++				holder.closeSession(impl, handler);
++		}
++	}
++
+ 	private class LocalSessionsHolder {
+ 		
+ 		private SocketAddress localAddr;
+@@ -122,8 +159,25 @@
+ 					}
+ 				}
+ 			}
++			this.sessions.clear();
+ 		}
+ 
++		public void closeSession(StatefulDatagramSessionImpl impl, IoHandler handler) {
++			if(this.sessions.containsKey(impl.getRemoteAddress())) {
++				try {
++					handler.sessionClosed(impl);
++				} catch(Exception e) {
++					try {
++						handler.exceptionCaught(impl, e);
++					} catch(Throwable t) {
++						getExceptionMonitor().exceptionCaught(t);
++					}
++				}
++				this.sessions.remove(impl.getRemoteAddress());
++			} else 
++				throw new IllegalStateException(&quot;session not managed&quot;);
++		}
++
+ 		private StatefulDatagramSessionImpl getSession(SocketAddress remoteAddr, IoHandler handler, 
+ 				IoFilterChainBuilder chainBuilder) throws Exception {
+ 			StatefulDatagramSessionImpl session = null;
+@@ -145,6 +199,17 @@
+ 			return session;
+ 		}
+ 
++		private StatefulDatagramSessionImpl getSession(SocketAddress remoteAddr) {
++			StatefulDatagramSessionImpl session = null;
++			
++			if(remoteAddr != null) {
++				session = this.sessions.get(remoteAddr);
++			}
++			
++			return session;
++		}
++
++
+ 		private StatefulDatagramSessionImpl createSession(SocketAddress remoteAddr, IoHandler handler, 
+ 				IoFilterChainBuilder chainBuilder) throws Exception {
+ 			StatefulDatagramSessionImpl session = new StatefulDatagramSessionImpl(handler, this.localAddr, remoteAddr,
+@@ -161,4 +226,5 @@
+ 			return session;
+ 		}
+ 	}
++
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000087.html">[Rtspproxy-devel] r403 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio: . support
+</A></li>
+	<LI>Next message: <A HREF="000089.html">[Rtspproxy-devel] r405 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: lib proxy rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#88">[ date ]</a>
+              <a href="thread.html#88">[ thread ]</a>
+              <a href="subject.html#88">[ subject ]</a>
+              <a href="author.html#88">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

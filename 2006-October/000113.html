@@ -1,0 +1,647 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r431 - in	trunk/RTSPProxy-Core/src/main/java/rtspproxy: . config filter
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r431%20-%20in%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20config%20filter&In-Reply-To=%3C200610121044.k9CAi1G6024429%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000112.html">
+   <LINK REL="Next"  HREF="000114.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r431 - in	trunk/RTSPProxy-Core/src/main/java/rtspproxy: . config filter</H1>
+    <B>merlimat at mail.berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r431%20-%20in%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20config%20filter&In-Reply-To=%3C200610121044.k9CAi1G6024429%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r431 - in	trunk/RTSPProxy-Core/src/main/java/rtspproxy: . config filter">merlimat at mail.berlios.de
+       </A><BR>
+    <I>Thu Oct 12 12:44:01 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000112.html">[Rtspproxy-devel] r429 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+        <LI>Next message: <A HREF="000114.html">[Rtspproxy-devel] r432 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#113">[ date ]</a>
+              <a href="thread.html#113">[ thread ]</a>
+              <a href="subject.html#113">[ subject ]</a>
+              <a href="author.html#113">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-10-12 12:43:55 +0200 (Thu, 12 Oct 2006)
+New Revision: 431
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java
+Log:
+Changed the ThreadPool handling code.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -31,7 +31,6 @@
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.filter.ThreadPoolFilter;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
+@@ -314,24 +313,5 @@
+             throw new RuntimeException( e );
+         }
+     }
+-
+-    /**
+-     * service may provide their own ThreadPoolFilter instances.
+-     * 
+-     * @return a ThreadPoolFilter instance or null if the service wants to use
+-     *         the shared instance.
+-     * 
+-     */
+-    public ThreadPoolFilter getThreadPoolFilter()
+-    {
+-        return null;
+-    }
+-
+-    /**
+-     * flag if the service wants to use a ThreadPoolFilter at all
+-     */
+-    public boolean wantThreadPoolFilter()
+-    {
+-        return true;
+-    }
++    
+ }
+
+
+Property changes on: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyService.java
+___________________________________________________________________
+Name: svn:keywords
+   - Id URL Rev
+   + LastChangedRevision HeadURL Id
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -27,15 +27,16 @@
+ import java.util.Set;
+ import java.util.concurrent.ConcurrentHashMap;
+ import java.util.concurrent.ConcurrentMap;
++import java.util.concurrent.Executor;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
+ 
+ import org.apache.mina.common.IoAcceptor;
+-import org.apache.mina.common.IoFilter;
+-import org.apache.mina.common.IoFilterChain;
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+-import org.apache.mina.filter.ThreadPoolFilter;
++import org.apache.mina.filter.executor.ExecutorExecutor;
+ import org.apache.mina.transport.socket.nio.DatagramAcceptor;
+ import org.apache.mina.transport.socket.nio.DatagramAcceptorConfig;
+ import org.apache.mina.transport.socket.nio.DatagramSessionConfig;
+@@ -56,41 +57,37 @@
+  */
+ public final class ProxyServiceRegistry extends Singleton implements Observer
+ {
+-
+-    private static Logger log = LoggerFactory.getLogger( ProxyServiceRegistry.class );
+-
+-    public static final String threadPoolFilterNAME = &quot;threadPoolFilter&quot;;
+-
+-    /** Thread pool instance that will be added to all acceptors. */
+-    private final ThreadPoolFilter threadPoolFilter = new ThreadPoolFilter(
+-            &quot;sharedThreadPoolFilter&quot; );
+-
++    
++    private static Logger log = LoggerFactory
++            .getLogger( ProxyServiceRegistry.class );
++    
+     /** All the services, mapped by name. */
+     private final ConcurrentMap&lt;String, ProxyService&gt; services = new ConcurrentHashMap&lt;String, ProxyService&gt;();
+-
++    
+     /** Map a ProxyService to all its bound addresses. */
+     private final ConcurrentMap&lt;ProxyService, Set&lt;SocketAddress&gt;&gt; addresses = new ConcurrentHashMap&lt;ProxyService, Set&lt;SocketAddress&gt;&gt;();
+-
++    
+     /** Map a ProxyService to its own IoAcceptor. */
+     private final ConcurrentMap&lt;ProxyService, IoAcceptor&gt; acceptors = new ConcurrentHashMap&lt;ProxyService, IoAcceptor&gt;();
+-
++    
+     private SocketAcceptor socketAcceptor = null;
+-
++    
+     private DatagramAcceptor datagramAcceptor = null;
+-
++    
++    private ExecutorService executor = Executors.newCachedThreadPool();
++    
+     /**
+      * Construct a new ProxyServiceRegistry. This class is a Singleton, so there
+      * can be only one instance.
+      */
+     public ProxyServiceRegistry()
+     {
+-        int poolMaxSize = Config.threadPoolSize.getValue();
+-        threadPoolFilter.setMaximumPoolSize( poolMaxSize );
+-
++        /// int poolMaxSize = Config.threadPoolSize.getValue();
++        
+         // Subscribe to thread pool size changes notification
+         Config.threadPoolSize.addObserver( this );
+     }
+-
++    
+     /**
+      * Bind a Service to a local address and specify the IoHandler that will
+      * manage ingoing and outgoing messages.
+@@ -103,12 +100,12 @@
+      *            the local address to bind on
+      * @throws IOException
+      */
+-    public void bind( ProxyService service, IoHandler ioHandler, InetSocketAddress address )
+-            throws IOException
++    public void bind( ProxyService service, IoHandler ioHandler,
++            InetSocketAddress address ) throws IOException
+     {
+         bind( service, ioHandler, address, null );
+     }
+-
++    
+     /**
+      * Bind a Service to a local address and specify the IoHandler that will
+      * manage ingoing and outgoing messages.
+@@ -132,24 +129,22 @@
+             throws IOException
+     {
+         IoAcceptor acceptor = newAcceptor( service );
+-
+-        IoFilterChainBuilder builder = new IoFilterChainBuilderWrapper( service,
+-                filterChainBuilder );
+-        acceptor.setFilterChainBuilder( builder );
++        
++        acceptor.setFilterChainBuilder( filterChainBuilder );
+         acceptor.bind( address, ioHandler );
+-
++        
+         services.put( service.getName(), service );
+-
++        
+         if ( addresses.get( service ) == null )
+             addresses.put( service, new HashSet&lt;SocketAddress&gt;() );
+         addresses.get( service ).add( address );
+     }
+-
++    
+     public void unbind( ProxyService service ) throws Exception
+     {
+         unbind( service, true );
+     }
+-
++    
+     /**
+      * Unbind the service from all of its bound addresses.
+      * 
+@@ -161,35 +156,40 @@
+             throws Exception
+     {
+         IoAcceptor acceptor = acceptors.get( service );
+-
+-        for ( SocketAddress address : addresses.get( service ) ) {
+-            try {
++        
++        for ( SocketAddress address : addresses.get( service ) )
++        {
++            try
++            {
+                 // Disconnect all clients
+                 Set sessions = acceptor.getManagedSessions( address );
+-                log.debug( &quot;{} has {} connected clients.&quot;, service.getName(), sessions
+-                        .size() );
+-                for ( Object obj : sessions ) {
++                log.debug( &quot;{} has {} connected clients.&quot;, service.getName(),
++                        sessions.size() );
++                for ( Object obj : sessions )
++                {
+                     IoSession session = (IoSession) obj;
+                     session.close();
+                 }
+-
++                
+                 acceptor.unbind( address );
+-            } catch ( Exception e ) {
++            } catch ( Exception e )
++            {
+                 // log.debug( &quot;Error unbinding {}&quot;, service.getName() );
+                 // Exceptions.logStackTrace( e );
+                 // ignore
+             }
+         }
+-
+-        if ( stopService &amp;&amp; service.isRunning() ) {
++        
++        if ( stopService &amp;&amp; service.isRunning() )
++        {
+             service.stop();
+         }
+-
++        
+         services.remove( service.getName() );
+         acceptors.remove( service );
+         addresses.remove( service );
+     }
+-
++    
+     /**
+      * Unbind all the services registered in the ProxyServiceRegistry, from all
+      * of they bound addresses.
+@@ -198,11 +198,12 @@
+      */
+     public synchronized void unbindAll() throws Exception
+     {
+-        for ( ProxyService service : services.values() ) {
++        for ( ProxyService service : services.values() )
++        {
+             unbind( service );
+         }
+     }
+-
++    
+     /**
+      * @return a Set containing all the registered services.
+      */
+@@ -210,7 +211,7 @@
+     {
+         return new HashSet&lt;ProxyService&gt;( services.values() );
+     }
+-
++    
+     /**
+      * Return the instance of a ProxyService.
+      * 
+@@ -222,7 +223,7 @@
+     {
+         return services.get( name );
+     }
+-
++    
+     /**
+      * Returns a reference to the IoAcceptor used by the specified ProxyService.
+      * 
+@@ -236,10 +237,10 @@
+         ProxyService service = services.get( serviceName );
+         if ( service == null )
+             return null;
+-
++        
+         return acceptors.get( service );
+     }
+-
++    
+     /**
+      * Returns a reference to the IoAcceptor used by the specified ProxyService.
+      * 
+@@ -251,7 +252,7 @@
+     {
+         return acceptors.get( service );
+     }
+-
++    
+     /**
+      * Gets a new IoAcceptor suitable for the specified ProxyService
+      * 
+@@ -265,21 +266,27 @@
+         IoAcceptor acceptor = acceptors.get( service );
+         if ( acceptor != null )
+             return acceptor;
+-
++        
+         // Create a new one
+         TransportType transportType = service.getTransportType();
+-        if ( transportType == TransportType.SOCKET ) {
+-            if ( socketAcceptor == null ) {
+-                socketAcceptor = new SocketAcceptor();
++        if ( transportType == TransportType.SOCKET )
++        {
++            if ( socketAcceptor == null )
++            {
++                socketAcceptor = new SocketAcceptor( 1, new ExecutorExecutor(
++                        executor ) );
+                 SocketAcceptorConfig config = (SocketAcceptorConfig) socketAcceptor
+                         .getDefaultConfig();
+                 config.setReuseAddress( true );
+             }
+             acceptor = socketAcceptor;
+-
+-        } else if ( transportType == TransportType.DATAGRAM ) {
+-            if ( datagramAcceptor == null ) {
+-                datagramAcceptor = new DatagramAcceptor(); // datagramAcceptor;
++            
++        } else if ( transportType == TransportType.DATAGRAM )
++        {
++            if ( datagramAcceptor == null )
++            {
++                datagramAcceptor = new DatagramAcceptor( 
++                        new ExecutorExecutor( executor ) ); 
+                 DatagramAcceptorConfig config = (DatagramAcceptorConfig) datagramAcceptor
+                         .getDefaultConfig();
+                 DatagramSessionConfig sessionConfig = (DatagramSessionConfig) config
+@@ -287,17 +294,23 @@
+                 sessionConfig.setReuseAddress( true );
+             }
+             acceptor = datagramAcceptor;
+-
+-        } else {
++            
++        } else
++        {
+             log.debug( &quot;Unrecognized transport type: {}&quot;, transportType );
+             return null;
+         }
+-
++        
+         // Save the acceptor
+         acceptors.put( service, acceptor );
+         return acceptor;
+     }
+-
++    
++    public Executor getExecutor()
++    {
++        return executor;
++    }
++    
+     /**
+      * Gets notification of changed parameters.
+      * 
+@@ -307,73 +320,25 @@
+     {
+         if ( !(o instanceof Parameter) )
+             throw new IllegalArgumentException( &quot;Only observe parameters&quot; );
+-
+-        if ( o == Config.threadPoolSize ) {
++        
++        if ( o == Config.threadPoolSize )
++        {
+             // Update the thread pool size
+-            threadPoolFilter.setMaximumPoolSize( Config.threadPoolSize.getValue() );
+-            log.info( &quot;Changed ThreadPool size. New max size: {}&quot;, threadPoolFilter
+-                    .getMaximumPoolSize() );
++            // XXX: Refactor this: the thread pool should have no fixed upper
++            //      limit
++            // executor.setMaximumPoolSize( Config.threadPoolSize.getValue() );
++            // log.info( &quot;Changed ThreadPool size. New max size: {}&quot;,
++            //        executor.getMaximumPoolSize() );
+         }
+     }
+-
++    
+     /**
+-     * @param service
+-     * @param service
+-     * @return the shared thread pool filter instance
+-     */
+-    public IoFilter getThreadPoolFilterInstance( ProxyService service )
+-    {
+-        ThreadPoolFilter filter = service.getThreadPoolFilter();
+-
+-        if ( filter == null )
+-            filter = threadPoolFilter;
+-        return filter;
+-    }
+-
+-    /**
+      * @return a reference to the (unique) ProxyServiceRegistry instance
+      */
+     public static ProxyServiceRegistry getInstance()
+     {
+-        return (ProxyServiceRegistry) Singleton.getInstance( ProxyServiceRegistry.class );
++        return (ProxyServiceRegistry) Singleton
++                .getInstance( ProxyServiceRegistry.class );
+     }
+-
+-    /**
+-     * Wrapper class for the IoFilterChainBuilder that always add the thread
+-     * pool filter as the filter in the chain.
+-     * &lt;p&gt;
+-     * The thread pool filter will be shared by all the services and acceptors.
+-     */
+-    protected static class IoFilterChainBuilderWrapper implements IoFilterChainBuilder
+-    {
+-
+-        private final ProxyService service;
+-
+-        private final IoFilterChainBuilder originalBuilder;
+-
+-        public IoFilterChainBuilderWrapper( ProxyService service,
+-                IoFilterChainBuilder originalBuilder )
+-        {
+-            this.service = service;
+-            this.originalBuilder = originalBuilder;
+-        }
+-
+-        /*
+-         * (non-Javadoc)
+-         * 
+-         * @see org.apache.mina.common.IoFilterChainBuilder#buildFilterChain(org.apache.mina.common.IoFilterChain)
+-         */
+-        public void buildFilterChain( IoFilterChain chain ) throws Exception
+-        {
+-            chain.getSession().setAttribute( ProxyService.SERVICE, service );
+-
+-            if ( service.wantThreadPoolFilter() ) {
+-                IoFilter threadPoolFilter = ProxyServiceRegistry.getInstance()
+-                        .getThreadPoolFilterInstance( service );
+-                chain.addFirst( threadPoolFilterNAME, threadPoolFilter );
+-            }
+-            originalBuilder.buildFilterChain( chain );
+-        }
+-    }
+-
++    
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/config/Config.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -244,12 +244,6 @@
+             false, // mutable
+             &quot;Enable keep-alive on RTSP connections to remote servers.&quot; );
+ 
+-    public static final BooleanParameter proxyRtspAllowBrokenHeaders = new BooleanParameter(
+-            &quot;proxy.transport.hacks.rtspAllowBrokenHeaders&quot;, // name
+-            false, // default value
+-            false, // mutable
+-            &quot;Allow certain work-arounds for clients generating non-conformant RTSP protocol traffic.&quot; );
+-
+     public static final BooleanParameter proxyRtspOfferSsrcToServer = new BooleanParameter(
+             &quot;proxy.transport.hacks.offerRemoteSsrc&quot;, // name
+             false, // default value
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspClientFilters.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -30,14 +30,14 @@
+ public class RtspClientFilters extends RtspFilters
+ {
+ 
+-	public void buildFilterChain( IoFilterChain chain ) throws Exception
+-	{
+-		addIpAddressFilter( chain, Side.Client );
+-		addRtspCodecFilter( chain );
+-		addAuthenticationFilter( chain );
+-		addRewriteFilter( chain, Side.Client );
+-		addAccountingFilter( chain );
+-		addControlFilter( chain );
+-	}
++    public void buildFilterChain( IoFilterChain chain ) throws Exception
++    {
++        addIpAddressFilter( chain, Side.Client );
++        addRtspCodecFilter( chain );
++        addAuthenticationFilter( chain );
++        addRewriteFilter( chain, Side.Client );
++        addAccountingFilter( chain );
++        addControlFilter( chain );
++    }
+ 
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspFilters.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -21,19 +21,14 @@
+ import org.apache.mina.common.IoFilter;
+ import org.apache.mina.common.IoFilterChain;
+ import org.apache.mina.common.IoFilterChainBuilder;
+-import org.apache.mina.filter.codec.ProtocolCodecFactory;
+ import org.apache.mina.filter.codec.ProtocolCodecFilter;
+-import org.apache.mina.filter.codec.ProtocolDecoder;
+-import org.apache.mina.filter.codec.ProtocolEncoder;
+ 
+-import rtspproxy.ProxyServiceRegistry;
+ import rtspproxy.filter.accounting.AccountingFilter;
+ import rtspproxy.filter.authentication.AuthenticationFilter;
+ import rtspproxy.filter.ipaddress.IpAddressFilter;
+ import rtspproxy.filter.rewrite.UrlRewritingFilter;
+ import rtspproxy.lib.Side;
+-import rtspproxy.rtsp.RtspDecoder;
+-import rtspproxy.rtsp.RtspEncoder;
++import rtspproxy.rtsp.RtspCodecFactory;
+ 
+ /**
+  * Base class for filter chains based on configuration settings.
+@@ -43,27 +38,9 @@
+ public abstract class RtspFilters implements IoFilterChainBuilder
+ {
+ 
+-    private static ProtocolCodecFactory codecFactory = new ProtocolCodecFactory()
+-    {
++    private static final IoFilter codecFilter = new ProtocolCodecFilter( RtspCodecFactory
++            .getInstance() );
+ 
+-        // Decoders can be shared
+-        private final ProtocolEncoder rtspEncoder = new RtspEncoder();
+-
+-        private final ProtocolDecoder rtspDecoder = new RtspDecoder();
+-
+-        public ProtocolEncoder getEncoder()
+-        {
+-            return rtspEncoder;
+-        }
+-
+-        public ProtocolDecoder getDecoder()
+-        {
+-            return rtspDecoder;
+-        }
+-    };
+-
+-    private static final IoFilter codecFilter = new ProtocolCodecFilter( codecFactory );
+-
+     private static final String rtspCodecNAME = &quot;rtspCodec&quot;;
+ 
+     /**
+@@ -84,8 +61,7 @@
+         if ( filter == null || !filter.isRunning() )
+             return;
+ 
+-        chain.addAfter( ProxyServiceRegistry.threadPoolFilterNAME, filter.getChainName(),
+-                filter );
++        chain.addFirst( filter.getChainName(), filter );
+     }
+ 
+     /**
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java	2006-10-11 18:18:22 UTC (rev 430)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/RtspServerFilters.java	2006-10-12 10:43:55 UTC (rev 431)
+@@ -30,13 +30,13 @@
+ public class RtspServerFilters extends RtspFilters
+ {
+ 
+-	public void buildFilterChain( IoFilterChain chain ) throws Exception
+-	{
+-		addIpAddressFilter( chain, Side.Server );
+-		addRtspCodecFilter( chain );
+-		addRewriteFilter( chain, Side.Server );
+-		addAccountingFilter( chain );
+-		addControlFilter ( chain );
+-	}
++    public void buildFilterChain( IoFilterChain chain ) throws Exception
++    {
++        addIpAddressFilter( chain, Side.Server );
++        addRtspCodecFilter( chain );
++        addRewriteFilter( chain, Side.Server );
++        addAccountingFilter( chain );
++        addControlFilter( chain );
++    }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000112.html">[Rtspproxy-devel] r429 - trunk/RTSPProxy-App/src/resources/conf
+</A></li>
+	<LI>Next message: <A HREF="000114.html">[Rtspproxy-devel] r432 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#113">[ date ]</a>
+              <a href="thread.html#113">[ thread ]</a>
+              <a href="subject.html#113">[ subject ]</a>
+              <a href="author.html#113">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

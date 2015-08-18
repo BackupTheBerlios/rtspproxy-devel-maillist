@@ -1,0 +1,1282 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r384 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . proxy rdt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r384%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20proxy%20rdt&In-Reply-To=%3C200601092203.k09M3cuQ029419%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000067.html">
+   <LINK REL="Next"  HREF="000069.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r384 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . proxy rdt</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r384%20-%20in%20trunk/RTSPProxy-Core/src/main/java/rtspproxy%3A%20.%20proxy%20rdt&In-Reply-To=%3C200601092203.k09M3cuQ029419%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r384 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . proxy rdt">rbieniek at berlios.de
+       </A><BR>
+    <I>Mon Jan  9 23:03:38 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000067.html">[Rtspproxy-devel] r383 - in trunk: RTSPProxy-App/src/resources/conf RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/rtsp RTSPProxy-Core/src/test/java/rtspproxy/rtsp
+</A></li>
+        <LI>Next message: <A HREF="000069.html">[Rtspproxy-devel] r385 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#68">[ date ]</a>
+              <a href="thread.html#68">[ thread ]</a>
+              <a href="subject.html#68">[ subject ]</a>
+              <a href="author.html#68">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-09 23:03:33 +0100 (Mon, 09 Jan 2006)
+New Revision: 384
+
+Added:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtAckPacket.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtControlPacket.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtDataPacket.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtLatencyReportPacket.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacket.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtRttRequestPacket.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtRttResponsePacket.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtStreamEndPacket.java
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ClientRdtPacketHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRdtPacketHandler.java
+Log:
+- started RDT packet assembly / disassembly package for use with RDT transport
+support.
+-- RDT packet (dis)assembly needs some unit tests
+- RDT transport does not seem to work. I think the RDTTrack logic is broken.
+
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ClientRdtPacketHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ClientRdtPacketHandler.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ClientRdtPacketHandler.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -29,6 +29,8 @@
+ import rtspproxy.lib.Exceptions;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.proxy.track.Track;
++import rtspproxy.rdt.RdtPacket;
++import rtspproxy.rdt.RdtPacketDecoder;
+ 
+ /**
+  * Handles RDT packets from client and forward them to server. The RTSP session
+@@ -52,6 +54,14 @@
+ 		// RtcpPacket packet = new RtcpPacket( (ByteBuffer) buffer );
+ 		log.debug( &quot;Received RDT packet from client&quot; );
+ 
++		ByteBuffer receivedBuffer = (ByteBuffer) buffer;
++		byte[] bytes = new byte[receivedBuffer.limit()];
++		receivedBuffer.get( bytes );
++		
++		RdtPacket decPacket = RdtPacketDecoder.decode(bytes, 0, 0);
++		
++		log.debug(&quot;client received packet: &quot; + decPacket);
++
+ 		RdtTrack track = (RdtTrack) Track.getByClientAddress( (InetSocketAddress) session.getRemoteAddress() );
+ 
+ 		if ( track == null ) {
+@@ -63,9 +73,6 @@
+ 			return;
+ 		}
+ 
+-		ByteBuffer receivedBuffer = (ByteBuffer) buffer;
+-		byte[] bytes = new byte[receivedBuffer.limit()];
+-		receivedBuffer.get( bytes );
+ 		ByteBuffer rdtPacket = ByteBuffer.wrap( bytes );
+ 		track.forwardRdtToServer( rdtPacket );
+ 	}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRdtPacketHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRdtPacketHandler.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRdtPacketHandler.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -29,6 +29,8 @@
+ import rtspproxy.lib.Exceptions;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.proxy.track.Track;
++import rtspproxy.rdt.RdtPacket;
++import rtspproxy.rdt.RdtPacketDecoder;
+ 
+ /**
+  * Handles RDT packets from server and forward them to client. The RTSP 
+@@ -52,6 +54,14 @@
+ 		// RtcpPacket packet = new RtcpPacket( (ByteBuffer) buffer );
+ 		log.debug( &quot;Received RDT packet from server&quot; );
+ 
++		ByteBuffer receivedBuffer = (ByteBuffer) buffer;
++		byte[] bytes = new byte[receivedBuffer.limit()];
++		receivedBuffer.get( bytes );
++		
++		RdtPacket decPacket = RdtPacketDecoder.decode(bytes, 0, 0);
++		
++		log.debug(&quot;client received packet: &quot; + decPacket);
++
+ 		RdtTrack track = (RdtTrack)Track.getByServerAddress( (InetSocketAddress) session.getRemoteAddress() );
+ 
+ 		if ( track == null ) {
+@@ -63,11 +73,9 @@
+ 			return;
+ 		}
+ 
+-		ByteBuffer receivedBuffer = (ByteBuffer) buffer;
+-		byte[] bytes = new byte[receivedBuffer.limit()];
+-		receivedBuffer.get( bytes );
+ 		ByteBuffer rdtPacket = ByteBuffer.wrap( bytes );
+ 		track.forwardRdtToClient( rdtPacket );
++
+ 	}
+ 
+ 	@Override
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtAckPacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtAckPacket.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtAckPacket.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,56 @@
++package rtspproxy.rdt;
++
++import org.apache.mina.common.ByteBuffer;
++
++
++public class RdtAckPacket extends RdtControlPacket {
++
++	private boolean lostHigh;
++
++	public RdtAckPacket(boolean lostHigh) {
++		super(Type.Ack, (byte)0);
++		
++		this.lostHigh = lostHigh;
++	}
++
++	@Override
++	protected void toStringHelper(StringBuffer buffer) {
++		buffer.append(&quot; lostHigh=&quot; + lostHigh);
++	}
++
++	/**
++	 * @return Returns the lostHigh.
++	 */
++	public boolean isLostHigh() {
++		return lostHigh;
++	}
++
++	/**
++	 * @param lostHigh The lostHigh to set.
++	 */
++	public void setLostHigh(boolean lostHigh) {
++		this.lostHigh = lostHigh;
++	}
++
++	@Override
++	protected ByteBuffer buildHeader() {
++		ByteBuffer buf = ByteBuffer.allocate(3, true);
++		byte marker = 0;
++		
++		if(isLengthIncluded())
++			marker |= (1&lt;&lt;7);
++		if(this.lostHigh)
++			marker |= (1&lt;&lt;6);
++		buf.put(marker);
++		buf.put(getType().toByteArray());
++		
++		if(isLengthIncluded()) {
++			// add 2 bytes for length to packet size of 3
++			// TODO find a cleaner way.
++			buf.put(encodeShort((short)5));
++		}
++		
++		return buf;
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtControlPacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtControlPacket.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtControlPacket.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,25 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++
++/**
++ * Common base class for all RDT control packets.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public abstract class RdtControlPacket extends RdtPacket {
++
++	/**
++	 * @param type
++	 * @param needReliable
++	 * @param streamId
++	 */
++	public RdtControlPacket(Type type, byte streamId) {
++		super(type, false, streamId);
++	}
++
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtDataPacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtDataPacket.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtDataPacket.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,183 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.common.ByteBuffer;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RdtDataPacket extends RdtPacket {
++
++	private boolean reliable;
++	private boolean backToBack;
++	private boolean slowData;
++	private byte asmRule;
++	private int timestamp;
++	private short totalReliable;
++	private short sequence;
++
++	public RdtDataPacket(boolean needReliable, boolean reliable, byte streamId, short sequence, boolean backToBack, 
++			boolean slowData, byte asmRule, int timestamp) {
++		super(Type.Data, needReliable, streamId);
++		
++		this.reliable = reliable;
++		this.sequence = sequence;
++		this.backToBack = backToBack;
++		this.slowData = slowData;
++		this.asmRule = asmRule;
++		this.timestamp = timestamp;
++	}
++
++	/**
++	 * @return Returns the asmRule.
++	 */
++	public byte getAsmRule() {
++		return asmRule;
++	}
++
++	/**
++	 * @param asmRule The asmRule to set.
++	 */
++	public void setAsmRule(byte asmRule) {
++		this.asmRule = asmRule;
++	}
++
++	/**
++	 * @return Returns the backToBack.
++	 */
++	public boolean isBackToBack() {
++		return backToBack;
++	}
++
++	/**
++	 * @param backToBack The backToBack to set.
++	 */
++	public void setBackToBack(boolean backToBack) {
++		this.backToBack = backToBack;
++	}
++
++	/**
++	 * @return Returns the reliable.
++	 */
++	public boolean isReliable() {
++		return reliable;
++	}
++
++	/**
++	 * @param reliable The reliable to set.
++	 */
++	public void setReliable(boolean reliable) {
++		this.reliable = reliable;
++	}
++
++	/**
++	 * @return Returns the slowData.
++	 */
++	public boolean isSlowData() {
++		return slowData;
++	}
++
++	/**
++	 * @param slowData The slowData to set.
++	 */
++	public void setSlowData(boolean slowData) {
++		this.slowData = slowData;
++	}
++
++	/**
++	 * @return Returns the timestamp.
++	 */
++	public int getTimestamp() {
++		return timestamp;
++	}
++
++	/**
++	 * @param timestamp The timestamp to set.
++	 */
++	public void setTimestamp(int timestamp) {
++		this.timestamp = timestamp;
++	}
++
++	/**
++	 * @return Returns the totalReliable.
++	 */
++	public short getTotalReliable() {
++		return totalReliable;
++	}
++
++	/**
++	 * @param totalReliable The totalReliable to set.
++	 */
++	public void setTotalReliable(short totalReliable) {
++		this.totalReliable = totalReliable;
++	}
++
++	@Override
++	protected void toStringHelper(StringBuffer buffer) {
++		buffer.append(&quot; reliable=&quot; + this.reliable);
++		buffer.append(&quot; sequence=&quot;  + this.sequence);
++		buffer.append(&quot; backToback=&quot;+ backToBack);
++		buffer.append(&quot; slowData= &quot; + slowData);
++		buffer.append(&quot; asmRule=&quot; + asmRule);
++		buffer.append(&quot; timestamp=&quot; + timestamp);
++		buffer.append(&quot; totalReliable=&quot; + totalReliable);
++	}
++
++	/**
++	 * @return Returns the sequence.
++	 */
++	public short getSequence() {
++		return sequence;
++	}
++
++	/**
++	 * @param sequence The sequence to set.
++	 */
++	public void setSequence(short sequence) {
++		this.sequence = sequence;
++	}
++
++	@Override
++	protected ByteBuffer buildHeader() {
++		ByteBuffer buf = ByteBuffer.allocate(8, true);
++		byte marker = 0, control = 0;
++		
++		if(isLengthIncluded())
++			marker |= (1&lt;&lt;7);
++		if(isNeedReliable())
++			marker |= (1&lt;&lt;6);
++		marker |= (getStreamId() &lt;&lt; 1);
++		if(this.reliable)
++			marker |= (1&lt;&lt;0);		
++		buf.put(marker);		
++
++		buf.put(getType().toByteArray());
++
++		if(isLengthIncluded()) {
++			short length = 8;
++			
++			if(isNeedReliable())
++				length += 2;
++			
++			buf.put(encodeShort(length));
++		}
++		
++		if(this.backToBack)
++			control |= (1&lt;&lt;7);
++		if(slowData)
++			control |= (1&lt;&lt;6);
++		control |= this.asmRule;
++		buf.put(control);
++		
++		buf.put(encodeInt(this.timestamp));
++
++		if(isNeedReliable())
++			buf.put(encodeShort(this.totalReliable));
++		
++		return buf;
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtLatencyReportPacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtLatencyReportPacket.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtLatencyReportPacket.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,70 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.common.ByteBuffer;
++
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RdtLatencyReportPacket extends RdtControlPacket {
++
++	private int serverTimeout;
++
++	/**
++	 * @param type
++	 * @param needReliable
++	 * @param streamId
++	 */
++	public RdtLatencyReportPacket(int serverTimeout) {
++		super(Type.LatencyReport, (byte)0);
++		
++		this.serverTimeout = serverTimeout;
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.rdt.RdtPacket#toStringHelper(java.lang.StringBuffer)
++	 */
++	@Override
++	protected void toStringHelper(StringBuffer buffer) {
++		buffer.append(&quot; serverTimeout=&quot; + this.serverTimeout);
++	}
++
++	/**
++	 * @return Returns the serverTimeout.
++	 */
++	public int getServerTimeout() {
++		return serverTimeout;
++	}
++
++	/**
++	 * @param serverTimeout The serverTimeout to set.
++	 */
++	public void setServerTimeout(int serverTimeout) {
++		this.serverTimeout = serverTimeout;
++	}
++	
++	@Override
++	protected ByteBuffer buildHeader() {
++		ByteBuffer buf = ByteBuffer.allocate(3, true);
++		byte marker = 0;
++		
++		if(isLengthIncluded())
++			marker |= (1&lt;&lt;7);
++		buf.put(marker);
++		buf.put(getType().toByteArray());
++		
++		if(isLengthIncluded()) {
++			// add 2 bytes for length to packet size of 3
++			// TODO find a cleaner way.
++			buf.put(encodeShort((short)9));
++		}
++		buf.put(encodeInt(this.serverTimeout));
++		
++		return buf;
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacket.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacket.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,265 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import java.util.HashMap;
++
++import org.apache.commons.collections.functors.NonePredicate;
++import org.apache.mina.common.ByteBuffer;
++
++import rtspproxy.rtp.RtpPacket;
++
++/**
++ * Base class of specific RDT packet types.
++ * The knowledge of packet types, codes and bit packing was taken from analyzing
++ * RDT streams with ethereal 0.10.14
++ *  
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ * @see &lt;a href=&quot;<A HREF="http://www.ethereal.com/">http://www.ethereal.com/</A>&quot;&gt;ethereal homepage&lt;/a&gt;
++ */
++public abstract class RdtPacket {
++	
++	/**
++	 * Defines the various packet types
++	 * The knowledge of packet types, codes and bit packing was taken from analyzing
++	 * RDT streams with ethereal 0.10.14
++	 *  
++	 * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++	 * @see &lt;a href=&quot;<A HREF="http://www.ethereal.com/">http://www.ethereal.com/</A>&quot;&gt;ethereal homepage&lt;/a&gt;
++	 */
++	public enum Type {
++		None, RttRequest, RttResponse, LatencyReport, Ack, StreamEnd, Data;
++		
++		private static HashMap&lt;Type, Short&gt; typeCodeMap = new HashMap&lt;Type, Short&gt;();
++		private static HashMap&lt;Short, Type&gt; codeTypeMap = new HashMap&lt;Short, Type&gt;();
++		private static void populateMaps(Type type, short code) {
++			typeCodeMap.put(type, code);
++			codeTypeMap.put(code, type);
++		}
++		static {
++			populateMaps(RttRequest, (short)0xff03);
++			populateMaps(RttResponse, (short)0xff04);
++			populateMaps(LatencyReport, (short)0xff08);
++			populateMaps(Ack, (short)0xff02);
++			populateMaps(StreamEnd, (short)0xff06);
++		};
++		
++		public short toCode() {
++			short code = 0;
++
++			if(typeCodeMap.containsKey(this))
++				code = typeCodeMap.get(this);
++			
++			return code;
++		};
++		
++		public static Type fromCode(short code) {
++			Type type = None;
++
++			if(codeTypeMap.containsKey(code))
++				type = codeTypeMap.get(code);
++			
++			return type;
++		}
++		
++		public byte[] toByteArray() {
++			byte[] rep = new byte[2];
++			short code;
++			
++			if(typeCodeMap.containsKey(this)) {
++				code = typeCodeMap.get(this);
++				
++				rep[0] = (byte)((code &gt;&gt; 8) &amp; 0x0ff);
++				rep[1] = (byte)(code  &amp; 0x0ff);
++			} else 
++				rep[0] = rep[1] = -1;
++			
++			return rep;
++		}
++	};
++	
++	// type field
++	private Type type = Type.None;
++	
++	// payload
++	private byte[] payload = null;
++	
++	// need reliable flag
++	private boolean needReliable = false;
++
++	// stream id
++	private byte streamId = -1;
++	
++	// attached sub packet
++	private RdtPacket subPacket = null;
++	
++	/**
++	 * constructor
++	 */
++	protected RdtPacket(Type type, boolean needReliable, byte streamId) {
++		this.type = type;
++		this.needReliable = needReliable;
++		this.streamId = streamId;
++	}
++	
++	/**
++	 * @return Returns the type.
++	 */
++	public Type getType() {
++		return type;
++	}
++
++	/**
++	 * @return Returns the needReliable.
++	 */
++	public boolean isNeedReliable() {
++		return needReliable;
++	}
++
++	/**
++	 * @param needReliable The needReliable to set.
++	 */
++	public void setNeedReliable(boolean needReliable) {
++		this.needReliable = needReliable;
++	}
++	
++	/**
++	 * encode packet as byte buffer
++	 */
++	public ByteBuffer toByteBuffer() {
++		ByteBuffer buf = ByteBuffer.allocate(128, true);
++
++		buf.put(buildHeader());
++		if(this.payload != null)
++			buf.put(this.payload);
++		if(this.subPacket != null)
++			buf.put(this.subPacket.toByteBuffer());
++
++		return buf;
++	}
++
++	
++	/**
++	 * build the package header
++	 */
++	protected abstract ByteBuffer buildHeader(); 
++	
++	/**
++	 * @return Returns the subPacket.
++	 */
++	public RdtPacket getSubPacket() {
++		return subPacket;
++	}
++
++	/**
++	 * @param subPacket The subPacket to set.
++	 */
++	public void setSubPacket(RdtPacket subPacket) {
++		this.subPacket = subPacket;
++	}
++
++	/**
++	 * @return Returns the payload.
++	 */
++	public byte[] getPayload() {
++		return payload;
++	}
++
++	/**
++	 * get the payload size
++	 */
++	public short getPayloadSize() {
++		if(this.payload == null)
++			return 0;
++		return (short)this.payload.length;
++	}
++	
++	/**
++	 * @param payload The payload to set.
++	 */
++	public void setPayload(byte[] payload) {
++		this.payload = payload;
++	}
++	
++	/**
++	 * debug output
++	 */
++	public final String toString() {
++		StringBuffer buf = new StringBuffer();
++
++		buf.append(&quot;packet[type=&quot; + type);
++		buf.append(&quot; needReliable=&quot; + this.needReliable);
++		buf.append(&quot; streamId=&quot; + this.streamId);
++		toStringHelper(buf);
++		
++		if(this.payload != null)
++			buf.append(&quot; data[&quot; + this.payload.length + &quot;]&quot;);
++		if(this.subPacket != null)
++			buf.append(&quot; subpacket[&quot; + this.subPacket + &quot;]&quot;);
++
++		buf.append(&quot;]&quot;);
++
++		return buf.toString();
++	}
++	
++	/**
++	 * per packet-type specific toString output
++	 */
++	protected abstract void toStringHelper(StringBuffer buffer);
++
++	/**
++	 * @return Returns the streamId.
++	 */
++	public byte getStreamId() {
++		return streamId;
++	}
++
++	/**
++	 * @param streamId The streamId to set.
++	 */
++	public void setStreamId(byte streamId) {
++		this.streamId = streamId;
++	}
++
++	/**
++	 * @param type The type to set.
++	 */
++	public void setType(Type type) {
++		this.type = type;
++	}
++	
++	/**
++	 * query if encoded packet should contain length field included
++	 */
++	protected boolean isLengthIncluded() {
++		return (this.subPacket != null);
++	}
++	
++	/**
++	 * encode a short 
++	 */
++	protected byte[] encodeShort(short v) {
++		byte[] buf = new byte[2];
++		
++		buf[0] = (byte)((v &gt;&gt; 8) &amp; 0xff);
++		buf[1] = (byte)(v &amp; 0xff);
++		
++		return buf;
++	}
++	
++	/**
++	 * encode a short 
++	 */
++	protected byte[] encodeInt(int v) {
++		byte[] buf = new byte[4];
++		
++		buf[0] = (byte)((v &gt;&gt; 24) &amp; 0xff);
++		buf[1] = (byte)((v &gt;&gt; 16) &amp; 0xff);
++		buf[2] = (byte)((v &gt;&gt; 8) &amp; 0xff);
++		buf[3] = (byte)(v &amp; 0xff);
++		
++		return buf;
++	}
++	
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,197 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import java.lang.reflect.Array;
++
++import org.apache.mina.common.ByteBuffer;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++
++/**
++ * Decoder for RDT packets.
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ */
++public class RdtPacketDecoder {
++
++	// logger
++	private static Logger logger = LoggerFactory.getLogger(RdtPacketDecoder.class);
++	
++	/**
++	 * not instaniable
++	 */
++	private RdtPacketDecoder() {}
++	
++	/**
++	 * decode packet
++	 * @param buffer the byte buffer to decode packet from
++	 */
++	public static RdtPacket decode(ByteBuffer buffer) {
++		byte[] data = new byte[buffer.limit()];
++
++		// copy buffer content into temp array
++		buffer.get(data);
++
++		return decode(data, 0, 0);
++	}
++
++	/**
++	 * decode packet
++	 * @param buffer the byte buffer to decode packet from
++	 */
++	public static RdtPacket decode(byte[] data, int ind, int depth) {
++		RdtPacket packet = null;
++		byte markerByte;
++		byte seqLo, seqHi;
++		short sequence;
++		boolean lengthIncluded = false;
++		short packetLength = -1;
++
++		if(depth &gt; 1) {
++			logger.error(&quot;detected packet-decoding recursion overrun, aborting&quot;);
++			
++			return null;
++		}
++		
++		// process marker byte
++		markerByte = data[ind++];
++		lengthIncluded = ((markerByte &amp; (1&lt;&lt;7)) &gt; 0);
++
++		// process sequence / type field
++		seqHi = data[ind++];
++		seqLo = data[ind++];
++		sequence = (short)(seqHi &lt;&lt; 8 | seqLo);
++		
++		if(seqHi &lt; 0 ) {
++			logger.debug(&quot;decoding control packet&quot;);
++
++			// extract streamid from marker byte
++			byte streamId = (byte)((markerByte &amp; 0x7c) &gt;&gt; 2);
++
++			// control packet
++			RdtPacket.Type type = RdtPacket.Type.fromCode(sequence);
++			
++			switch(type) {
++			case RttRequest:
++				// process packet length (if included)
++				if(lengthIncluded)
++					packetLength = (short)((data[ind++] &lt;&lt; 8) | data[ind++]);
++				
++				packet = new RdtRttRequestPacket();
++				break;
++			case RttResponse:
++				// process packet length (if included)
++				if(lengthIncluded)
++					packetLength = (short)((data[ind++] &lt;&lt; 8) | data[ind++]);
++				
++				int roundtripTimestampSeconds = ((data[ind++] &lt;&lt; 24) | (data[ind++] &lt;&lt; 16) 
++						| (data[ind++] &lt;&lt; 8) | data[ind++]);
++				int roundtripTimestampMicroeconds = ((data[ind++] &lt;&lt; 24) | (data[ind++] &lt;&lt; 16) 
++						| (data[ind++] &lt;&lt; 8) | data[ind++]);
++				
++				packet = new RdtRttResponsePacket(roundtripTimestampSeconds, roundtripTimestampMicroeconds);
++				break;
++			case LatencyReport:
++				// process packet length (if included)
++				if(lengthIncluded)
++					packetLength = (short)((data[ind++] &lt;&lt; 8) | data[ind++]);
++				
++				int serverTimeout = ((data[ind++] &lt;&lt; 24) | (data[ind++] &lt;&lt; 16) | (data[ind++] &lt;&lt; 8) | data[ind++]);
++				
++				packet = new RdtLatencyReportPacket(serverTimeout);
++				break;
++			case Ack:
++				// process packet length (if included)
++				if(lengthIncluded)
++					packetLength = (short)((data[ind++] &lt;&lt; 8) | data[ind++]);
++				
++				boolean lostHigh = ((markerByte &amp; (1&lt;&lt;6)) &gt; 0);
++				int payloadSize = (lengthIncluded ? packetLength : (data.length - ind));
++
++				packet = new RdtAckPacket(lostHigh);
++				if(payloadSize &gt; 0)
++					ind = attachPayload(packet, data, ind, payloadSize);
++				
++				break;
++			case StreamEnd:
++				// in the stream end packet, the length-included serves as need reliable field
++				boolean packetSent = ((markerByte &amp; (1&lt;&lt;1)) &gt; 0);
++				boolean extFlag = ((markerByte &amp; (1&lt;&lt;0)) &gt; 0);
++				short streamEndSequenceNumber = (short)((data[ind++] &lt;&lt; 8) | data[ind++]);
++				int timeout = ((data[ind++] &lt;&lt; 24) | (data[ind++] &lt;&lt; 16) | (data[ind++] &lt;&lt; 8) | data[ind++]);
++				short totalReliable = (short)((data[ind++] &lt;&lt; 8) | data[ind++]);
++				
++				break;
++			}
++		} else {
++			logger.debug(&quot;decoding data packet&quot;);
++			
++			// data packet
++			// process packet length (if included)
++			if(lengthIncluded)
++				packetLength = (short)((data[ind++] &lt;&lt; 8) | data[ind++]);
++			
++			// process marker byte
++			boolean needReliable = ((markerByte &amp; (1&lt;&lt;6)) &gt; 0);
++			boolean isReliable = ((markerByte &amp; (1&lt;&lt;0)) &gt; 0);
++			byte streamId = (byte)((markerByte &amp; 0x3e) &gt;&gt; 1);
++			
++			// process next control byte
++			if(lengthIncluded)
++				packetLength--;
++			byte controlByte = data[ind++];
++			boolean backToBack = ((controlByte &amp; (1&lt;&lt;7)) &gt; 0);
++			boolean slowData = ((controlByte &amp; (1&lt;&lt;6)) &gt; 0);
++			byte asmRule = (byte)(controlByte &amp; 0x3f);
++			
++			// process timestamp
++			if(lengthIncluded)
++				packetLength -= 4;
++			int timestamp = ((data[ind++] &lt;&lt; 24) | (data[ind++] &lt;&lt; 16) | (data[ind++] &lt;&lt; 8) | data[ind++]);
++			
++			// process total reliable count
++			if(lengthIncluded)
++				packetLength -= 2;
++
++			packet = new RdtDataPacket(needReliable, isReliable, streamId,
++					sequence, backToBack, slowData, asmRule, timestamp);
++			if(needReliable) {
++				short totalReliable = (short)((data[ind++] &lt;&lt; 8) | data[ind++]);
++
++				((RdtDataPacket)packet).setTotalReliable(totalReliable);
++				packetLength -= 2;
++			}
++
++			int payloadSize = (lengthIncluded ? packetLength : (data.length - ind));
++			
++			if(payloadSize &gt; 0)
++				ind = attachPayload(packet, data, ind, payloadSize);
++		}
++		
++		if(ind != data.length) {
++			// handle attached subpacket
++			logger.debug(&quot;handling attached sub-packet&quot;);
++			
++			packet.setSubPacket(decode(data, ind, depth+1));
++		}
++		
++		if(logger.isDebugEnabled())
++			logger.debug(&quot;decoded packet: &quot; + packet);
++		
++		return packet;
++	}
++	
++	/**
++	 * attach payload to packet
++	 */
++	private static int attachPayload(RdtPacket packet, byte[] data, int ind, int size) {
++		byte[] buf = new byte[size];
++		
++		System.arraycopy(data, ind, buf, 0, size);
++		packet.setPayload(buf);
++		
++		return (ind + size);
++	}
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtRttRequestPacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtRttRequestPacket.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtRttRequestPacket.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,42 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.common.ByteBuffer;
++
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RdtRttRequestPacket extends RdtControlPacket {
++
++	/**
++	 * @param type
++	 * @param needReliable
++	 * @param streamId
++	 */
++	public RdtRttRequestPacket() {
++		super(Type.RttRequest, (byte)0);
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.rdt.RdtPacket#toStringHelper(java.lang.StringBuffer)
++	 */
++	@Override
++	protected void toStringHelper(StringBuffer buffer) {
++	}
++
++	@Override
++	protected ByteBuffer buildHeader() {
++		ByteBuffer buf = ByteBuffer.allocate(3, true);
++		byte marker = 0;
++		
++		buf.put(marker);
++		buf.put(getType().toByteArray());
++		
++		return buf;
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtRttResponsePacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtRttResponsePacket.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtRttResponsePacket.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,82 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.common.ByteBuffer;
++
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RdtRttResponsePacket extends RdtControlPacket {
++
++	private int roundtripTimestampSeconds;
++	private int roundtripTimestampMicroseconds;
++	
++	/**
++	 * @param type
++	 * @param needReliable
++	 * @param streamId
++	 */
++	public RdtRttResponsePacket(int roundtripTimestampSeconds, 
++			int roundtripTimestampMicroseconds) {
++		super(Type.RttResponse, (byte)0);
++		
++		this.roundtripTimestampMicroseconds = roundtripTimestampMicroseconds;
++		this.roundtripTimestampSeconds = roundtripTimestampSeconds;
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.rdt.RdtPacket#toStringHelper(java.lang.StringBuffer)
++	 */
++	@Override
++	protected void toStringHelper(StringBuffer buffer) {
++		buffer.append(&quot; roundtripTimestampSeconds=&quot; + roundtripTimestampSeconds);
++		buffer.append(&quot; roundtripTimestampMicroseconds=&quot; + roundtripTimestampMicroseconds);
++	}
++
++	/**
++	 * @return Returns the roundtripTimestampMicroseconds.
++	 */
++	public int getRoundtripTimestampMicroseconds() {
++		return roundtripTimestampMicroseconds;
++	}
++
++	/**
++	 * @param roundtripTimestampMicroseconds The roundtripTimestampMicroseconds to set.
++	 */
++	public void setRoundtripTimestampMicroseconds(int roundtripTimestampMicroseconds) {
++		this.roundtripTimestampMicroseconds = roundtripTimestampMicroseconds;
++	}
++
++	/**
++	 * @return Returns the roundtripTimestampSeconds.
++	 */
++	public int getRoundtripTimestampSeconds() {
++		return roundtripTimestampSeconds;
++	}
++
++	/**
++	 * @param roundtripTimestampSeconds The roundtripTimestampSeconds to set.
++	 */
++	public void setRoundtripTimestampSeconds(int roundtripTimestampSeconds) {
++		this.roundtripTimestampSeconds = roundtripTimestampSeconds;
++	}
++
++	@Override
++	protected ByteBuffer buildHeader() {
++		ByteBuffer buf = ByteBuffer.allocate(11, true);
++		byte marker = 0;
++		
++		buf.put(marker);
++		buf.put(getType().toByteArray());
++		
++		buf.put(encodeInt(this.roundtripTimestampSeconds));
++		buf.put(encodeInt(this.roundtripTimestampMicroseconds));
++		
++		return buf;
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtStreamEndPacket.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtStreamEndPacket.java	2006-01-09 00:04:58 UTC (rev 383)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtStreamEndPacket.java	2006-01-09 22:03:33 UTC (rev 384)
+@@ -0,0 +1,141 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.common.ByteBuffer;
++
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RdtStreamEndPacket extends RdtPacket {
++
++	private boolean packetSent;
++	private boolean extFlag;
++	private short streamEndSequenceNumber;
++	private int timestamp;
++	private short totalReliable;
++
++	/**
++	 * @param type
++	 * @param needReliable
++	 * @param streamId
++	 */
++	public RdtStreamEndPacket(boolean needReliable, byte streamId, boolean packetSent, boolean extFlag,
++			short streamEndSequenceNumber, int timestamp, short totalReliable) {
++		super(Type.StreamEnd, needReliable, streamId);
++		this.packetSent = packetSent;
++		this.extFlag = extFlag;
++		this.streamEndSequenceNumber = streamEndSequenceNumber;
++		this.timestamp = timestamp;
++		this.totalReliable = totalReliable;
++	}
++
++	/* (non-Javadoc)
++	 * @see rtspproxy.rdt.RdtPacket#toStringHelper(java.lang.StringBuffer)
++	 */
++	@Override
++	protected void toStringHelper(StringBuffer buffer) {
++		buffer.append(&quot; packetSent=&quot; + packetSent);
++		buffer.append(&quot; extFlag=&quot; + extFlag);
++		buffer.append(&quot; streamEndSequenceNumber=&quot; + streamEndSequenceNumber);
++		buffer.append(&quot; timestamp=&quot; + timestamp);
++		buffer.append(&quot; totalReliable=&quot; + totalReliable);
++	}
++
++	/**
++	 * @return Returns the extFlag.
++	 */
++	public boolean isExtFlag() {
++		return extFlag;
++	}
++
++	/**
++	 * @param extFlag The extFlag to set.
++	 */
++	public void setExtFlag(boolean extFlag) {
++		this.extFlag = extFlag;
++	}
++
++	/**
++	 * @return Returns the packetSent.
++	 */
++	public boolean isPacketSent() {
++		return packetSent;
++	}
++
++	/**
++	 * @param packetSent The packetSent to set.
++	 */
++	public void setPacketSent(boolean packetSent) {
++		this.packetSent = packetSent;
++	}
++
++	/**
++	 * @return Returns the streamEndSequenceNumber.
++	 */
++	public short getStreamEndSequenceNumber() {
++		return streamEndSequenceNumber;
++	}
++
++	/**
++	 * @param streamEndSequenceNumber The streamEndSequenceNumber to set.
++	 */
++	public void setStreamEndSequenceNumber(short streamEndSequenceNumber) {
++		this.streamEndSequenceNumber = streamEndSequenceNumber;
++	}
++
++	/**
++	 * @return Returns the timestamp.
++	 */
++	public int getTimestamp() {
++		return timestamp;
++	}
++
++	/**
++	 * @param timestamp The timestamp to set.
++	 */
++	public void setTimestamp(int timestamp) {
++		this.timestamp = timestamp;
++	}
++
++	/**
++	 * @return Returns the totalReliable.
++	 */
++	public short getTotalReliable() {
++		return totalReliable;
++	}
++
++	/**
++	 * @param totalReliable The totalReliable to set.
++	 */
++	public void setTotalReliable(short totalReliable) {
++		this.totalReliable = totalReliable;
++	}
++
++	@Override
++	protected ByteBuffer buildHeader() {
++		ByteBuffer buf = ByteBuffer.allocate(11, true);
++		byte marker = 0;
++		
++		if(isNeedReliable())
++			marker |= (1&lt;&lt;7);
++		marker |= getStreamId() &lt;&lt; 2;
++		if(packetSent)
++			marker |= (1&lt;&lt;1);
++		if(extFlag)
++			marker |= (1&lt;&lt;0);
++		
++		buf.put(marker);
++		buf.put(getType().toByteArray());
++		
++		buf.put(encodeShort(this.streamEndSequenceNumber));
++		buf.put(encodeInt(this.timestamp));
++		buf.put(encodeShort(this.totalReliable));
++		
++		return buf;
++	}
++
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000067.html">[Rtspproxy-devel] r383 - in trunk: RTSPProxy-App/src/resources/conf RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/rtsp RTSPProxy-Core/src/test/java/rtspproxy/rtsp
+</A></li>
+	<LI>Next message: <A HREF="000069.html">[Rtspproxy-devel] r385 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: rdt rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#68">[ date ]</a>
+              <a href="thread.html#68">[ thread ]</a>
+              <a href="subject.html#68">[ subject ]</a>
+              <a href="author.html#68">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

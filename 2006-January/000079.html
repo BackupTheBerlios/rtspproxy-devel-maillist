@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r395 - in trunk: RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r395%20-%20in%20trunk%3A%20RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite%20RTSPProxy-Core/src/main/java/rtspproxy/rtsp&In-Reply-To=%3C200601162015.k0GKFYrl013986%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000078.html">
+   <LINK REL="Next"  HREF="000080.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r395 - in trunk: RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/rtsp</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r395%20-%20in%20trunk%3A%20RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite%20RTSPProxy-Core/src/main/java/rtspproxy/rtsp&In-Reply-To=%3C200601162015.k0GKFYrl013986%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r395 - in trunk: RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite RTSPProxy-Core/src/main/java/rtspproxy/rtsp">rbieniek at berlios.de
+       </A><BR>
+    <I>Mon Jan 16 21:15:34 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000078.html">[Rtspproxy-devel] r394 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/rdt test/java/rtspproxy/rdt test/resources/rtspproxy/rdt
+</A></li>
+        <LI>Next message: <A HREF="000080.html">[Rtspproxy-devel] r396 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#79">[ date ]</a>
+              <a href="thread.html#79">[ thread ]</a>
+              <a href="subject.html#79">[ subject ]</a>
+              <a href="author.html#79">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-16 21:15:16 +0100 (Mon, 16 Jan 2006)
+New Revision: 395
+
+Modified:
+   trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspDecoder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+Log:
+- Fixed off-by-one problem in RTSP parser. It gracefully handles now
+a missing terminating CRLF.
+- Reworked URL rewriting filter a bit. The correct handling of the OPTIONS
+request is not clear yet.
+
+
+Modified: trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java
+===================================================================
+--- trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java	2006-01-16 17:05:29 UTC (rev 394)
++++ trunk/RTSPProxy-App/src/main/java/rtspproxy/filter/rewrite/SimpleUrlRewritingProvider.java	2006-01-16 20:15:16 UTC (rev 395)
+@@ -32,6 +32,9 @@
+ 	// map with url from--&gt;to prefix mapping (used in rewriting request URL)
+ 	private HashMap&lt;String, String&gt; forwardMappings = new HashMap&lt;String, String&gt;();
+ 	
++	// map with url from--&gt;to prefix mapping (used in rewriting request URL)
++	private HashMap&lt;URL, URL&gt; optionsForwardMappings = new HashMap&lt;URL, URL&gt;();
++	
+ 	// map with url to--&gt;from prefix mapping (used in rewriting response URL)
+ 	private HashMap&lt;String, String&gt; reverseMappings = new HashMap&lt;String, String&gt;();
+ 	
+@@ -42,7 +45,17 @@
+ 		URL rewritten = null;
+ 		String req = request.toString();
+ 		
+-		logger.debug(&quot;checking request URL: &quot; + req);
++		logger.debug(&quot;checking request URL: &quot; + req + &quot;, verb=&quot; + verb);
++		
++		if(verb == RtspRequest.Verb.OPTIONS) {
++			logger.debug(&quot;handling OPTIONS request&quot;);
++			
++			if((rewritten = this.optionsForwardMappings.get(request)) != null) {
++				logger.debug(&quot;found special OPTIONS rewrite URL: &quot; + rewritten);
++				
++				return rewritten;
++			}
++		}
+ 		for(String prefix : this.forwardMappings.keySet()) {
+ 			if(req.startsWith(prefix)) {
+ 				logger.debug(&quot;found prefix match on &quot; + prefix);
+@@ -105,6 +118,26 @@
+ 
+ 				this.forwardMappings.put(from, to);
+ 				this.reverseMappings.put(to, from);
++			} else if(el.getName().equals(&quot;map-options&quot;)) {
++				Element fromEl = el.element(&quot;from&quot;);
++				Element toEl = el.element(&quot;to&quot;);
++				
++				if(fromEl == null || toEl == null)
++					throw new IllegalArgumentException(&quot;no from or to element in mapping configuration&quot;);
++				
++				String from = fromEl.getTextTrim();
++				String to = toEl.getTextTrim();
++				
++				if(from == null || from.length() == 0 || to == null || to.length() == 0)
++					throw new IllegalArgumentException(&quot;invalid from or to element in mapping configuration&quot;);
++				
++				URL fromUrl = new URL(from);
++				URL toUrl = new URL(to);
++				
++				this.optionsForwardMappings.put(new URL(fromUrl.getProtocol(), fromUrl.getHost(), 
++						fromUrl.getPort(), &quot;/&quot;),
++						new URL(toUrl.getProtocol(), toUrl.getHost(), 
++								toUrl.getPort(), &quot;/&quot;));
+ 			}
+ 		}
+ 	}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspDecoder.java	2006-01-16 17:05:29 UTC (rev 394)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspDecoder.java	2006-01-16 20:15:16 UTC (rev 395)
+@@ -89,7 +89,7 @@
+ 		BufferedReader reader = null;
+ 
+ 		reader = new BufferedReader(new InputStreamReader( buffer.asInputStream(),
+-				asciiCharset ), 256 );
++				asciiCharset ), 2048 );
+ 
+ 		// Retrieve status from session
+ 		ReadState state = (ReadState) session.getAttribute( readStateATTR );
+@@ -106,7 +106,7 @@
+ 					break;
+ 					*/
+ 
+-				reader.mark(256);
++				reader.mark(2048);
+ 				String line = reader.readLine();
+ 				if ( line == null ) {
+ 					// there's no more data in the buffer
+@@ -125,6 +125,7 @@
+ 					if(rtspMessage != null) {
+ 						log.debug(&quot;seen emtpy line, switching to Body&quot;);
+ 						state = ReadState.Body;
++						reader.mark(64);
+ 					} else {
+ 						log.debug(&quot;seen emtpy line, switching to Sync&quot;);
+ 						state = ReadState.Sync;						
+@@ -230,6 +231,13 @@
+ 						bufferContent.flip();
+ 						rtspMessage.appendToBuffer(bufferContent);
+ 						
++						// this is an ugly hack to avoid content underruns produced by bogus servers
++						if( rtspMessage.getBufferSize() == (bufferLen - 2))
++							rtspMessage.appendToBuffer(&quot;\r\n&quot;);
++						if( rtspMessage.getBufferSize() == (bufferLen - 1))
++							rtspMessage.appendToBuffer(&quot;\n&quot;);
++						
++						// terminate message here
+ 						if (rtspMessage.getBufferSize() &gt;= bufferLen) {
+ 							// The RTSP message parsing is completed
+ 							state = ReadState.Dispatch;
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-01-16 17:05:29 UTC (rev 394)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rtsp/RtspMessage.java	2006-01-16 20:15:16 UTC (rev 395)
+@@ -189,6 +189,15 @@
+ 	 * @param other
+ 	 *            buffer with content to be appended
+ 	 */
++	public void appendToBuffer( String other )
++	{
++		this.buffer.append( other );
++	}
++
++	/**
++	 * @param other
++	 *            buffer with content to be appended
++	 */
+ 	public void appendToBuffer( CharBuffer other )
+ 	{
+ 		this.buffer.append( other );
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000078.html">[Rtspproxy-devel] r394 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/rdt test/java/rtspproxy/rdt test/resources/rtspproxy/rdt
+</A></li>
+	<LI>Next message: <A HREF="000080.html">[Rtspproxy-devel] r396 - trunk/RTSPProxy-Core/src/main/java/rtspproxy/filter/rewrite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#79">[ date ]</a>
+              <a href="thread.html#79">[ thread ]</a>
+              <a href="subject.html#79">[ subject ]</a>
+              <a href="author.html#79">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

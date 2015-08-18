@@ -1,0 +1,574 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r317 - trunk/src/main/java/rtspproxy/proxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r317%20-%20trunk/src/main/java/rtspproxy/proxy&In-Reply-To=%3C200512042345.jB4Nj3uh000733%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000001.html">
+   <LINK REL="Next"  HREF="000003.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r317 - trunk/src/main/java/rtspproxy/proxy</H1>
+    <B>merlimat at BerliOS</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r317%20-%20trunk/src/main/java/rtspproxy/proxy&In-Reply-To=%3C200512042345.jB4Nj3uh000733%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r317 - trunk/src/main/java/rtspproxy/proxy">merlimat at berlios.de
+       </A><BR>
+    <I>Mon Dec  5 00:45:03 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000001.html">[Rtspproxy-devel] r316 - trunk/src/main/java/rtspproxy/lib/number
+</A></li>
+        <LI>Next message: <A HREF="000003.html">[Rtspproxy-devel] r318 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2">[ date ]</a>
+              <a href="thread.html#2">[ thread ]</a>
+              <a href="subject.html#2">[ subject ]</a>
+              <a href="author.html#2">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-05 00:45:01 +0100 (Mon, 05 Dec 2005)
+New Revision: 317
+
+Modified:
+   trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+   trunk/src/main/java/rtspproxy/proxy/ProxySession.java
+   trunk/src/main/java/rtspproxy/proxy/Track.java
+Log:
+* Partially resolved the problems with maps not cleared (bug #5778)
+* Refactored code
+* Using ConcurrentHashMap instead of synchronized maps
+* Documented most methods
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-04 14:48:53 UTC (rev 316)
++++ trunk/src/main/java/rtspproxy/proxy/ProxyHandler.java	2005-12-04 23:45:01 UTC (rev 317)
+@@ -91,7 +91,7 @@
+ 					log.error( e );
+ 					// closeAll();
+ 				} finally {
+-					if ( serverSession == null ) 
++					if ( serverSession == null )
+ 						return;
+ 				}
+ 			}
+@@ -231,12 +231,13 @@
+ 	 */
+ 	public void passSetupResponseToClient( RtspResponse response )
+ 	{
+-		// If there isn't yet an rtspSession, create a new one
++		// If there isn't yet a proxySession, create a new one
+ 		ProxySession proxySession = ProxySession.getByServerSessionID( response.getHeader( &quot;Session&quot; ) );
+ 		if ( proxySession == null ) {
+ 			proxySession = (ProxySession) clientSession.getAttribute( &quot;proxySession&quot; );
+ 			if ( proxySession == null ) {
+ 				proxySession = new ProxySession();
++				clientSession.setAttribute( &quot;proxySession&quot;, proxySession );
+ 			}
+ 		}
+ 
+@@ -338,7 +339,8 @@
+ 			 * for a long time. Check how to do it in asyncronous way.
+ 			 */
+ 			ConnectFuture future = connector.connect(
+-					new InetSocketAddress( host, port ), new ServerSide(), new RtspServerFilters() );
++					new InetSocketAddress( host, port ), new ServerSide(),
++					new RtspServerFilters() );
+ 			future.join();
+ 			serverSession = future.getSession();
+ 
+@@ -366,6 +368,13 @@
+ 			clientSession.close();
+ 		if ( serverSession != null &amp;&amp; serverSession.isConnected() )
+ 			serverSession.close();
++
++		// Remove ProxySession and Track instances
++		if ( clientSession != null ) {
++			ProxySession proxySession = (ProxySession) clientSession.getAttribute( &quot;proxySession&quot; );
++			if ( proxySession != null )
++				proxySession.close();
++		}
+ 	}
+ 
+ 	/**
+
+Modified: trunk/src/main/java/rtspproxy/proxy/ProxySession.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/ProxySession.java	2005-12-04 14:48:53 UTC (rev 316)
++++ trunk/src/main/java/rtspproxy/proxy/ProxySession.java	2005-12-04 23:45:01 UTC (rev 317)
+@@ -18,16 +18,17 @@
+ 
+ package rtspproxy.proxy;
+ 
+-import java.util.Collections;
+-import java.util.HashMap;
+ import java.util.Map;
+ import java.util.Random;
++import java.util.concurrent.ConcurrentHashMap;
+ 
+ import org.apache.log4j.Logger;
+ 
+ import rtspproxy.lib.number.UnsignedLong;
+ 
+ /**
++ * Manages RTSP sessions with both client and server.
++ * 
+  * @author Matteo Merli
+  */
+ public class ProxySession
+@@ -36,48 +37,35 @@
+ 	private static Logger log = Logger.getLogger( ProxySession.class );
+ 
+ 	/** Map IDs for RTSP session with servers to ProxySession objects. */
+-	private static Map&lt;String, ProxySession&gt; serverSessionIds = Collections.synchronizedMap( new HashMap&lt;String, ProxySession&gt;() );
++	private static Map&lt;String, ProxySession&gt; serverSessionIds = new ConcurrentHashMap&lt;String, ProxySession&gt;();
+ 
+ 	/** Map IDs for RTSP session with clients to ProxySession objects. */
+-	private static Map&lt;String, ProxySession&gt; clientSessionIds = Collections.synchronizedMap( new HashMap&lt;String, ProxySession&gt;() );
++	private static Map&lt;String, ProxySession&gt; clientSessionIds = new ConcurrentHashMap&lt;String, ProxySession&gt;();
+ 
+ 	/**
++	 * Retrieve the ProxySession associated with the given session ID used by
++	 * the client.
++	 * 
+ 	 * @param clientSessionId
+ 	 *        a string containing the RTSP session ID
+-	 * @return a ProxySession
++	 * @return the associated ProxySession or null if not found
+ 	 */
+-	public synchronized static ProxySession getByClientSessionID( String clientSessionId )
++	public static ProxySession getByClientSessionID( String clientSessionId )
+ 	{
+ 		return clientSessionIds.get( clientSessionId );
+ 	}
+ 
+-	public synchronized static ProxySession getByServerSessionID( String serverSessionId )
+-	{
+-		return serverSessionIds.get( serverSessionId );
+-	}
+-
+-	private static Random random = new Random();
+-
+ 	/**
+-	 * Creates a unique session ID that is a 64 bit number.
++	 * Retrieve the ProxySession associated with the given session ID used by
++	 * the server.
+ 	 * 
+-	 * @return the session ID
++	 * @param serverSessionId
++	 *        a string containing the RTSP session ID
++	 * @return the associated ProxySession or null if not found
+ 	 */
+-	private static String newSessionID()
++	public static ProxySession getByServerSessionID( String serverSessionId )
+ 	{
+-		String id;
+-		while ( true ) {
+-			// Create a 64 bit random number
+-			synchronized ( random ) {
+-				id = new UnsignedLong( random ).toString();
+-			}
+-
+-			if ( clientSessionIds.get( id ) == null ) {
+-				// Ok, the id is unique
+-				return id;
+-			}
+-			// try with another id
+-		}
++		return serverSessionIds.get( serverSessionId );
+ 	}
+ 
+ 	/**
+@@ -92,44 +80,132 @@
+ 	 */
+ 	private String serverSessionId = null;
+ 
+-	private Map&lt;String, Track&gt; trackList = Collections.synchronizedMap( new HashMap&lt;String, Track&gt;() );
++	/** Tells whether the proxySession has already been closed. */
++	private boolean isClosed = false;
+ 
++	/**
++	 * Collection of Track associated with this ProxySession.
++	 */
++	private Map&lt;String, Track&gt; trackList = new ConcurrentHashMap&lt;String, Track&gt;();
++
++	/**
++	 * Construct a new ProxySession. The session ID that will be used when
++	 * communicating with the client will be generated.
++	 */
+ 	public ProxySession()
+ 	{
+ 		setClientSessionId( newSessionID() );
+ 	}
+ 
+-	// Session ID generation
+-
+-	public Track addTrack( String url, String serverSsrc )
++	/**
++	 * Adds a new Track associated with this ProxySession.
++	 * 
++	 * @param url
++	 *        The URL used as a control reference for the Track
++	 * @param serverSsrc
++	 *        the SSRC id given by the server or null if not provided
++	 * @return a reference to the newly created Track
++	 */
++	public synchronized Track addTrack( String url, String serverSsrc )
+ 	{
+ 		Track track = new Track( url );
+ 		if ( serverSsrc != null )
+ 			track.setServerSSRC( serverSsrc );
+ 		trackList.put( url, track );
++		log.debug( &quot;Added track. TrackList: &quot; + trackList );
+ 		return track;
+ 	}
+ 
++	/**
++	 * @return the RTSP session id used by the client in this session.
++	 */
+ 	public String getClientSessionId()
+ 	{
+ 		return clientSessionId;
+ 	}
+ 
++	/**
++	 * @return the RTSP session id used by the server in this session.
++	 */
+ 	public String getServerSessionId()
+ 	{
+ 		return serverSessionId;
+ 	}
+ 
+-	public void setClientSessionId( String clientSessionId )
++	/**
++	 * Sets the RTSP session id for the client.
++	 * 
++	 * @param clientSessionId
++	 *        a string containing the session id
++	 */
++	public synchronized void setClientSessionId( String clientSessionId )
+ 	{
+ 		this.clientSessionId = clientSessionId;
+ 		clientSessionIds.put( clientSessionId, this );
+ 	}
+ 
+-	public void setServerSessionId( String serverSessionId )
++	/**
++	 * Sets the RTSP session id for the client.
++	 * 
++	 * @param clientSessionId
++	 *        a string containing the session id
++	 */
++	public synchronized void setServerSessionId( String serverSessionId )
+ 	{
+ 		this.serverSessionId = serverSessionId;
+ 		serverSessionIds.put( serverSessionId, this );
+ 	}
+ 
++	/**
++	 * Closes the entire proxy session and frees all associated resources.
++	 */
++	public synchronized void close()
++	{
++		if ( isClosed )
++			return;
++
++		if ( clientSessionId != null )
++			clientSessionIds.remove( clientSessionId );
++		if ( serverSessionId != null )
++			serverSessionIds.remove( serverSessionId );
++
++		log.debug( &quot;TrackList: &quot; + trackList );
++
++		// close all associated tracks
++		for ( Map.Entry&lt;String, Track&gt; entry : trackList.entrySet() ) {
++			entry.getValue().close();
++		}
++
++		isClosed = true;
++		log.debug( &quot;Closed proxySession&quot; );
++	}
++
++	// ///////////////////
++	// Session ID generation
++
++	/** Used for Session IDs generation */
++	private static Random random = new Random();
++
++	/**
++	 * Creates a unique session ID that is a 64 bit number.
++	 * 
++	 * @return the session ID string.
++	 */
++	private static String newSessionID()
++	{
++		String id;
++		while ( true ) {
++			// Create a 64 bit random number
++			synchronized ( random ) {
++				id = new UnsignedLong( random ).toString();
++			}
++
++			if ( clientSessionIds.get( id ) == null ) {
++				// Ok, the id is unique
++				return id;
++			}
++			// try with another id
++		}
++	}
++
+ }
+
+Modified: trunk/src/main/java/rtspproxy/proxy/Track.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/proxy/Track.java	2005-12-04 14:48:53 UTC (rev 316)
++++ trunk/src/main/java/rtspproxy/proxy/Track.java	2005-12-04 23:45:01 UTC (rev 317)
+@@ -21,11 +21,11 @@
+ import java.net.InetAddress;
+ import java.net.InetSocketAddress;
+ import java.util.Collections;
+-import java.util.HashMap;
+ import java.util.HashSet;
+ import java.util.Map;
+ import java.util.Random;
+ import java.util.Set;
++import java.util.concurrent.ConcurrentHashMap;
+ 
+ import org.apache.log4j.Logger;
+ import org.apache.mina.common.IoSession;
+@@ -37,6 +37,13 @@
+ import rtspproxy.rtp.rtcp.RtcpPacket;
+ 
+ /**
++ * A Track is a part of a RTSP session. A typical RTSP session for a video
++ * stream trasmission is composed of 2 tracks: a track for video data and
++ * another track for audio data.
++ * &lt;p&gt;
++ * These two stream are independent and usually are activated by the same
++ * &lt;code&gt;PLAY&lt;/code&gt; and &lt;code&gt;TEARDOWN&lt;/code&gt; requests.
++ * 
+  * @author Matteo Merli
+  */
+ public class Track
+@@ -44,33 +51,45 @@
+ 
+ 	private static Logger log = Logger.getLogger( Track.class );
+ 
++	/** Maps a server SSRC id to a Track */
++	private static Map&lt;UnsignedInt, Track&gt; serverSsrcMap = new ConcurrentHashMap&lt;UnsignedInt, Track&gt;();
++
++	/** Maps a client address to a Track */
++	private static Map&lt;InetSocketAddress, Track&gt; clientAddressMap = new ConcurrentHashMap&lt;InetSocketAddress, Track&gt;();
++
++	/** Maps a server address to a Track */
++	private static Map&lt;InetSocketAddress, Track&gt; serverAddressMap = new ConcurrentHashMap&lt;InetSocketAddress, Track&gt;();
++
++	/** Keeps track of the SSRC IDs used by the proxy, to avoid collisions. */
++	private static Set&lt;UnsignedInt&gt; proxySsrcList = Collections.synchronizedSet( new HashSet&lt;UnsignedInt&gt;() );
++
++	/**
++	 * Control Url of the track. This is the url handle given by the server to
++	 * control different tracks in a RTSP session.
++	 */
+ 	private String url;
+ 
++	/** SSRC id given by the server */
+ 	private UnsignedInt serverSSRC = new UnsignedInt( 0 );
++	/** SSRC id selected by the proxy */
+ 	private UnsignedInt proxySSRC = new UnsignedInt( 0 );;
+ 
++	/**
++	 * Cached references to IoSession objects used to send packets to server and
++	 * client.
++	 */
+ 	private IoSession rtpServerSession = null;
+ 	private IoSession rtcpServerSession = null;
+ 	private IoSession rtpClientSession = null;
+ 	private IoSession rtcpClientSession = null;
+ 
+-	/** Maps a server SSRC id to a Track */
+-	private static Map&lt;UnsignedInt, Track&gt; serverSsrcMap = Collections.synchronizedMap( new HashMap&lt;UnsignedInt, Track&gt;() );
+-
+-	/** Maps a client address to a Track */
+-	private static Map&lt;InetSocketAddress, Track&gt; clientAddressMap = Collections.synchronizedMap( new HashMap&lt;InetSocketAddress, Track&gt;() );
+-
+-	/** Maps a server address to a Track */
+-	private static Map&lt;InetSocketAddress, Track&gt; serverAddressMap = Collections.synchronizedMap( new HashMap&lt;InetSocketAddress, Track&gt;() );
+-
+-	/** Keeps track of the SSRC IDs used by the proxy, to avoid collisions. */
+-	private static Set&lt;UnsignedInt&gt; proxySsrcList = Collections.synchronizedSet( new HashSet&lt;UnsignedInt&gt;() );
+-
+-	// IP address and RTP/RTCP ports for client and server.
+-	// TODO: When using reflection, there will be more than one connected client
+-	// at a
+-	// time to the same Track. So the track should keep a list of connected
+-	// clients and forward packets to each of them.
++	/**
++	 * IP address and RTP/RTCP ports for client and server.
++	 * &lt;p&gt;
++	 * TODO: When using reflection, there will be more than one connected client
++	 * at a time to the same Track. So the track should keep a list of connected
++	 * clients and forward packets to each of them.
++	 */
+ 	private InetAddress clientAddress;
+ 	private int clientRtpPort;
+ 	private int clientRtcpPort;
+@@ -126,7 +145,7 @@
+ 	// /// Member methods
+ 
+ 	/**
+-	 * @return the
++	 * @return the SSRC id used byt the proxy
+ 	 */
+ 	public UnsignedInt getProxySSRC()
+ 	{
+@@ -267,9 +286,6 @@
+ 			rtpClientSession = RtpClientService.newRtpSession( new InetSocketAddress(
+ 					clientAddress, clientRtpPort ) );
+ 
+-			// Client packets needs this attribute to find
+-			// the track
+-			rtpClientSession.setAttribute( &quot;track&quot;, this );
+ 		}
+ 
+ 		rtpClientSession.write( packet.toByteBuffer() );
+@@ -294,33 +310,9 @@
+ 			rtcpClientSession = RtpClientService.newRtcpSession( new InetSocketAddress(
+ 					clientAddress, clientRtcpPort ) );
+ 
+-			// Client packets needs this attribute to find
+-			// the track
+-			rtcpClientSession.setAttribute( &quot;track&quot;, this );
+ 		}
+-	}
+ 
+-	/** Used in SSRC id generation */
+-	private static Random random = new Random();
+-
+-	/**
+-	 * Creates a new SSRC id that is unique in the proxy.
+-	 * 
+-	 * @return the session ID
+-	 */
+-	private static String newSSRC()
+-	{
+-		long id;
+-		while ( true ) {
+-			id = random.nextLong() &amp; 0xFFFFFFFFL;
+-
+-			if ( !proxySsrcList.contains( id ) ) {
+-				// Ok, the id is unique
+-				String ids = Long.toString( id, 16 );
+-				return ids;
+-			}
+-			// try with another id
+-		}
++		rtcpClientSession.write( packet.toByteBuffer() );
+ 	}
+ 
+ 	/**
+@@ -336,7 +328,8 @@
+ 	 * @param rtcpPort
+ 	 *        the port number used for RTCP packets
+ 	 */
+-	public void setClientAddress( InetAddress clientAddress, int rtpPort, int rtcpPort )
++	public synchronized void setClientAddress( InetAddress clientAddress, int rtpPort,
++			int rtcpPort )
+ 	{
+ 		this.clientAddress = clientAddress;
+ 		this.clientRtpPort = rtpPort;
+@@ -356,7 +349,8 @@
+ 	 * @param rtcpPort
+ 	 *        the port number used for RTCP packets
+ 	 */
+-	public void setServerAddress( InetAddress serverAddress, int rtpPort, int rtcpPort )
++	public synchronized void setServerAddress( InetAddress serverAddress, int rtpPort,
++			int rtcpPort )
+ 	{
+ 		this.serverAddress = serverAddress;
+ 		this.serverRtpPort = rtpPort;
+@@ -366,4 +360,49 @@
+ 		serverAddressMap.put( new InetSocketAddress( serverAddress, rtcpPort ), this );
+ 	}
+ 
++	public synchronized void close()
++	{
++		if ( serverSSRC != null )
++			serverSsrcMap.remove( serverSSRC );
++		serverAddressMap.remove( new InetSocketAddress( serverAddress, serverRtpPort ) );
++		serverAddressMap.remove( new InetSocketAddress( serverAddress, serverRtcpPort ) );
++
++		clientAddressMap.remove( new InetSocketAddress( clientAddress, clientRtpPort ) );
++		clientAddressMap.remove( new InetSocketAddress( clientAddress, clientRtcpPort ) );
++
++		if ( proxySSRC != null )
++			proxySsrcList.remove( proxySSRC );
++		log.debug( &quot;Closed track &quot; + url );
++	}
++
++	public String toString()
++	{
++		return &quot;Track(url=\&quot;&quot; + url + &quot;\&quot;&quot;;
++	}
++
++	// ////////////////
++
++	/** Used in SSRC id generation */
++	private static Random random = new Random();
++
++	/**
++	 * Creates a new SSRC id that is unique in the proxy.
++	 * 
++	 * @return the session ID
++	 */
++	private static String newSSRC()
++	{
++		long id;
++		while ( true ) {
++			id = random.nextLong() &amp; 0xFFFFFFFFL;
++
++			if ( !proxySsrcList.contains( id ) ) {
++				// Ok, the id is unique
++				String ids = Long.toString( id, 16 );
++				return ids;
++			}
++			// try with another id
++		}
++	}
++
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000001.html">[Rtspproxy-devel] r316 - trunk/src/main/java/rtspproxy/lib/number
+</A></li>
+	<LI>Next message: <A HREF="000003.html">[Rtspproxy-devel] r318 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2">[ date ]</a>
+              <a href="thread.html#2">[ thread ]</a>
+              <a href="subject.html#2">[ subject ]</a>
+              <a href="author.html#2">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

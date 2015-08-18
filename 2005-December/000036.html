@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r351 - trunk/src/main/java/rtspproxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r351%20-%20trunk/src/main/java/rtspproxy&In-Reply-To=%3C200512191932.jBJJWMZ5012401%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000035.html">
+   <LINK REL="Next"  HREF="000037.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r351 - trunk/src/main/java/rtspproxy</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r351%20-%20trunk/src/main/java/rtspproxy&In-Reply-To=%3C200512191932.jBJJWMZ5012401%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r351 - trunk/src/main/java/rtspproxy">merlimat at berlios.de
+       </A><BR>
+    <I>Mon Dec 19 20:32:22 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000035.html">[Rtspproxy-devel] r350 - in trunk/src/main/java/rtspproxy: . lib proxy proxy/track
+</A></li>
+        <LI>Next message: <A HREF="000037.html">[Rtspproxy-devel] r352 - in trunk: . src/changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#36">[ date ]</a>
+              <a href="thread.html#36">[ thread ]</a>
+              <a href="subject.html#36">[ subject ]</a>
+              <a href="author.html#36">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-19 20:32:18 +0100 (Mon, 19 Dec 2005)
+New Revision: 351
+
+Modified:
+   trunk/src/main/java/rtspproxy/Reactor.java
+Log:
+* Totally refactored the Service code.
+
+
+Modified: trunk/src/main/java/rtspproxy/Reactor.java
+===================================================================
+--- trunk/src/main/java/rtspproxy/Reactor.java	2005-12-19 19:27:06 UTC (rev 350)
++++ trunk/src/main/java/rtspproxy/Reactor.java	2005-12-19 19:32:18 UTC (rev 351)
+@@ -30,12 +30,6 @@
+ 
+ 	private static ProxyServiceRegistry registry = new ProxyServiceRegistry();
+ 
+-	private static ProxyService rtspService;
+-	private static ProxyService rtpClientService;
+-	private static ProxyService rtpServerService;
+-	private static ProxyService rdtClientService;
+-	private static ProxyService rdtServerService;
+-
+ 	private static boolean isStandalone = false;
+ 
+ 	public static void setStandalone( boolean standalone )
+@@ -48,40 +42,36 @@
+ 	 */
+ 	static public void start() throws Exception
+ 	{
+-		rtspService = new RtspService();
++		ProxyService rtspService = new RtspService();
+ 		rtspService.start();
+ 
+-		rtpClientService = new RtpClientService();
++		ProxyService rtpClientService = new RtpClientService();
+ 		rtpClientService.start();
+ 
+-		rtpServerService = new RtpServerService();
++		ProxyService rtcpClientService = new RtcpClientService();
++		rtcpClientService.start();
++
++		ProxyService rtpServerService = new RtpServerService();
+ 		rtpServerService.start();
+ 		
+-		rdtClientService = new RdtClientService();
++		ProxyService rtcpServerService = new RtcpServerService();
++		rtcpServerService.start();
++
++		ProxyService rdtClientService = new RdtClientService();
+ 		rdtClientService.start();
+-		
+-		rdtServerService = new RdtServerService();
++
++		ProxyService rdtServerService = new RdtServerService();
+ 		rdtServerService.start();
+ 	}
+ 
+ 	static public void stop()
+ 	{
+ 		try {
+-			// registry.unbindAll();
+-			if ( rtspService != null )
+-				rtspService.stop();
+-			if ( rtpClientService != null )
+-				rtpClientService.stop();
+-			if ( rtpServerService != null )
+-				rtpServerService.stop();
+-			if ( rdtClientService != null )
+-				rdtClientService.stop();
+-			if ( rdtServerService != null )
+-				rdtServerService.stop();
++			registry.unbindAll();
+ 		} catch ( Exception e ) {
+ 			log.debug( &quot;Error shutting down: &quot; + e );
+ 		}
+-		
++
+ 		log.info( &quot;Shutdown completed&quot; );
+ 
+ 		if ( isStandalone )
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000035.html">[Rtspproxy-devel] r350 - in trunk/src/main/java/rtspproxy: . lib proxy proxy/track
+</A></li>
+	<LI>Next message: <A HREF="000037.html">[Rtspproxy-devel] r352 - in trunk: . src/changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#36">[ date ]</a>
+              <a href="thread.html#36">[ thread ]</a>
+              <a href="subject.html#36">[ subject ]</a>
+              <a href="author.html#36">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

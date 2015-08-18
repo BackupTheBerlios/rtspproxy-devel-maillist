@@ -1,0 +1,698 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r381 - in trunk: RTSPProxy-App RTSPProxy-Core RTSPProxy-OSGi src/site
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r381%20-%20in%20trunk%3A%20RTSPProxy-App%20RTSPProxy-Core%20RTSPProxy-OSGi%20src/site&In-Reply-To=%3C200601070157.k071vuGa032305%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000064.html">
+   <LINK REL="Next"  HREF="000067.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r381 - in trunk: RTSPProxy-App RTSPProxy-Core RTSPProxy-OSGi src/site</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r381%20-%20in%20trunk%3A%20RTSPProxy-App%20RTSPProxy-Core%20RTSPProxy-OSGi%20src/site&In-Reply-To=%3C200601070157.k071vuGa032305%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r381 - in trunk: RTSPProxy-App RTSPProxy-Core RTSPProxy-OSGi src/site">rbieniek at berlios.de
+       </A><BR>
+    <I>Sat Jan  7 02:57:56 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000064.html">[Rtspproxy-devel] r380 - in trunk: . RTSPProxy-Core/src RTSPProxy-Core/src/resources RTSPProxy-OSGi src src/resources src/site
+</A></li>
+        <LI>Next message: <A HREF="000067.html">[Rtspproxy-devel] r383 - in trunk: RTSPProxy-App/src/resources/conf RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/rtsp RTSPProxy-Core/src/test/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#65">[ date ]</a>
+              <a href="thread.html#65">[ thread ]</a>
+              <a href="subject.html#65">[ subject ]</a>
+              <a href="author.html#65">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-07 02:57:24 +0100 (Sat, 07 Jan 2006)
+New Revision: 381
+
+Modified:
+   trunk/RTSPProxy-App/pom.xml
+   trunk/RTSPProxy-Core/pom.xml
+   trunk/RTSPProxy-OSGi/pom.xml
+   trunk/src/site/site.xml
+Log:
+- simplified sub-project POMs
+
+
+Modified: trunk/RTSPProxy-App/pom.xml
+===================================================================
+--- trunk/RTSPProxy-App/pom.xml	2006-01-07 01:30:53 UTC (rev 380)
++++ trunk/RTSPProxy-App/pom.xml	2006-01-07 01:57:24 UTC (rev 381)
+@@ -22,79 +22,7 @@
+ 	&lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+ 	&lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+ 
+-	&lt;organization&gt;
+-		&lt;name&gt;Matteo Merli&lt;/name&gt;
+-		&lt;url&gt;<A HREF="http://merlimat.net&lt;/url">http://merlimat.net&lt;/url</A>&gt;
+-	&lt;/organization&gt;
+ 
+-	&lt;issueManagement&gt;
+-		&lt;system&gt;Berlios&lt;/system&gt;
+-		&lt;url&gt;<A HREF="http://developer.berlios.de/bugs/?group_id=4526&lt;/url">http://developer.berlios.de/bugs/?group_id=4526&lt;/url</A>&gt;
+-	&lt;/issueManagement&gt;
+-
+-	&lt;licenses&gt;
+-		&lt;license&gt;
+-			&lt;name&gt;GNU General Public License&lt;/name&gt;
+-			&lt;url&gt;LICENSE.txt&lt;/url&gt;
+-		&lt;/license&gt;
+-	&lt;/licenses&gt;
+-	&lt;developers&gt;
+-		&lt;developer&gt;
+-			&lt;id&gt;merlimat&lt;/id&gt;
+-			&lt;name&gt;Matteo Merli&lt;/name&gt;
+-			&lt;email&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>&lt;/email&gt;
+-			&lt;!-- &lt;timezone&gt;+1&lt;/timezone&gt; --&gt;
+-			&lt;url&gt;<A HREF="http://merlimat.net/about&lt;/url">http://merlimat.net/about&lt;/url</A>&gt;
+-		&lt;/developer&gt;
+-		&lt;developer&gt;
+-			&lt;id&gt;rbieniek&lt;/id&gt;
+-			&lt;name&gt;Rainer Bieniek&lt;/name&gt;
+-			&lt;email&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>&lt;/email&gt;
+-			&lt;!-- &lt;timezone&gt;+1&lt;/timezone&gt; --&gt;
+-			&lt;!-- &lt;url&gt;<A HREF="http://merlimat.net/about&lt;/url">http://merlimat.net/about&lt;/url</A>&gt; --&gt;
+-		&lt;/developer&gt;
+-	&lt;/developers&gt;
+-
+-	&lt;scm&gt;
+-		&lt;connection&gt;
+-			scm:svn:<A HREF="http://svn.berlios.de/svnroot/repos/rtspproxy/trunk">http://svn.berlios.de/svnroot/repos/rtspproxy/trunk</A>
+-		&lt;/connection&gt;
+-		&lt;developerConnection&gt;
+-			scm:svn:<A HREF="https://svn.berlios.de/svnroot/repos/rtspproxy/trunk">https://svn.berlios.de/svnroot/repos/rtspproxy/trunk</A>
+-		&lt;/developerConnection&gt;
+-		&lt;url&gt;<A HREF="http://svn.berlios.de/wsvn/rtspproxy/&lt;/url">http://svn.berlios.de/wsvn/rtspproxy/&lt;/url</A>&gt;
+-	&lt;/scm&gt;
+-
+-	&lt;mailingLists&gt;
+-		&lt;mailingList&gt;
+-			&lt;name&gt;Development list&lt;/name&gt;
+-			&lt;post&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">rtspproxy-devel at lists.berlios.de</A>&lt;/post&gt;
+-
+-			&lt;archive&gt;
+-				<A HREF="http://www.nabble.com/RtspProxy-Devel-f6753.html">http://www.nabble.com/RtspProxy-Devel-f6753.html</A>
+-			&lt;/archive&gt;
+-			&lt;subscribe&gt;
+-				<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">https://lists.berlios.de/mailman/listinfo/rtspproxy-devel</A>
+-			&lt;/subscribe&gt;
+-			&lt;unsubscribe&gt;
+-				<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">https://lists.berlios.de/mailman/listinfo/rtspproxy-devel</A>
+-			&lt;/unsubscribe&gt;
+-		&lt;/mailingList&gt;
+-	&lt;/mailingLists&gt;
+-
+-	&lt;distributionManagement&gt;
+-		&lt;downloadUrl&gt;
+-			<A HREF="http://rtspproxy.berlios.de/download.html">http://rtspproxy.berlios.de/download.html</A>
+-		&lt;/downloadUrl&gt;
+-		&lt;site&gt;
+-			&lt;id&gt;rtspproxy.website&lt;/id&gt;
+-			&lt;name&gt;Default Site&lt;/name&gt;
+-			&lt;url&gt;
+-				<A HREF="scp://shell.berlios.de/home/groups/rtspproxy/htdocs">scp://shell.berlios.de/home/groups/rtspproxy/htdocs</A>
+-			&lt;/url&gt;
+-		&lt;/site&gt;
+-	&lt;/distributionManagement&gt;
+-
+ 	&lt;dependencies&gt;
+ 
+     &lt;dependency&gt;
+@@ -160,109 +88,7 @@
+ 					&lt;/descriptor&gt;
+ 				&lt;/configuration&gt;
+ 			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-					&lt;outputEncoding&gt;UTF-8&lt;/outputEncoding&gt;
+-				&lt;/configuration&gt;
+-				&lt;!--  &lt;version&gt;2.0-beta-2&lt;/version&gt; --&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
+-				&lt;executions&gt;
+-					&lt;execution&gt;
+-						&lt;goals&gt;
+-							&lt;goal&gt;announcement-generate&lt;/goal&gt;
+-						&lt;/goals&gt;
+-						&lt;id&gt;announcement-generate&lt;/id&gt;
+-					&lt;/execution&gt;
+-					&lt;execution&gt;
+-						&lt;goals&gt;
+-							&lt;goal&gt;announcement-mail&lt;/goal&gt;
+-						&lt;/goals&gt;
+-						&lt;id&gt;announcement-mail&lt;/id&gt;
+-					&lt;/execution&gt;
+-				&lt;/executions&gt;
+-				&lt;configuration&gt;
+-					&lt;xmlPath&gt;src/changes&lt;/xmlPath&gt;
+-
+-					&lt;smtpHost&gt;mail.yourhost.com&lt;/smtpHost&gt;
+-					&lt;smtpPort implementation=&quot;java.lang.Integer&quot;&gt;
+-						25
+-					&lt;/smtpPort&gt;
+-					&lt;toAddresses&gt;
+-						&lt;toAddress implementation=&quot;java.lang.String&quot;&gt;
+-							<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">someones at email.com</A>
+-						&lt;/toAddress&gt;
+-						&lt;toAddress implementation=&quot;java.lang.String&quot;&gt;
+-							<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">anothersomeone at email.com</A>
+-						&lt;/toAddress&gt;
+-					&lt;/toAddresses&gt;
+-				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-					&lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;
+-						1.5
+-					&lt;/targetJdk&gt;
+-				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
+ 		&lt;/plugins&gt;
+ 	&lt;/build&gt;
+ 
+-	&lt;reporting&gt;
+-		&lt;plugins&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;
+-					maven-project-info-reports-plugin
+-				&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;changelog-maven-plugin&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;surefire-report-maven-plugin&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;taglist-maven-plugin&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-&lt;!-- 
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-javadoc-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-					&lt;charset&gt;UTF-8&lt;/charset&gt;
+-					&lt;docencoding&gt;UTF-8&lt;/docencoding&gt;
+-					&lt;link&gt;
+-						<A HREF="http://java.sun.com/j2se/1.5.0/docs/api/,">http://java.sun.com/j2se/1.5.0/docs/api/,</A>
+-						<A HREF="http://www.junit.org/junit/javadoc/3.8.1/,">http://www.junit.org/junit/javadoc/3.8.1/,</A>
+-						<A HREF="http://directory.apache.org/subprojects/network/apidocs/">http://directory.apache.org/subprojects/network/apidocs/</A>
+-					&lt;/link&gt;
+-				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
+---&gt;
+-			&lt;!-- 
+-				&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-				&lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;1.5&lt;/targetJdk&gt;
+-				&lt;/configuration&gt;
+-				&lt;/plugin&gt;
+-			--&gt;
+-		&lt;/plugins&gt;
+-	&lt;/reporting&gt;
+-
+ &lt;/project&gt;
+
+Modified: trunk/RTSPProxy-Core/pom.xml
+===================================================================
+--- trunk/RTSPProxy-Core/pom.xml	2006-01-07 01:30:53 UTC (rev 380)
++++ trunk/RTSPProxy-Core/pom.xml	2006-01-07 01:57:24 UTC (rev 381)
+@@ -21,79 +21,6 @@
+ 	&lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+ 	&lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+ 
+-	&lt;organization&gt;
+-		&lt;name&gt;Matteo Merli&lt;/name&gt;
+-		&lt;url&gt;<A HREF="http://merlimat.net&lt;/url">http://merlimat.net&lt;/url</A>&gt;
+-	&lt;/organization&gt;
+-
+-	&lt;issueManagement&gt;
+-		&lt;system&gt;Berlios&lt;/system&gt;
+-		&lt;url&gt;<A HREF="http://developer.berlios.de/bugs/?group_id=4526&lt;/url">http://developer.berlios.de/bugs/?group_id=4526&lt;/url</A>&gt;
+-	&lt;/issueManagement&gt;
+-
+-	&lt;licenses&gt;
+-		&lt;license&gt;
+-			&lt;name&gt;GNU General Public License&lt;/name&gt;
+-			&lt;url&gt;LICENSE.txt&lt;/url&gt;
+-		&lt;/license&gt;
+-	&lt;/licenses&gt;
+-	&lt;developers&gt;
+-		&lt;developer&gt;
+-			&lt;id&gt;merlimat&lt;/id&gt;
+-			&lt;name&gt;Matteo Merli&lt;/name&gt;
+-			&lt;email&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>&lt;/email&gt;
+-			&lt;!-- &lt;timezone&gt;+1&lt;/timezone&gt; --&gt;
+-			&lt;url&gt;<A HREF="http://merlimat.net/about&lt;/url">http://merlimat.net/about&lt;/url</A>&gt;
+-		&lt;/developer&gt;
+-		&lt;developer&gt;
+-			&lt;id&gt;rbieniek&lt;/id&gt;
+-			&lt;name&gt;Rainer Bieniek&lt;/name&gt;
+-			&lt;email&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>&lt;/email&gt;
+-			&lt;!-- &lt;timezone&gt;+1&lt;/timezone&gt; --&gt;
+-			&lt;!-- &lt;url&gt;<A HREF="http://merlimat.net/about&lt;/url">http://merlimat.net/about&lt;/url</A>&gt; --&gt;
+-		&lt;/developer&gt;
+-	&lt;/developers&gt;
+-
+-	&lt;scm&gt;
+-		&lt;connection&gt;
+-			scm:svn:<A HREF="http://svn.berlios.de/svnroot/repos/rtspproxy/trunk">http://svn.berlios.de/svnroot/repos/rtspproxy/trunk</A>
+-		&lt;/connection&gt;
+-		&lt;developerConnection&gt;
+-			scm:svn:<A HREF="https://svn.berlios.de/svnroot/repos/rtspproxy/trunk">https://svn.berlios.de/svnroot/repos/rtspproxy/trunk</A>
+-		&lt;/developerConnection&gt;
+-		&lt;url&gt;<A HREF="http://svn.berlios.de/wsvn/rtspproxy/&lt;/url">http://svn.berlios.de/wsvn/rtspproxy/&lt;/url</A>&gt;
+-	&lt;/scm&gt;
+-
+-	&lt;mailingLists&gt;
+-		&lt;mailingList&gt;
+-			&lt;name&gt;Development list&lt;/name&gt;
+-			&lt;post&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">rtspproxy-devel at lists.berlios.de</A>&lt;/post&gt;
+-
+-			&lt;archive&gt;
+-				<A HREF="http://www.nabble.com/RtspProxy-Devel-f6753.html">http://www.nabble.com/RtspProxy-Devel-f6753.html</A>
+-			&lt;/archive&gt;
+-			&lt;subscribe&gt;
+-				<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">https://lists.berlios.de/mailman/listinfo/rtspproxy-devel</A>
+-			&lt;/subscribe&gt;
+-			&lt;unsubscribe&gt;
+-				<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">https://lists.berlios.de/mailman/listinfo/rtspproxy-devel</A>
+-			&lt;/unsubscribe&gt;
+-		&lt;/mailingList&gt;
+-	&lt;/mailingLists&gt;
+-
+-	&lt;distributionManagement&gt;
+-		&lt;downloadUrl&gt;
+-			<A HREF="http://rtspproxy.berlios.de/download.html">http://rtspproxy.berlios.de/download.html</A>
+-		&lt;/downloadUrl&gt;
+-		&lt;site&gt;
+-			&lt;id&gt;rtspproxy.website&lt;/id&gt;
+-			&lt;name&gt;Default Site&lt;/name&gt;
+-			&lt;url&gt;
+-				<A HREF="scp://shell.berlios.de/home/groups/rtspproxy/htdocs">scp://shell.berlios.de/home/groups/rtspproxy/htdocs</A>
+-			&lt;/url&gt;
+-		&lt;/site&gt;
+-	&lt;/distributionManagement&gt;
+-
+ 	&lt;dependencies&gt;
+ 
+ 		&lt;dependency&gt;
+@@ -150,118 +77,7 @@
+ 					&lt;showWarnings&gt;true&lt;/showWarnings&gt;
+ 				&lt;/configuration&gt;
+ 			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-assembly-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-					&lt;descriptor&gt;
+-						src/resources/release/default.xml
+-					&lt;/descriptor&gt;
+-				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-					&lt;outputEncoding&gt;UTF-8&lt;/outputEncoding&gt;
+-				&lt;/configuration&gt;
+-				&lt;!--  &lt;version&gt;2.0-beta-2&lt;/version&gt; --&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
+-				&lt;executions&gt;
+-					&lt;execution&gt;
+-						&lt;goals&gt;
+-							&lt;goal&gt;announcement-generate&lt;/goal&gt;
+-						&lt;/goals&gt;
+-						&lt;id&gt;announcement-generate&lt;/id&gt;
+-					&lt;/execution&gt;
+-					&lt;execution&gt;
+-						&lt;goals&gt;
+-							&lt;goal&gt;announcement-mail&lt;/goal&gt;
+-						&lt;/goals&gt;
+-						&lt;id&gt;announcement-mail&lt;/id&gt;
+-					&lt;/execution&gt;
+-				&lt;/executions&gt;
+-				&lt;configuration&gt;
+-					&lt;xmlPath&gt;src/changes&lt;/xmlPath&gt;
+-
+-					&lt;smtpHost&gt;mail.yourhost.com&lt;/smtpHost&gt;
+-					&lt;smtpPort implementation=&quot;java.lang.Integer&quot;&gt;
+-						25
+-					&lt;/smtpPort&gt;
+-					&lt;toAddresses&gt;
+-						&lt;toAddress implementation=&quot;java.lang.String&quot;&gt;
+-							<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">someones at email.com</A>
+-						&lt;/toAddress&gt;
+-						&lt;toAddress implementation=&quot;java.lang.String&quot;&gt;
+-							<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">anothersomeone at email.com</A>
+-						&lt;/toAddress&gt;
+-					&lt;/toAddresses&gt;
+-				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-					&lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;
+-						1.5
+-					&lt;/targetJdk&gt;
+-				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
+ 		&lt;/plugins&gt;
+ 	&lt;/build&gt;
+ 
+-	&lt;reporting&gt;
+-		&lt;plugins&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;
+-					maven-project-info-reports-plugin
+-				&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;changelog-maven-plugin&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;surefire-report-maven-plugin&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-				&lt;artifactId&gt;taglist-maven-plugin&lt;/artifactId&gt;
+-			&lt;/plugin&gt;
+-&lt;!-- 
+-			&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-javadoc-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-					&lt;charset&gt;UTF-8&lt;/charset&gt;
+-					&lt;docencoding&gt;UTF-8&lt;/docencoding&gt;
+-					&lt;link&gt;
+-						<A HREF="http://java.sun.com/j2se/1.5.0/docs/api/,">http://java.sun.com/j2se/1.5.0/docs/api/,</A>
+-						<A HREF="http://www.junit.org/junit/javadoc/3.8.1/,">http://www.junit.org/junit/javadoc/3.8.1/,</A>
+-						<A HREF="http://directory.apache.org/subprojects/network/apidocs/">http://directory.apache.org/subprojects/network/apidocs/</A>
+-					&lt;/link&gt;
+-				&lt;/configuration&gt;
+-			&lt;/plugin&gt;
+---&gt;
+-			&lt;!-- 
+-				&lt;plugin&gt;
+-				&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-				&lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
+-				&lt;configuration&gt;
+-				&lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;1.5&lt;/targetJdk&gt;
+-				&lt;/configuration&gt;
+-				&lt;/plugin&gt;
+-			--&gt;
+-		&lt;/plugins&gt;
+-	&lt;/reporting&gt;
+-
+ &lt;/project&gt;
+
+Modified: trunk/RTSPProxy-OSGi/pom.xml
+===================================================================
+--- trunk/RTSPProxy-OSGi/pom.xml	2006-01-07 01:30:53 UTC (rev 380)
++++ trunk/RTSPProxy-OSGi/pom.xml	2006-01-07 01:57:24 UTC (rev 381)
+@@ -15,79 +15,6 @@
+   &lt;url&gt;<A HREF="http://rtspproxy.berlios.de&lt;/url">http://rtspproxy.berlios.de&lt;/url</A>&gt;
+   &lt;inceptionYear&gt;2003&lt;/inceptionYear&gt;
+ 
+-  &lt;organization&gt;
+-    &lt;name&gt;Matteo Merli&lt;/name&gt;
+-    &lt;url&gt;<A HREF="http://merlimat.net&lt;/url">http://merlimat.net&lt;/url</A>&gt;
+-  &lt;/organization&gt;
+-  
+-  &lt;issueManagement&gt;
+-    &lt;system&gt;Berlios&lt;/system&gt;
+-    &lt;url&gt;<A HREF="http://developer.berlios.de/bugs/?group_id=4526&lt;/url">http://developer.berlios.de/bugs/?group_id=4526&lt;/url</A>&gt;
+-  &lt;/issueManagement&gt;
+-  
+-  &lt;licenses&gt;
+-    &lt;license&gt;
+-      &lt;name&gt;GNU General Public License&lt;/name&gt;
+-      &lt;url&gt;LICENSE.txt&lt;/url&gt;
+-    &lt;/license&gt;
+-  &lt;/licenses&gt;
+-  &lt;developers&gt;
+-    &lt;developer&gt;
+-      &lt;id&gt;merlimat&lt;/id&gt;
+-      &lt;name&gt;Matteo Merli&lt;/name&gt;
+-      &lt;email&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">matteo.merli at gmail.com</A>&lt;/email&gt;
+-      &lt;!-- &lt;timezone&gt;+1&lt;/timezone&gt; --&gt;
+-      &lt;url&gt;<A HREF="http://merlimat.net/about&lt;/url">http://merlimat.net/about&lt;/url</A>&gt;
+-    &lt;/developer&gt;
+-    &lt;developer&gt;
+-      &lt;id&gt;rbieniek&lt;/id&gt;
+-      &lt;name&gt;Rainer Bieniek&lt;/name&gt;
+-      &lt;email&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>&lt;/email&gt;
+-      &lt;!-- &lt;timezone&gt;+1&lt;/timezone&gt; --&gt;
+-      &lt;!-- &lt;url&gt;<A HREF="http://merlimat.net/about&lt;/url">http://merlimat.net/about&lt;/url</A>&gt; --&gt;
+-    &lt;/developer&gt;
+-  &lt;/developers&gt;
+-  
+-  &lt;scm&gt;
+-    &lt;connection&gt;
+-      scm:svn:<A HREF="http://svn.berlios.de/svnroot/repos/rtspproxy/trunk">http://svn.berlios.de/svnroot/repos/rtspproxy/trunk</A>
+-    &lt;/connection&gt;
+-    &lt;developerConnection&gt;
+-      scm:svn:<A HREF="https://svn.berlios.de/svnroot/repos/rtspproxy/trunk">https://svn.berlios.de/svnroot/repos/rtspproxy/trunk</A>
+-    &lt;/developerConnection&gt;
+-    &lt;url&gt;<A HREF="http://svn.berlios.de/wsvn/rtspproxy/&lt;/url">http://svn.berlios.de/wsvn/rtspproxy/&lt;/url</A>&gt;
+-  &lt;/scm&gt;
+-  
+-  &lt;mailingLists&gt;
+-    &lt;mailingList&gt;
+-      &lt;name&gt;Development list&lt;/name&gt;
+-      &lt;post&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">rtspproxy-devel at lists.berlios.de</A>&lt;/post&gt;
+-      
+-      &lt;archive&gt;
+-	<A HREF="http://www.nabble.com/RtspProxy-Devel-f6753.html">http://www.nabble.com/RtspProxy-Devel-f6753.html</A>
+-      &lt;/archive&gt;
+-      &lt;subscribe&gt;
+-	<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">https://lists.berlios.de/mailman/listinfo/rtspproxy-devel</A>
+-      &lt;/subscribe&gt;
+-      &lt;unsubscribe&gt;
+-	<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">https://lists.berlios.de/mailman/listinfo/rtspproxy-devel</A>
+-      &lt;/unsubscribe&gt;
+-    &lt;/mailingList&gt;
+-  &lt;/mailingLists&gt;
+-  
+-  &lt;distributionManagement&gt;
+-    &lt;downloadUrl&gt;
+-      <A HREF="http://rtspproxy.berlios.de/download.html">http://rtspproxy.berlios.de/download.html</A>
+-    &lt;/downloadUrl&gt;
+-    &lt;site&gt;
+-      &lt;id&gt;rtspproxy.website&lt;/id&gt;
+-      &lt;name&gt;Default Site&lt;/name&gt;
+-      &lt;url&gt;
+-	<A HREF="scp://shell.berlios.de/home/groups/rtspproxy/htdocs">scp://shell.berlios.de/home/groups/rtspproxy/htdocs</A>
+-      &lt;/url&gt;
+-    &lt;/site&gt;
+-  &lt;/distributionManagement&gt;
+-    
+   &lt;dependencies&gt;
+ 
+     &lt;dependency&gt;
+@@ -132,66 +59,7 @@
+ 	  &lt;showWarnings&gt;true&lt;/showWarnings&gt;
+ 	&lt;/configuration&gt;
+       &lt;/plugin&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-	&lt;artifactId&gt;maven-assembly-plugin&lt;/artifactId&gt;
+-	&lt;configuration&gt;
+-	  &lt;descriptor&gt;
+-	    src/resources/release/default.xml
+-	  &lt;/descriptor&gt;
+-	&lt;/configuration&gt;
+-      &lt;/plugin&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-	&lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
+-	&lt;configuration&gt;
+-	  &lt;outputEncoding&gt;UTF-8&lt;/outputEncoding&gt;
+-	&lt;/configuration&gt;
+-	&lt;!--  &lt;version&gt;2.0-beta-2&lt;/version&gt; --&gt;
+-      &lt;/plugin&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-	&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
+-	&lt;executions&gt;
+-	  &lt;execution&gt;
+-	    &lt;goals&gt;
+-	      &lt;goal&gt;announcement-generate&lt;/goal&gt;
+-	    &lt;/goals&gt;
+-	    &lt;id&gt;announcement-generate&lt;/id&gt;
+-	  &lt;/execution&gt;
+-	  &lt;execution&gt;
+-	    &lt;goals&gt;
+-	      &lt;goal&gt;announcement-mail&lt;/goal&gt;
+-	    &lt;/goals&gt;
+-	    &lt;id&gt;announcement-mail&lt;/id&gt;
+-	  &lt;/execution&gt;
+-	&lt;/executions&gt;
+-	&lt;configuration&gt;
+-	  &lt;xmlPath&gt;src/changes&lt;/xmlPath&gt;
+-	  
+-	  &lt;smtpHost&gt;mail.yourhost.com&lt;/smtpHost&gt;
+-	  &lt;smtpPort implementation=&quot;java.lang.Integer&quot;&gt;
+-	    25
+-	  &lt;/smtpPort&gt;
+-	  &lt;toAddresses&gt;
+-	    &lt;toAddress implementation=&quot;java.lang.String&quot;&gt;
+-	      <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">someones at email.com</A>
+-	    &lt;/toAddress&gt;
+-	    &lt;toAddress implementation=&quot;java.lang.String&quot;&gt;
+-	      <A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">anothersomeone at email.com</A>
+-	    &lt;/toAddress&gt;
+-	  &lt;/toAddresses&gt;
+-	&lt;/configuration&gt;
+-      &lt;/plugin&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-	&lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
+-	&lt;configuration&gt;
+-	  &lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;
+-	    1.5
+-	  &lt;/targetJdk&gt;
+-	&lt;/configuration&gt;
+-      &lt;/plugin&gt;
++
+       &lt;!-- see <A HREF="http://docs.safehaus.org/display/OSGI/OSGi+Plugin+for+Maven+2.0">http://docs.safehaus.org/display/OSGI/OSGi+Plugin+for+Maven+2.0</A> for further instructions --&gt;
+       &lt;plugin&gt;
+         &lt;groupId&gt;org.apache.felix.plugins&lt;/groupId&gt;
+@@ -218,56 +86,5 @@
+       &lt;url&gt;<A HREF="http://m2.safehaus.org&lt;/url">http://m2.safehaus.org&lt;/url</A>&gt;
+     &lt;/repository&gt;
+   &lt;/repositories&gt;
+-   
+-  &lt;reporting&gt;
+-    &lt;plugins&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-	&lt;artifactId&gt;
+-	  maven-project-info-reports-plugin
+-	&lt;/artifactId&gt;
+-      &lt;/plugin&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-	&lt;artifactId&gt;changelog-maven-plugin&lt;/artifactId&gt;
+-      &lt;/plugin&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-	&lt;artifactId&gt;surefire-report-maven-plugin&lt;/artifactId&gt;
+-      &lt;/plugin&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-	&lt;artifactId&gt;changes-maven-plugin&lt;/artifactId&gt;
+-      &lt;/plugin&gt;
+-      &lt;plugin&gt;
+-	&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+-	&lt;artifactId&gt;taglist-maven-plugin&lt;/artifactId&gt;
+-      &lt;/plugin&gt;
+-      &lt;!-- 
+-      &lt;plugin&gt;
+-      &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-      &lt;artifactId&gt;maven-javadoc-plugin&lt;/artifactId&gt;
+-      &lt;configuration&gt;
+-      &lt;charset&gt;UTF-8&lt;/charset&gt;
+-      &lt;docencoding&gt;UTF-8&lt;/docencoding&gt;
+-      &lt;link&gt;
+-      <A HREF="http://java.sun.com/j2se/1.5.0/docs/api/,">http://java.sun.com/j2se/1.5.0/docs/api/,</A>
+-      <A HREF="http://www.junit.org/junit/javadoc/3.8.1/,">http://www.junit.org/junit/javadoc/3.8.1/,</A>
+-      <A HREF="http://directory.apache.org/subprojects/network/apidocs/">http://directory.apache.org/subprojects/network/apidocs/</A>
+-    &lt;/link&gt;
+-    &lt;/configuration&gt;
+-    &lt;/plugin&gt;
+-      --&gt;
+-      &lt;!-- 
+-      &lt;plugin&gt;
+-      &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+-      &lt;artifactId&gt;maven-pmd-plugin&lt;/artifactId&gt;
+-      &lt;configuration&gt;
+-      &lt;targetJdk implementation=&quot;java.lang.String&quot;&gt;1.5&lt;/targetJdk&gt;
+-    &lt;/configuration&gt;
+-    &lt;/plugin&gt;
+-      --&gt;
+-    &lt;/plugins&gt;
+-  &lt;/reporting&gt;
+-  
++
+ &lt;/project&gt;
+
+Modified: trunk/src/site/site.xml
+===================================================================
+--- trunk/src/site/site.xml	2006-01-07 01:30:53 UTC (rev 380)
++++ trunk/src/site/site.xml	2006-01-07 01:57:24 UTC (rev 381)
+@@ -91,7 +91,5 @@
+ 		&lt;/menu&gt;
+ 
+                ${modules}
+-
+-               ${reports}
+ 	&lt;/body&gt;
+ &lt;/project&gt;
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000064.html">[Rtspproxy-devel] r380 - in trunk: . RTSPProxy-Core/src RTSPProxy-Core/src/resources RTSPProxy-OSGi src src/resources src/site
+</A></li>
+	<LI>Next message: <A HREF="000067.html">[Rtspproxy-devel] r383 - in trunk: RTSPProxy-App/src/resources/conf RTSPProxy-Core/src/main/java/rtspproxy/config RTSPProxy-Core/src/main/java/rtspproxy/rtsp RTSPProxy-Core/src/test/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#65">[ date ]</a>
+              <a href="thread.html#65">[ thread ]</a>
+              <a href="subject.html#65">[ subject ]</a>
+              <a href="author.html#65">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

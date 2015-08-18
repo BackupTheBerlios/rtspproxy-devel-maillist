@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r347 - trunk/src/test/java/rtspproxy/rtsp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r347%20-%20trunk/src/test/java/rtspproxy/rtsp&In-Reply-To=%3C200512181551.jBIFpgbb032273%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000034.html">
+   <LINK REL="Next"  HREF="000032.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r347 - trunk/src/test/java/rtspproxy/rtsp</H1>
+    <B>merlimat at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r347%20-%20trunk/src/test/java/rtspproxy/rtsp&In-Reply-To=%3C200512181551.jBIFpgbb032273%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r347 - trunk/src/test/java/rtspproxy/rtsp">merlimat at berlios.de
+       </A><BR>
+    <I>Sun Dec 18 16:51:42 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000034.html">[Rtspproxy-devel] r346 - in trunk/src/main/java/rtspproxy: . lib proxy proxy/track rtsp
+</A></li>
+        <LI>Next message: <A HREF="000032.html">[Rtspproxy-devel] r348 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#31">[ date ]</a>
+              <a href="thread.html#31">[ thread ]</a>
+              <a href="subject.html#31">[ subject ]</a>
+              <a href="author.html#31">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2005-12-18 16:51:39 +0100 (Sun, 18 Dec 2005)
+New Revision: 347
+
+Modified:
+   trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java
+   trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java
+Log:
+Initial support for RDT packets handling.
+
+Modified: trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java
+===================================================================
+--- trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java	2005-12-18 15:50:15 UTC (rev 346)
++++ trunk/src/test/java/rtspproxy/rtsp/RtspTransportListTest.java	2005-12-18 15:51:39 UTC (rev 347)
+@@ -48,14 +48,15 @@
+ 
+ 	public void testToString()
+ 	{
+-		String expected = &quot;RTP/AVP/UDP;unicast;client_port=6972-6973;mode=play&quot;;
++		String expected = &quot;x-real-rdt/udp;client_port=6972;mode=play,&quot;
++				+ &quot;RTP/AVP/UDP;unicast;client_port=6972-6973;mode=play&quot;;
+ 		assertEquals( expected, transportList.toString() );
+ 	}
+ 
+ 	public void testCount()
+ 	{
+ 		// only a transport type is valid in this test
+-		assertEquals( 1, transportList.count() );
++		assertEquals( 2, transportList.count() );
+ 	}
+ 
+ }
+
+Modified: trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java
+===================================================================
+--- trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java	2005-12-18 15:50:15 UTC (rev 346)
++++ trunk/src/test/java/rtspproxy/rtsp/RtspTransportTest.java	2005-12-18 15:51:39 UTC (rev 347)
+@@ -65,7 +65,7 @@
+ 	public void testIsSupportedByProxy()
+ 	{
+ 		assertEquals( false, transport1.isSupportedByProxy() );
+-		assertEquals( false, transport2.isSupportedByProxy() );
++		assertEquals( true, transport2.isSupportedByProxy() );
+ 		assertEquals( false, transport3.isSupportedByProxy() );
+ 		assertEquals( true, transport4.isSupportedByProxy() );
+ 		assertEquals( false, transport5.isSupportedByProxy() );
+@@ -114,12 +114,12 @@
+ 	 */
+ 	public void testGetDeliveryType()
+ 	{
+-		assertEquals( DeliveryType.None, transport1.getDeliveryType() );
+-		assertEquals( DeliveryType.None, transport2.getDeliveryType() );
++		assertEquals( DeliveryType.unicast, transport1.getDeliveryType() );
++		assertEquals( DeliveryType.unicast, transport2.getDeliveryType() );
+ 		assertEquals( DeliveryType.None, transport3.getDeliveryType() );
+ 		assertEquals( DeliveryType.unicast, transport4.getDeliveryType() );
+ 		assertEquals( DeliveryType.None, transport5.getDeliveryType() );
+-		assertEquals( DeliveryType.None, transport6.getDeliveryType() );
++		assertEquals( DeliveryType.unicast, transport6.getDeliveryType() );
+ 		assertEquals( DeliveryType.unicast, transport7.getDeliveryType() );
+ 	}
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000034.html">[Rtspproxy-devel] r346 - in trunk/src/main/java/rtspproxy: . lib proxy proxy/track rtsp
+</A></li>
+	<LI>Next message: <A HREF="000032.html">[Rtspproxy-devel] r348 - trunk/src/main/java/rtspproxy/rtsp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#31">[ date ]</a>
+              <a href="thread.html#31">[ thread ]</a>
+              <a href="subject.html#31">[ subject ]</a>
+              <a href="author.html#31">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

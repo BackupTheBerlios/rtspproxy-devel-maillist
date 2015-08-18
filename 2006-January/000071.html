@@ -1,0 +1,2393 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r387 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/proxy main/java/rtspproxy/proxy/track main/java/rtspproxy/rdt main/java/rtspproxy/transport main/java/rtspproxy/transport/socket main/java/rtspproxy/transport/socket/nio main/java/rtspproxy/transport/socket/nio/support test/java/rtspproxy/rdt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r387%20-%20in%20trunk/RTSPProxy-Core/src%3A%20main/java/rtspproxy%20main/java/rtspproxy/proxy%20main/java/rtspproxy/proxy/track%20main/java/rtspproxy/rdt%20main/java/rtspproxy/transport%20main/java/rtspproxy/transport/socket%20main/java/rtspproxy/transport/socket/nio%20main/java/rtspproxy/transport/socket/nio/support%20test/java/rtspproxy/rdt&In-Reply-To=%3C200601102338.k0ANcwCR003892%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000070.html">
+   <LINK REL="Next"  HREF="000072.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r387 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/proxy main/java/rtspproxy/proxy/track main/java/rtspproxy/rdt main/java/rtspproxy/transport main/java/rtspproxy/transport/socket main/java/rtspproxy/transport/socket/nio main/java/rtspproxy/transport/socket/nio/support test/java/rtspproxy/rdt</H1>
+    <B>rbieniek at berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r387%20-%20in%20trunk/RTSPProxy-Core/src%3A%20main/java/rtspproxy%20main/java/rtspproxy/proxy%20main/java/rtspproxy/proxy/track%20main/java/rtspproxy/rdt%20main/java/rtspproxy/transport%20main/java/rtspproxy/transport/socket%20main/java/rtspproxy/transport/socket/nio%20main/java/rtspproxy/transport/socket/nio/support%20test/java/rtspproxy/rdt&In-Reply-To=%3C200601102338.k0ANcwCR003892%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r387 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy main/java/rtspproxy/proxy main/java/rtspproxy/proxy/track main/java/rtspproxy/rdt main/java/rtspproxy/transport main/java/rtspproxy/transport/socket main/java/rtspproxy/transport/socket/nio main/java/rtspproxy/transport/socket/nio/support test/java/rtspproxy/rdt">rbieniek at berlios.de
+       </A><BR>
+    <I>Wed Jan 11 00:38:58 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000070.html">[Rtspproxy-devel] r386 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy/rdt test test/java/rtspproxy test/java/rtspproxy/rdt test/resources test/resources/rtspproxy test/resources/rtspproxy/rdt
+</A></li>
+        <LI>Next message: <A HREF="000072.html">[Rtspproxy-devel] r388 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter filter/tracking proxy proxy/track rdt transport/socket/nio transport/socket/nio/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#71">[ date ]</a>
+              <a href="thread.html#71">[ thread ]</a>
+              <a href="subject.html#71">[ subject ]</a>
+              <a href="author.html#71">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: rbieniek
+Date: 2006-01-11 00:38:43 +0100 (Wed, 11 Jan 2006)
+New Revision: 387
+
+Added:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtFilterChainBuilder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolCodecFactory.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolEncoder.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramAcceptor.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramConnector.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramSession.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramAcceptorDelegate.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramConnectorDelegate.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramFilterChain.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramSessionImpl.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramSessionManager.java
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ClientRdtPacketHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRdtPacketHandler.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+   trunk/RTSPProxy-Core/src/test/java/rtspproxy/rdt/BufferUtils.java
+Log:
+- Moved RDT transport implementation to Iofilter / IoHandler based 
+  implementation.
+- Added datagram connector / acceptor sources from mina 0.9.0 as
+  rtspproxy.transport.socket.nio package. This helps to fix bugs
+  in the mina 0.9.0 datagram connector / acceptor implementation
+  which are related to session management.
+
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -123,9 +123,11 @@
+ 			throws IOException
+ 	{
+ 		IoAcceptor acceptor = newAcceptor( service );
+-		acceptor.setFilterChainBuilder( new IoFilterChainBuilderWrapper( service,
+-				filterChainBuilder ) );
+-		acceptor.bind( address, ioHandler );
++		
++		IoFilterChainBuilder builder = new IoFilterChainBuilderWrapper( service,
++				filterChainBuilder );
++		// acceptor.setFilterChainBuilder( builder );
++		acceptor.bind( address, ioHandler, builder );
+ 
+ 		services.put( service.getName(), service );
+ 
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtClientService.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -18,13 +18,18 @@
+ 
+ package rtspproxy;
+ 
++import java.net.SocketAddress;
++
++import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+ 
+ import rtspproxy.config.Config;
+ import rtspproxy.config.Parameter;
+ import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ClientRdtPacketHandler;
++import rtspproxy.rdt.RdtFilterChainBuilder;
+ 
+ /**
+  * ProxyService that manages the RDT packets incoming from clients.
+@@ -35,6 +40,8 @@
+ {
+ 
+ 	private IoHandler clientRdtPacketHandler = new ClientRdtPacketHandler();
++	
++	private RdtFilterChainBuilder filterChainBuilder = new RdtFilterChainBuilder();
+ 
+ 	/** Service name */
+ 	private static final String NAME = &quot;RdtClientService&quot;;
+@@ -98,4 +105,12 @@
+ 		return Config.proxyClientRdtPort;
+ 	}
+ 
++	/* (non-Javadoc)
++	 * @see rtspproxy.ProxyService#getFilterChainBuilder()
++	 */
++	@Override
++	public IoFilterChainBuilder getFilterChainBuilder() {
++		return this.filterChainBuilder;
++	}
++
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/RdtServerService.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -18,13 +18,18 @@
+ 
+ package rtspproxy;
+ 
++import java.net.SocketAddress;
++
++import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+ 
+ import rtspproxy.config.Config;
+ import rtspproxy.config.Parameter;
+ import rtspproxy.lib.Singleton;
+ import rtspproxy.proxy.ServerRdtPacketHandler;
++import rtspproxy.rdt.RdtFilterChainBuilder;
+ 
+ /**
+  * ProxyService that manages the RDT packets incoming from servers.
+@@ -37,6 +42,8 @@
+ 
+ 	private static final String NAME = &quot;RdtServerService&quot;;
+ 
++	private RdtFilterChainBuilder filterChainBuilder = new RdtFilterChainBuilder();
++
+ 	public RdtServerService()
+ 	{
+ 		super();
+@@ -95,4 +102,12 @@
+ 	{
+ 		return Config.proxyServerRdtPort;
+ 	}
++	/* (non-Javadoc)
++	 * @see rtspproxy.ProxyService#getFilterChainBuilder()
++	 */
++	@Override
++	public IoFilterChainBuilder getFilterChainBuilder() {
++		return this.filterChainBuilder;
++	}
++
+ }
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ClientRdtPacketHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ClientRdtPacketHandler.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ClientRdtPacketHandler.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -20,17 +20,18 @@
+ 
+ import java.net.InetSocketAddress;
+ 
++import org.apache.mina.common.IoFilterChain;
++import org.apache.mina.common.IoHandlerAdapter;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.TrafficMask;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+-import org.apache.mina.common.ByteBuffer;
+-import org.apache.mina.common.IoHandlerAdapter;
+-import org.apache.mina.common.IoSession;
+ 
+ import rtspproxy.lib.Exceptions;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.proxy.track.Track;
++import rtspproxy.rdt.RdtFilterChainBuilder;
+ import rtspproxy.rdt.RdtPacket;
+-import rtspproxy.rdt.RdtPacketDecoder;
+ 
+ /**
+  * Handles RDT packets from client and forward them to server. The RTSP session
+@@ -43,40 +44,57 @@
+ 
+ 	private static Logger log = LoggerFactory.getLogger( ClientRdtPacketHandler.class );
+ 
++	/**
++	 * this sessionCreated method is an ugly hack. It suspends the session for a moment and
++	 * checks the filter chain if the protocol filter has already been applied to the 
++	 * session. If not, it assembles the filter chain. This should have been done by the acceptor
++	 * (which he does not do (in mina 0.9.0))
++	 */
+ 	@Override
+ 	public void sessionCreated( IoSession session ) throws Exception
+ 	{
++		TrafficMask mask = session.getTrafficMask();
++		
++		try {
++			session.setTrafficMask(TrafficMask.NONE);
++			
++			IoFilterChain chain = session.getFilterChain();
++			
++			if(!chain.contains(RdtFilterChainBuilder.rdtCODEC)) 
++				(new RdtFilterChainBuilder()).buildFilterChain(chain);
++		} finally {
++			session.setTrafficMask(mask);
++		}
+ 	}
+ 
+ 	@Override
+ 	public void messageReceived( IoSession session, Object buffer ) throws Exception
+ 	{
+-		// RtcpPacket packet = new RtcpPacket( (ByteBuffer) buffer );
+-		log.debug( &quot;Received RDT packet from client&quot; );
++		if(buffer instanceof RdtPacket) {
++			RdtPacket rdtPacket = (RdtPacket)buffer;
++			
++			log.debug( &quot;Received RDT packet from client, packet=&quot; + rdtPacket );
+ 
+-		ByteBuffer receivedBuffer = (ByteBuffer) buffer;
+-		byte[] bytes = new byte[receivedBuffer.limit()];
+-		receivedBuffer.get( bytes );
+-		
+-		RdtPacket decPacket = RdtPacketDecoder.decode(bytes, 0, 0);
+-		
+-		log.debug(&quot;client received packet: &quot; + decPacket);
++			RdtTrack track = (RdtTrack) Track.getByClientAddress( (InetSocketAddress) session.getRemoteAddress() );
+ 
+-		RdtTrack track = (RdtTrack) Track.getByClientAddress( (InetSocketAddress) session.getRemoteAddress() );
++			if ( track == null ) {
++				// drop packet
++				log.debug( &quot;Invalid address: &quot;
++						+ (InetSocketAddress) session.getRemoteAddress()
++						+ &quot; - Class: &quot;
++						+ ( (InetSocketAddress) session.getRemoteAddress() ).getAddress().getClass() );
++				return;
++			}
+ 
+-		if ( track == null ) {
+-			// drop packet
+-			log.debug( &quot;Invalid address: &quot;
+-					+ (InetSocketAddress) session.getRemoteAddress()
+-					+ &quot; - Class: &quot;
+-					+ ( (InetSocketAddress) session.getRemoteAddress() ).getAddress().getClass() );
+-			return;
++			track.forwardRdtToServer( rdtPacket );			
++		} else {
++			log.debug(&quot;invalid object passed: &quot; + buffer.getClass().getName());
++			
++			throw new IllegalStateException(&quot;invalid packet on chain&quot;);
+ 		}
+-
+-		ByteBuffer rdtPacket = ByteBuffer.wrap( bytes );
+-		track.forwardRdtToServer( rdtPacket );
++		
+ 	}
+-
++	
+ 	@Override
+ 	public void exceptionCaught( IoSession session, Throwable cause ) throws Exception
+ 	{
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRdtPacketHandler.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRdtPacketHandler.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/ServerRdtPacketHandler.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -23,12 +23,15 @@
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ import org.apache.mina.common.ByteBuffer;
++import org.apache.mina.common.IoFilterChain;
+ import org.apache.mina.common.IoHandlerAdapter;
+ import org.apache.mina.common.IoSession;
++import org.apache.mina.common.TrafficMask;
+ 
+ import rtspproxy.lib.Exceptions;
+ import rtspproxy.proxy.track.RdtTrack;
+ import rtspproxy.proxy.track.Track;
++import rtspproxy.rdt.RdtFilterChainBuilder;
+ import rtspproxy.rdt.RdtPacket;
+ import rtspproxy.rdt.RdtPacketDecoder;
+ 
+@@ -43,39 +46,54 @@
+ 
+ 	private static Logger log = LoggerFactory.getLogger( ServerRdtPacketHandler.class );
+ 
++	/**
++	 * this sessionCreated method is an ugly hack. It suspends the session for a moment and
++	 * checks the filter chain if the protocol filter has already been applied to the 
++	 * session. If not, it assembles the filter chain. This should have been done by the acceptor
++	 * (which he does not do (in mina 0.9.0))
++	 */
+ 	@Override
+ 	public void sessionCreated( IoSession session ) throws Exception
+ 	{
++		TrafficMask mask = session.getTrafficMask();
++		
++		try {
++			session.setTrafficMask(TrafficMask.NONE);
++			
++			IoFilterChain chain = session.getFilterChain();
++			
++			if(!chain.contains(RdtFilterChainBuilder.rdtCODEC)) 
++				(new RdtFilterChainBuilder()).buildFilterChain(chain);
++		} finally {
++			session.setTrafficMask(mask);
++		}
+ 	}
+ 
+ 	@Override
+ 	public void messageReceived( IoSession session, Object buffer ) throws Exception
+ 	{
+-		// RtcpPacket packet = new RtcpPacket( (ByteBuffer) buffer );
+-		log.debug( &quot;Received RDT packet from server&quot; );
++		if(buffer instanceof RdtPacket) {
++			RdtPacket rdtPacket = (RdtPacket)buffer;
++			
++			log.debug( &quot;Received RDT packet from server, packet=&quot; + rdtPacket );
+ 
+-		ByteBuffer receivedBuffer = (ByteBuffer) buffer;
+-		byte[] bytes = new byte[receivedBuffer.limit()];
+-		receivedBuffer.get( bytes );
+-		
+-		RdtPacket decPacket = RdtPacketDecoder.decode(bytes, 0, 0);
+-		
+-		log.debug(&quot;client received packet: &quot; + decPacket);
++			RdtTrack track = (RdtTrack)Track.getByServerAddress( (InetSocketAddress) session.getRemoteAddress() );
+ 
+-		RdtTrack track = (RdtTrack)Track.getByServerAddress( (InetSocketAddress) session.getRemoteAddress() );
++			if ( track == null ) {
++				// drop packet
++				log.debug( &quot;Invalid address: &quot;
++						+ (InetSocketAddress) session.getRemoteAddress()
++						+ &quot; - Class: &quot;
++						+ ( (InetSocketAddress) session.getRemoteAddress() ).getAddress().getClass() );
++				return;
++			}
+ 
+-		if ( track == null ) {
+-			// drop packet
+-			log.debug( &quot;Invalid address: &quot;
+-					+ (InetSocketAddress) session.getRemoteAddress()
+-					+ &quot; - Class: &quot;
+-					+ ( (InetSocketAddress) session.getRemoteAddress() ).getAddress().getClass() );
+-			return;
++			track.forwardRdtToClient( rdtPacket );			
++		} else {
++			log.debug(&quot;invalid object passed: &quot; + buffer.getClass().getName());
++			
++			throw new IllegalStateException(&quot;invalid packet on chain&quot;);
+ 		}
+-
+-		ByteBuffer rdtPacket = ByteBuffer.wrap( bytes );
+-		track.forwardRdtToClient( rdtPacket );
+-
+ 	}
+ 
+ 	@Override
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy/track/RdtTrack.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -10,6 +10,7 @@
+ 
+ import rtspproxy.RdtClientService;
+ import rtspproxy.RdtServerService;
++import rtspproxy.rdt.RdtPacket;
+ 
+ public class RdtTrack extends Track
+ {
+@@ -49,7 +50,7 @@
+ 	 * @param packet
+ 	 *            a buffer containing a RDT packet
+ 	 */
+-	public void forwardRdtToClient( ByteBuffer packet )
++	public void forwardRdtToClient( RdtPacket packet )
+ 	{
+ 		// modify the SSRC for the client
+ 		// packet.setSsrc( proxySSRC );
+@@ -70,7 +71,7 @@
+ 	 * @param packet
+ 	 *            a RDT packet
+ 	 */
+-	public void forwardRdtToServer( ByteBuffer packet )
++	public void forwardRdtToServer( RdtPacket packet )
+ 	{
+ 		if ( rdtServerSession == null || !rdtServerSession.isConnected() ) {
+ 			InetSocketAddress remoteAddress = new InetSocketAddress( serverAddress,
+@@ -83,7 +84,7 @@
+ 		// packet.reset();
+ 		// log.debug(&quot;Packet: &quot; + packet );
+ 		// log.debug( &quot;Written bytes1: &quot; + rdtServerSession.getWrittenBytes() );
+-		rdtServerSession.write( packet );
++		rdtServerSession.write( packet.toByteBuffer() );
+ 		// log.debug( &quot;Written bytes2: &quot; + rdtServerSession.getWrittenBytes() );
+ 	}
+ 
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtFilterChainBuilder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtFilterChainBuilder.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtFilterChainBuilder.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,37 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.common.IoFilterChain;
++import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.filter.codec.ProtocolCodecFilter;
++
++/**
++ * Builds filter chain operating on RDT connection.
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RdtFilterChainBuilder implements IoFilterChainBuilder {
++
++	private RdtProtocolCodecFactory codecFactory = new RdtProtocolCodecFactory();
++	
++	// filter name fields
++	public static final String rdtCODEC = &quot;rdtProtocolCodec&quot;;
++	
++	/**
++	 * 
++	 */
++	public RdtFilterChainBuilder() {
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.common.IoFilterChainBuilder#buildFilterChain(org.apache.mina.common.IoFilterChain)
++	 */
++	public void buildFilterChain(IoFilterChain chain) throws Exception {
++		
++		chain.addLast(rdtCODEC, new ProtocolCodecFilter(codecFactory));
++	}
++
++}
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtPacketDecoder.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -29,7 +29,7 @@
+ 	 * @param buffer the byte buffer to decode packet from
+ 	 */
+ 	public static RdtPacket decode(ByteBuffer buffer) {
+-		byte[] data = new byte[buffer.position()];
++		byte[] data = new byte[buffer.limit()];
+ 
+ 		// copy buffer content into temp array
+ 		buffer.rewind();
+@@ -149,6 +149,9 @@
+ 				if(payloadSize &gt; 0)
+ 					ind = attachPayload(packet, data, ind, payloadSize);
+ 				break;
++			default:
++				logger.error(&quot;unknown control packet received, code=&quot; + sequence 
++						+ &quot;, full packet dump: &quot; + formatByteArray(data));
+ 			}
+ 		} else {
+ 			logger.debug(&quot;decoding data packet&quot;);
+@@ -245,4 +248,24 @@
+ 	private static final int decodeInt(byte b3, byte b2, byte b1, byte b0) {
+ 		return ((b3 &amp; 0xff) * 16777216) + ((b2 &amp; 0xff) * 65536) + ((b1 &amp; 0xff) * 256) + (b0 &amp; 0xff);
+ 	}
++
++	private static final char[] digits = new char[] { 
++		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
++		'a', 'b', 'c', 'd', 'e', 'f'
++	};
++	private static final String formatByteArray(byte[] data) {
++		StringBuffer buf = new StringBuffer();
++		
++		for(int i=0; i&lt;data.length; i++) {
++			if((i % 16) == 0)
++				buf.append('\n');
++			
++			buf.append(digits[data[i] / 16]);
++			buf.append(digits[data[i] % 16]);
++			if((i % 16) != 0)
++				buf.append(' ');
++		}
++ 		
++		return buf.toString();
++	}
+ }
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolCodecFactory.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolCodecFactory.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolCodecFactory.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,42 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.filter.codec.ProtocolCodecFactory;
++import org.apache.mina.filter.codec.ProtocolDecoder;
++import org.apache.mina.filter.codec.ProtocolEncoder;
++
++/**
++ * Codec factory for RDT protocol coder and decoder. Uses shared codec instances because
++ * RDT PDU are self-contained and do not contain states across PDUs
++ * 
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ */
++public class RdtProtocolCodecFactory implements ProtocolCodecFactory {
++
++	private RdtProtocolEncoder encoder = new RdtProtocolEncoder();
++	
++	private RdtProtocolDecoder decoder = new RdtProtocolDecoder();
++	
++	/**
++	 * 
++	 */
++	RdtProtocolCodecFactory() {
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.filter.codec.ProtocolCodecFactory#getEncoder()
++	 */
++	public ProtocolEncoder getEncoder() {
++		return encoder;
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.filter.codec.ProtocolCodecFactory#getDecoder()
++	 */
++	public ProtocolDecoder getDecoder() {
++		return decoder;
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolDecoder.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,57 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.common.ByteBuffer;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.filter.codec.ProtocolDecoder;
++import org.apache.mina.filter.codec.ProtocolDecoderOutput;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RdtProtocolDecoder implements ProtocolDecoder {
++
++	private static Logger logger = LoggerFactory.getLogger(RdtProtocolDecoder.class);
++
++	/**
++	 * 
++	 */
++	RdtProtocolDecoder() {
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.filter.codec.ProtocolDecoder#decode(org.apache.mina.common.IoSession, org.apache.mina.common.ByteBuffer, org.apache.mina.filter.codec.ProtocolDecoderOutput)
++	 */
++	public void decode(IoSession ioSession, ByteBuffer buffer,
++			ProtocolDecoderOutput out) throws Exception {
++		try {
++		RdtPacket rdtPacket = RdtPacketDecoder.decode(buffer);
++	
++		if(logger.isDebugEnabled())
++			logger.debug(&quot;received RDT packet: &quot; + rdtPacket);
++
++		if(rdtPacket == null)
++			throw new IllegalStateException(&quot;RDT network packet cannot be decoded&quot;);
++		
++		out.write(rdtPacket);
++		} catch(Exception e) {
++			logger.debug(&quot;error decoding packet&quot;, e);
++			
++			throw e;
++		}
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.filter.codec.ProtocolDecoder#dispose(org.apache.mina.common.IoSession)
++	 */
++	public void dispose(IoSession arg0) throws Exception {
++		// TODO Auto-generated method stub
++
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolEncoder.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolEncoder.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/rdt/RdtProtocolEncoder.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,46 @@
++/**
++ * 
++ */
++package rtspproxy.rdt;
++
++import org.apache.mina.common.IoSession;
++import org.apache.mina.filter.codec.ProtocolEncoder;
++import org.apache.mina.filter.codec.ProtocolEncoderOutput;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++/**
++ * @author Rainer Bieniek (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">Rainer.Bieniek at vodafone.com</A>)
++ *
++ */
++public class RdtProtocolEncoder implements ProtocolEncoder {
++
++	private static Logger logger = LoggerFactory.getLogger(RdtProtocolEncoder.class);
++	
++	/**
++	 * 
++	 */
++	RdtProtocolEncoder() {
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.filter.codec.ProtocolEncoder#encode(org.apache.mina.common.IoSession, java.lang.Object, org.apache.mina.filter.codec.ProtocolEncoderOutput)
++	 */
++	public void encode(IoSession ioSession, Object packet, ProtocolEncoderOutput out)
++			throws Exception {
++		RdtPacket rdtPacket = (RdtPacket)packet;
++
++		if(logger.isDebugEnabled())
++			logger.debug(&quot;sending RDP packet: &quot; + rdtPacket);
++		
++		out.write(rdtPacket.toByteBuffer());
++		out.flush();
++	}
++
++	/* (non-Javadoc)
++	 * @see org.apache.mina.filter.codec.ProtocolEncoder#dispose(org.apache.mina.common.IoSession)
++	 */
++	public void dispose(IoSession arg0) throws Exception {
++	}
++
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramAcceptor.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramAcceptor.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramAcceptor.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,40 @@
++/*
++ *   @(#) $Id: DatagramAcceptor.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio;
++
++import org.apache.mina.common.IoAcceptor;
++import org.apache.mina.common.support.DelegatedIoAcceptor;
++import org.apache.mina.transport.socket.nio.support.DatagramAcceptorDelegate;
++
++/**
++ * {@link IoAcceptor} for datagram transport (UDP/IP).
++ * 
++ * @author The Apache Directory Project (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">dev at directory.apache.org</A>)
++ * @version $Rev: 355016 $, $Date: 2005-12-08 16:00:30 +0900 (Thu, 08 Dec 2005) $
++ */
++public class DatagramAcceptor extends DelegatedIoAcceptor
++{
++    /**
++     * Creates a new instance.
++     */
++    public DatagramAcceptor()
++    {
++        init( new DatagramAcceptorDelegate( this ) );
++    }
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramConnector.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramConnector.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramConnector.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,40 @@
++/*
++ *   @(#) $Id: DatagramConnector.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio;
++
++import org.apache.mina.common.IoConnector;
++import org.apache.mina.common.support.DelegatedIoConnector;
++import org.apache.mina.transport.socket.nio.support.DatagramConnectorDelegate;
++
++/**
++ * {@link IoConnector} for datagram transport (UDP/IP).
++ * 
++ * @author The Apache Directory Project (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">dev at directory.apache.org</A>)
++ * @version $Rev: 355016 $, $Date: 2005-12-08 16:00:30 +0900 (Thu, 08 Dec 2005) $
++ */
++public class DatagramConnector extends DelegatedIoConnector
++{
++    /**
++     * Creates a new instance.
++     */
++    public DatagramConnector()
++    {
++        init( new DatagramConnectorDelegate( this ) );
++    }
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramSession.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramSession.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/DatagramSession.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,37 @@
++/*
++ *   @(#) $Id: DatagramSession.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio;
++
++import java.net.SocketException;
++
++import org.apache.mina.common.IoSession;
++
++/**
++ * An {@link IoSession} for datagram transport (UDP/IP).
++ * 
++ * @author The Apache Directory Project (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">dev at directory.apache.org</A>)
++ * @version $Rev: 355016 $, $Date: 2005-12-08 16:00:30 +0900 (Thu, 08 Dec 2005) $
++ */
++public interface DatagramSession extends IoSession
++{
++    boolean getReuseAddress() throws SocketException;
++    void setReuseAddress( boolean on ) throws SocketException;
++    int getTrafficClass() throws SocketException;
++    void setTrafficClass( int tc ) throws SocketException;
++}
+\ No newline at end of file
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramAcceptorDelegate.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramAcceptorDelegate.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramAcceptorDelegate.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,615 @@
++/*
++ *   @(#) $Id: DatagramAcceptorDelegate.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio.support;
++
++import java.io.IOException;
++import java.net.InetSocketAddress;
++import java.net.SocketAddress;
++import java.nio.channels.DatagramChannel;
++import java.nio.channels.SelectionKey;
++import java.nio.channels.Selector;
++import java.util.HashMap;
++import java.util.Iterator;
++import java.util.Map;
++import java.util.Set;
++
++import org.apache.mina.common.ByteBuffer;
++import org.apache.mina.common.ExceptionMonitor;
++import org.apache.mina.common.IoAcceptor;
++import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoFilter.WriteRequest;
++import org.apache.mina.common.support.BaseIoAcceptor;
++import org.apache.mina.util.ExceptionUtil;
++import org.apache.mina.util.Queue;
++
++/**
++ * {@link IoAcceptor} for datagram transport (UDP/IP).
++ * 
++ * @author The Apache Directory Project (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">dev at directory.apache.org</A>)
++ * @version $Rev: 355016 $, $Date: 2005-12-08 16:00:30 +0900 (Thu, 08 Dec 2005) $
++ */
++public class DatagramAcceptorDelegate extends BaseIoAcceptor implements IoAcceptor, DatagramSessionManager
++{
++    private static volatile int nextId = 0;
++
++    private final IoAcceptor wrapper;
++    private final int id = nextId ++ ;
++    private Selector selector;
++    private final Map channels = new HashMap();
++    private final Queue registerQueue = new Queue();
++    private final Queue cancelQueue = new Queue();
++    private final Queue flushingSessions = new Queue();
++    private Worker worker;
++
++    /**
++     * Creates a new instance.
++     */
++    public DatagramAcceptorDelegate( IoAcceptor wrapper )
++    {
++        this.wrapper = wrapper;
++    }
++
++    public void bind( SocketAddress address, IoHandler handler, IoFilterChainBuilder filterChainBuilder )
++            throws IOException
++    {
++        if( address == null )
++            throw new NullPointerException( &quot;address&quot; );
++        if( handler == null )
++            throw new NullPointerException( &quot;handler&quot; );
++
++        if( !( address instanceof InetSocketAddress ) )
++            throw new IllegalArgumentException( &quot;Unexpected address type: &quot;
++                                                + address.getClass() );
++        if( ( ( InetSocketAddress ) address ).getPort() == 0 )
++            throw new IllegalArgumentException( &quot;Unsupported port number: 0&quot; );
++        
++        if( filterChainBuilder == null )
++        {
++            filterChainBuilder = IoFilterChainBuilder.NOOP;
++        }
++
++        RegistrationRequest request = new RegistrationRequest( address, handler, filterChainBuilder );
++        synchronized( this )
++        {
++            synchronized( registerQueue )
++            {
++                registerQueue.push( request );
++            }
++            startupWorker();
++        }
++        selector.wakeup();
++        
++        synchronized( request )
++        {
++            while( !request.done )
++            {
++                try
++                {
++                    request.wait();
++                }
++                catch( InterruptedException e )
++                {
++                }
++            }
++        }
++        
++        if( request.exception != null )
++        {
++            ExceptionUtil.throwException( request.exception );
++        }
++    }
++
++    public void unbind( SocketAddress address )
++    {
++        // TODO: DIRMINA-93
++        if( address == null )
++            throw new NullPointerException( &quot;address&quot; );
++
++        CancellationRequest request = new CancellationRequest( address );
++        synchronized( this )
++        {
++            try
++            {
++                startupWorker();
++            }
++            catch( IOException e )
++            {
++                // IOException is thrown only when Worker thread is not
++                // running and failed to open a selector.  We simply throw
++                // IllegalArgumentException here because we can simply
++                // conclude that nothing is bound to the selector.
++                throw new IllegalArgumentException( &quot;Address not bound: &quot; + address );
++            }
++
++            synchronized( cancelQueue )
++            {
++                cancelQueue.push( request );
++            }
++        }
++        selector.wakeup();
++        
++        synchronized( request )
++        {
++            while( !request.done )
++            {
++                try
++                {
++                    request.wait();
++                }
++                catch( InterruptedException e )
++                {
++                }
++            }
++        }
++        
++        if( request.exception != null )
++        {
++            request.exception.fillInStackTrace();
++            throw request.exception;
++        }
++    }
++    
++    public IoSession newSession( SocketAddress remoteAddress, SocketAddress localAddress )
++    {
++        if( remoteAddress == null )
++        {
++            throw new NullPointerException( &quot;remoteAddress&quot; );
++        }
++        if( localAddress == null )
++        {
++            throw new NullPointerException( &quot;localAddress&quot; );
++        }
++        
++        Selector selector = this.selector;
++        DatagramChannel ch = ( DatagramChannel ) channels.get( localAddress );
++        if( selector == null || ch == null )
++        {
++            throw new IllegalArgumentException( &quot;Unknown localAddress: &quot; + localAddress );
++        }
++            
++        SelectionKey key = ch.keyFor( selector );
++        if( key == null )
++        {
++            throw new IllegalArgumentException( &quot;Unknown localAddress: &quot; + localAddress );
++        }
++
++        RegistrationRequest req = ( RegistrationRequest ) key.attachment();
++        DatagramSessionImpl s = new DatagramSessionImpl( wrapper, this, ch, req.handler );
++        s.setRemoteAddress( remoteAddress );
++        s.setSelectionKey( key );
++        
++        try
++        {
++            this.filterChainBuilder.buildFilterChain( s.getFilterChain() );
++            req.filterChainBuilder.buildFilterChain( s.getFilterChain() );
++            ( ( DatagramFilterChain ) s.getFilterChain() ).sessionCreated( s );
++        }
++        catch( Throwable t )
++        {
++            ExceptionMonitor.getInstance().exceptionCaught( t );
++        }
++        
++        return s;
++    }
++
++    private synchronized void startupWorker() throws IOException
++    {
++        if( worker == null )
++        {
++            selector = Selector.open();
++            worker = new Worker();
++            worker.start();
++        }
++    }
++
++    public void flushSession( DatagramSessionImpl session )
++    {
++        scheduleFlush( session );
++        Selector selector = this.selector;
++        if( selector != null )
++        {
++            selector.wakeup();
++        }
++    }
++
++    public void closeSession( DatagramSessionImpl session )
++    {
++    }
++
++    private void scheduleFlush( DatagramSessionImpl session )
++    {
++        synchronized( flushingSessions )
++        {
++            flushingSessions.push( session );
++        }
++    }
++
++    private class Worker extends Thread
++    {
++        public Worker()
++        {
++            super( &quot;DatagramAcceptor-&quot; + id );
++        }
++
++        public void run()
++        {
++            for( ;; )
++            {
++                try
++                {
++                    int nKeys = selector.select();
++
++                    registerNew();
++
++                    if( nKeys &gt; 0 )
++                    {
++                        processReadySessions( selector.selectedKeys() );
++                    }
++
++                    flushSessions();
++                    cancelKeys();
++
++                    if( selector.keys().isEmpty() )
++                    {
++                        synchronized( DatagramAcceptorDelegate.this )
++                        {
++                            if( selector.keys().isEmpty() &amp;&amp;
++                                registerQueue.isEmpty() &amp;&amp;
++                                cancelQueue.isEmpty() )
++                            {
++                                worker = null;
++                                try
++                                {
++                                    selector.close();
++                                }
++                                catch( IOException e )
++                                {
++                                    ExceptionMonitor.getInstance().exceptionCaught( e );
++                                }
++                                finally
++                                {
++                                    selector = null;
++                                }
++                                break;
++                            }
++                        }
++                    }
++                }
++                catch( IOException e )
++                {
++                    ExceptionMonitor.getInstance().exceptionCaught( e );
++
++                    try
++                    {
++                        Thread.sleep( 1000 );
++                    }
++                    catch( InterruptedException e1 )
++                    {
++                    }
++                }
++            }
++        }
++    }
++
++    private void processReadySessions( Set keys )
++    {
++        Iterator it = keys.iterator();
++        while( it.hasNext() )
++        {
++            SelectionKey key = ( SelectionKey ) it.next();
++            it.remove();
++
++            DatagramChannel ch = ( DatagramChannel ) key.channel();
++
++            RegistrationRequest req = ( RegistrationRequest ) key.attachment();
++            DatagramSessionImpl session =
++                new DatagramSessionImpl( wrapper, this, ch, req.handler );
++            session.setSelectionKey( key );
++            
++            try
++            {
++                ( ( DatagramFilterChain ) session.getFilterChain() ).sessionCreated( session );
++
++                if( key.isReadable() )
++                {
++                    readSession( session );
++                }
++
++                if( key.isWritable() )
++                {
++                    scheduleFlush( session );
++                }
++            }
++            catch( Throwable t )
++            {
++                ExceptionMonitor.getInstance().exceptionCaught( t );
++            }
++        }
++    }
++
++    private void readSession( DatagramSessionImpl session )
++    {
++
++        ByteBuffer readBuf = ByteBuffer.allocate( 2048 );
++        try
++        {
++            SocketAddress remoteAddress = session.getChannel().receive(
++                    readBuf.buf() );
++            if( remoteAddress != null )
++            {
++                readBuf.flip();
++                session.setRemoteAddress( remoteAddress );
++
++                ByteBuffer newBuf = ByteBuffer.allocate( readBuf.limit() );
++                newBuf.put( readBuf );
++                newBuf.flip();
++
++                session.increaseReadBytes( newBuf.remaining() );
++                ( ( DatagramFilterChain ) session.getFilterChain() ).messageReceived( session, newBuf );
++            }
++        }
++        catch( IOException e )
++        {
++            ( ( DatagramFilterChain ) session.getFilterChain() ).exceptionCaught( session, e );
++        }
++        finally
++        {
++            readBuf.release();
++        }
++    }
++
++    private void flushSessions()
++    {
++        if( flushingSessions.size() == 0 )
++            return;
++
++        for( ;; )
++        {
++            DatagramSessionImpl session;
++
++            synchronized( flushingSessions )
++            {
++                session = ( DatagramSessionImpl ) flushingSessions.pop();
++            }
++
++            if( session == null )
++                break;
++
++            try
++            {
++                flush( session );
++            }
++            catch( IOException e )
++            {
++                ( ( DatagramFilterChain ) session.getFilterChain() ).exceptionCaught( session, e );
++            }
++        }
++    }
++
++    private void flush( DatagramSessionImpl session ) throws IOException
++    {
++        DatagramChannel ch = session.getChannel();
++
++        Queue writeRequestQueue = session.getWriteRequestQueue();
++
++        WriteRequest req;
++        for( ;; )
++        {
++            synchronized( writeRequestQueue )
++            {
++                req = ( WriteRequest ) writeRequestQueue.first();
++            }
++
++            if( req == null )
++                break;
++
++            ByteBuffer buf = ( ByteBuffer ) req.getMessage();
++            if( buf.remaining() == 0 )
++            {
++                // pop and fire event
++                synchronized( writeRequestQueue )
++                {
++                    writeRequestQueue.pop();
++                }
++
++                req.getFuture().setWritten( true );
++                session.increaseWrittenWriteRequests();
++                ( ( DatagramFilterChain ) session.getFilterChain() ).messageSent( session, buf );
++                continue;
++            }
++
++            SelectionKey key = session.getSelectionKey();
++            if( key == null )
++            {
++                scheduleFlush( session );
++                break;
++            }
++            if( !key.isValid() )
++            {
++                continue;
++            }
++
++            int pos = buf.position();
++            int writtenBytes = ch
++                    .send( buf.buf(), session.getRemoteAddress() );
++
++            if( writtenBytes == 0 )
++            {
++                // Kernel buffer is full
++                key.interestOps( key.interestOps() | SelectionKey.OP_WRITE );
++            }
++            else if( writtenBytes &gt; 0 )
++            {
++                key.interestOps( key.interestOps()
++                                 &amp; ( ~SelectionKey.OP_WRITE ) );
++
++                // pop and fire event
++                synchronized( writeRequestQueue )
++                {
++                    writeRequestQueue.pop();
++                }
++
++                session.increaseWrittenBytes( writtenBytes );
++                req.getFuture().setWritten( true );
++                session.increaseWrittenWriteRequests();
++                ( ( DatagramFilterChain ) session.getFilterChain() ).messageSent( session, buf.position( pos ) );
++            }
++        }
++    }
++
++    private void registerNew()
++    {
++        if( registerQueue.isEmpty() )
++            return;
++
++        for( ;; )
++        {
++            RegistrationRequest req;
++            synchronized( registerQueue )
++            {
++                req = ( RegistrationRequest ) registerQueue.pop();
++            }
++
++            if( req == null )
++                break;
++
++            DatagramChannel ch = null;
++            try
++            {
++                ch = DatagramChannel.open();
++                ch.configureBlocking( false );
++                ch.socket().bind( req.address );
++                ch.register( selector, SelectionKey.OP_READ, req );
++                channels.put( req.address, ch );
++            }
++            catch( Throwable t )
++            {
++                req.exception = t;
++            }
++            finally
++            {
++                synchronized( req )
++                {
++                    req.done = true;
++                    req.notify();
++                }
++
++                if( ch != null &amp;&amp; req.exception != null )
++                {
++                    try
++                    {
++                        ch.close();
++                    }
++                    catch( Throwable e )
++                    {
++                        ExceptionMonitor.getInstance().exceptionCaught( e );
++                    }
++                }
++            }
++        }
++    }
++
++    private void cancelKeys()
++    {
++        if( cancelQueue.isEmpty() )
++            return;
++
++        for( ;; )
++        {
++            CancellationRequest request;
++            synchronized( cancelQueue )
++            {
++                request = ( CancellationRequest ) cancelQueue.pop();
++            }
++            
++            if( request == null )
++            {
++                break;
++            }
++
++            DatagramChannel ch = ( DatagramChannel ) channels.remove( request.address );
++            // close the channel
++            try
++            {
++                if( ch == null )
++                {
++                    request.exception = new IllegalArgumentException(
++                            &quot;Address not bound: &quot; + request.address );
++                }
++                else
++                {
++                    SelectionKey key = ch.keyFor( selector );
++                    key.cancel();
++                    selector.wakeup(); // wake up again to trigger thread death
++                    ch.close();
++                }
++            }
++            catch( Throwable t )
++            {
++                ExceptionMonitor.getInstance().exceptionCaught( t );
++            }
++            finally
++            {
++                synchronized( request )
++                {
++                    request.done = true;
++                    request.notify();
++                }
++            }
++        }
++    }
++    
++    public void updateTrafficMask( DatagramSessionImpl session )
++    {
++        // There's no point in changing the traffic mask for sessions originating
++        // from this acceptor since new sessions are created every time data is
++        // received.
++    }
++
++    private static class RegistrationRequest
++    {
++        private final SocketAddress address;
++        private final IoHandler handler;
++        private final IoFilterChainBuilder filterChainBuilder;
++
++        private Throwable exception; 
++        private boolean done;
++        
++        private RegistrationRequest( SocketAddress address, IoHandler handler, IoFilterChainBuilder filterChainBuilder )
++        {
++            this.address = address;
++            this.handler = handler;
++            this.filterChainBuilder = filterChainBuilder;
++        }
++    }
++
++    private static class CancellationRequest
++    {
++        private final SocketAddress address;
++        private boolean done;
++        private RuntimeException exception;
++        
++        private CancellationRequest( SocketAddress address )
++        {
++            this.address = address;
++        }
++    }
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramConnectorDelegate.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramConnectorDelegate.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramConnectorDelegate.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,603 @@
++/*
++ *   @(#) $Id: DatagramConnectorDelegate.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio.support;
++
++import java.io.IOException;
++import java.net.InetSocketAddress;
++import java.net.SocketAddress;
++import java.nio.channels.DatagramChannel;
++import java.nio.channels.SelectionKey;
++import java.nio.channels.Selector;
++import java.util.Iterator;
++import java.util.Set;
++
++import org.apache.mina.common.ByteBuffer;
++import org.apache.mina.common.ConnectFuture;
++import org.apache.mina.common.ExceptionMonitor;
++import org.apache.mina.common.IoConnector;
++import org.apache.mina.common.IoFilterChainBuilder;
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoFilter.WriteRequest;
++import org.apache.mina.common.support.BaseIoConnector;
++import org.apache.mina.util.Queue;
++
++/**
++ * {@link IoConnector} for datagram transport (UDP/IP).
++ * 
++ * @author The Apache Directory Project (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">dev at directory.apache.org</A>)
++ * @version $Rev: 355016 $, $Date: 2005-12-08 16:00:30 +0900 (Thu, 08 Dec 2005) $
++ */
++public class DatagramConnectorDelegate extends BaseIoConnector implements DatagramSessionManager
++{
++    private static volatile int nextId = 0;
++
++    private final IoConnector wrapper;
++    private final int id = nextId ++ ;
++    private Selector selector;
++    private final Queue registerQueue = new Queue();
++    private final Queue cancelQueue = new Queue();
++    private final Queue flushingSessions = new Queue();
++    private final Queue trafficControllingSessions = new Queue();
++    private Worker worker;
++
++    /**
++     * Creates a new instance.
++     */
++    public DatagramConnectorDelegate( IoConnector wrapper )
++    {
++        this.wrapper = wrapper;
++    }
++
++    public ConnectFuture connect( SocketAddress address, IoHandler handler, IoFilterChainBuilder filterChainBuilder )
++    {
++        return connect( address, null, handler, filterChainBuilder );
++    }
++
++    public ConnectFuture connect( SocketAddress address, SocketAddress localAddress,
++                                  IoHandler handler, IoFilterChainBuilder filterChainBuilder )
++    {
++        if( address == null )
++            throw new NullPointerException( &quot;address&quot; );
++        if( handler == null )
++            throw new NullPointerException( &quot;handler&quot; );
++
++        if( !( address instanceof InetSocketAddress ) )
++            throw new IllegalArgumentException( &quot;Unexpected address type: &quot;
++                                                + address.getClass() );
++        
++        if( localAddress != null &amp;&amp; !( localAddress instanceof InetSocketAddress ) )
++        {
++            throw new IllegalArgumentException( &quot;Unexpected local address type: &quot;
++                                                + localAddress.getClass() );
++        }
++        
++        if( filterChainBuilder == null )
++        {
++            filterChainBuilder = IoFilterChainBuilder.NOOP;
++        }
++        
++        DatagramChannel ch = null;
++        boolean initialized = false;
++        try
++        {
++            ch = DatagramChannel.open();
++            ch.socket().setReuseAddress( true );
++            if( localAddress != null )
++            {
++                ch.socket().bind( localAddress );
++            }
++            ch.connect( address );
++            ch.configureBlocking( false );
++            initialized = true;
++        }
++        catch( IOException e )
++        {
++            return ConnectFuture.newFailedFuture( e );
++        }
++        finally
++        {
++            if( !initialized &amp;&amp; ch != null )
++            {
++                try
++                {
++                    ch.close();
++                }
++                catch( IOException e )
++                {
++                    ExceptionMonitor.getInstance().exceptionCaught( e );
++                }
++            }
++        }
++
++        RegistrationRequest request = new RegistrationRequest( ch, handler, filterChainBuilder );
++        synchronized( this )
++        {
++            try
++            {
++                startupWorker();
++            }
++            catch( IOException e )
++            {
++                try
++                {
++                    ch.close();
++                }
++                catch( IOException e2 )
++                {
++                    ExceptionMonitor.getInstance().exceptionCaught( e2 );
++                }
++
++                return ConnectFuture.newFailedFuture( e );
++            }
++            
++            synchronized( registerQueue )
++            {
++                registerQueue.push( request );
++            }
++        }
++
++        selector.wakeup();
++        return request;
++    }
++    
++    private synchronized void startupWorker() throws IOException
++    {
++        if( worker == null )
++        {
++            selector = Selector.open();
++            worker = new Worker();
++            worker.start();
++        }
++    }
++
++    public void closeSession( DatagramSessionImpl session )
++    {
++        synchronized( this )
++        {
++            try
++            {
++                startupWorker();
++            }
++            catch( IOException e )
++            {
++                // IOException is thrown only when Worker thread is not
++                // running and failed to open a selector.  We simply return
++                // silently here because it we can simply conclude that
++                // this session is not managed by this connector or
++                // already closed.
++                return;
++            }
++
++            synchronized( cancelQueue )
++            {
++                cancelQueue.push( session );
++            }
++        }
++
++        selector.wakeup();
++    }
++
++    public void flushSession( DatagramSessionImpl session )
++    {
++        scheduleFlush( session );
++        Selector selector = this.selector;
++        if( selector != null )
++        {
++            selector.wakeup();
++        }
++    }
++
++    private void scheduleFlush( DatagramSessionImpl session )
++    {
++        synchronized( flushingSessions )
++        {
++            flushingSessions.push( session );
++        }
++    }
++
++    public void updateTrafficMask( DatagramSessionImpl session )
++    {
++        scheduleTrafficControl( session );
++        Selector selector = this.selector;
++        if( selector != null )
++        {
++            selector.wakeup();
++        }
++        selector.wakeup();
++    }
++    
++    private void scheduleTrafficControl( DatagramSessionImpl session )
++    {
++        synchronized( trafficControllingSessions )
++        {
++            trafficControllingSessions.push( session );
++        }
++    }
++    
++    private void doUpdateTrafficMask() 
++    {
++        if( trafficControllingSessions.isEmpty() )
++            return;
++
++        for( ;; )
++        {
++            DatagramSessionImpl session;
++
++            synchronized( trafficControllingSessions )
++            {
++                session = ( DatagramSessionImpl ) trafficControllingSessions.pop();
++            }
++
++            if( session == null )
++                break;
++
++            SelectionKey key = session.getSelectionKey();
++            // Retry later if session is not yet fully initialized.
++            // (In case that Session.suspend??() or session.resume??() is 
++            // called before addSession() is processed)
++            if( key == null )
++            {
++                scheduleTrafficControl( session );
++                break;
++            }
++            // skip if channel is already closed
++            if( !key.isValid() )
++            {
++                continue;
++            }
++
++            // The normal is OP_READ and, if there are write requests in the
++            // session's write queue, set OP_WRITE to trigger flushing.
++            int ops = SelectionKey.OP_READ;
++            Queue writeRequestQueue = session.getWriteRequestQueue();
++            synchronized( writeRequestQueue )
++            {
++                if( !writeRequestQueue.isEmpty() )
++                {
++                    ops |= SelectionKey.OP_WRITE;
++                }
++            }
++
++            // Now mask the preferred ops with the mask of the current session
++            int mask = session.getTrafficMask().getInterestOps();
++            key.interestOps( ops &amp; mask );
++        }
++    }
++    
++    private class Worker extends Thread
++    {
++        public Worker()
++        {
++            super( &quot;DatagramConnector-&quot; + id );
++        }
++
++        public void run()
++        {
++            for( ;; )
++            {
++                try
++                {
++                    int nKeys = selector.select();
++
++                    registerNew();
++                    doUpdateTrafficMask();
++
++                    if( nKeys &gt; 0 )
++                    {
++                        processReadySessions( selector.selectedKeys() );
++                    }
++
++                    flushSessions();
++                    cancelKeys();
++
++                    if( selector.keys().isEmpty() )
++                    {
++                        synchronized( DatagramConnectorDelegate.this )
++                        {
++                            if( selector.keys().isEmpty() &amp;&amp;
++                                registerQueue.isEmpty() &amp;&amp;
++                                cancelQueue.isEmpty() )
++                            {
++                                worker = null;
++                                try
++                                {
++                                    selector.close();
++                                }
++                                catch( IOException e )
++                                {
++                                    ExceptionMonitor.getInstance().exceptionCaught( e );
++                                }
++                                finally
++                                {
++                                    selector = null;
++                                }
++                                break;
++                            }
++                        }
++                    }
++                }
++                catch( IOException e )
++                {
++                    ExceptionMonitor.getInstance().exceptionCaught(  e );
++
++                    try
++                    {
++                        Thread.sleep( 1000 );
++                    }
++                    catch( InterruptedException e1 )
++                    {
++                    }
++                }
++            }
++        }
++    }
++
++    private void processReadySessions( Set keys )
++    {
++        Iterator it = keys.iterator();
++        while( it.hasNext() )
++        {
++            SelectionKey key = ( SelectionKey ) it.next();
++            it.remove();
++
++            DatagramSessionImpl session = ( DatagramSessionImpl ) key.attachment();
++
++            if( key.isReadable() &amp;&amp; session.getTrafficMask().isReadable() )
++            {
++                readSession( session );
++            }
++
++            if( key.isWritable() &amp;&amp; session.getTrafficMask().isWritable() )
++            {
++                scheduleFlush( session );
++            }
++        }
++    }
++
++    private void readSession( DatagramSessionImpl session )
++    {
++
++        ByteBuffer readBuf = ByteBuffer.allocate( 2048 );
++        try
++        {
++            int readBytes = session.getChannel().read( readBuf.buf() );
++            if( readBytes &gt; 0 )
++            {
++                readBuf.flip();
++                ByteBuffer newBuf = ByteBuffer.allocate( readBuf.limit() );
++                newBuf.put( readBuf );
++                newBuf.flip();
++
++                session.increaseReadBytes( readBytes );
++                ( ( DatagramFilterChain ) session.getFilterChain() ).messageReceived( session, newBuf );
++            }
++        }
++        catch( IOException e )
++        {
++            ( ( DatagramFilterChain ) session.getFilterChain() ).exceptionCaught( session, e );
++        }
++        finally
++        {
++            readBuf.release();
++        }
++    }
++
++    private void flushSessions()
++    {
++        if( flushingSessions.size() == 0 )
++            return;
++
++        for( ;; )
++        {
++            DatagramSessionImpl session;
++
++            synchronized( flushingSessions )
++            {
++                session = ( DatagramSessionImpl ) flushingSessions.pop();
++            }
++
++            if( session == null )
++                break;
++
++            try
++            {
++                flush( session );
++            }
++            catch( IOException e )
++            {
++                ( ( DatagramFilterChain ) session.getFilterChain() ).exceptionCaught( session, e );
++            }
++        }
++    }
++
++    private void flush( DatagramSessionImpl session ) throws IOException
++    {
++        DatagramChannel ch = session.getChannel();
++
++        Queue writeRequestQueue = session.getWriteRequestQueue();
++
++        WriteRequest req;
++        for( ;; )
++        {
++            synchronized( writeRequestQueue )
++            {
++                req = ( WriteRequest ) writeRequestQueue.first();
++            }
++
++            if( req == null )
++                break;
++
++            ByteBuffer buf = ( ByteBuffer ) req.getMessage();
++            if( buf.remaining() == 0 )
++            {
++                // pop and fire event
++                synchronized( writeRequestQueue )
++                {
++                    writeRequestQueue.pop();
++                }
++
++                req.getFuture().setWritten( true );
++                session.increaseWrittenWriteRequests();
++                ( ( DatagramFilterChain ) session.getFilterChain() ).messageSent( session, buf );
++                continue;
++            }
++
++            SelectionKey key = session.getSelectionKey();
++            if( key == null )
++            {
++                scheduleFlush( session );
++                break;
++            }
++            if( !key.isValid() )
++            {
++                continue;
++            }
++
++            int pos = buf.position();
++            int writtenBytes = ch.write( buf.buf() );
++
++            if( writtenBytes == 0 )
++            {
++                // Kernel buffer is full
++                key.interestOps( key.interestOps() | SelectionKey.OP_WRITE );
++            }
++            else if( writtenBytes &gt; 0 )
++            {
++                key.interestOps( key.interestOps()
++                                 &amp; ( ~SelectionKey.OP_WRITE ) );
++
++                // pop and fire event
++                synchronized( writeRequestQueue )
++                {
++                    writeRequestQueue.pop();
++                }
++
++                session.increaseWrittenBytes( writtenBytes );
++                req.getFuture().setWritten( true );
++                session.increaseWrittenWriteRequests();
++                ( ( DatagramFilterChain ) session.getFilterChain() ).messageSent( session, buf.position( pos ) );
++            }
++        }
++    }
++
++    private void registerNew()
++    {
++        if( registerQueue.isEmpty() )
++            return;
++
++        for( ;; )
++        {
++            RegistrationRequest req;
++            synchronized( registerQueue )
++            {
++                req = ( RegistrationRequest ) registerQueue.pop();
++            }
++
++            if( req == null )
++                break;
++
++            DatagramSessionImpl session =
++                new DatagramSessionImpl( wrapper, this, req.channel, req.handler );
++
++            boolean success = false;
++            try
++            {
++                this.filterChainBuilder.buildFilterChain( session.getFilterChain() );
++                req.filterChainBuilder.buildFilterChain( session.getFilterChain() );
++                ( ( DatagramFilterChain ) session.getFilterChain() ).sessionCreated( session );
++
++                SelectionKey key = req.channel.register( selector,
++                        SelectionKey.OP_READ, session );
++    
++                session.setSelectionKey( key );
++
++                req.setSession( session );
++                success = true;
++            }
++            catch( Throwable t )
++            {
++                req.setException( t );
++            }
++            finally 
++            {
++                if( !success )
++                {
++                    try
++                    {
++                        req.channel.close();
++                    }
++                    catch (IOException e)
++                    {
++                        ExceptionMonitor.getInstance().exceptionCaught( e );
++                    }
++                }
++            }
++        }
++    }
++
++    private void cancelKeys()
++    {
++        if( cancelQueue.isEmpty() )
++            return;
++
++        for( ;; )
++        {
++            DatagramSessionImpl session;
++            synchronized( cancelQueue )
++            {
++                session = ( DatagramSessionImpl ) cancelQueue.pop();
++            }
++
++            if( session == null )
++                break;
++            else
++            {
++                SelectionKey key = session.getSelectionKey();
++                DatagramChannel ch = ( DatagramChannel ) key.channel();
++                try
++                {
++                    ch.close();
++                }
++                catch( IOException e )
++                {
++                    ExceptionMonitor.getInstance().exceptionCaught( e );
++                }
++                session.getCloseFuture().setClosed();
++                key.cancel();
++                selector.wakeup(); // wake up again to trigger thread death
++            }
++        }
++    }
++
++    private static class RegistrationRequest extends ConnectFuture
++    {
++        private final DatagramChannel channel;
++        private final IoHandler handler;
++        private final IoFilterChainBuilder filterChainBuilder;
++
++        private RegistrationRequest( DatagramChannel channel,
++                                     IoHandler handler,
++                                     IoFilterChainBuilder filterChainBuilder )
++        {
++            this.channel = channel;
++            this.handler = handler;
++            this.filterChainBuilder = filterChainBuilder;
++        }
++    }
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramFilterChain.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramFilterChain.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramFilterChain.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,51 @@
++package rtspproxy.transport.socket.nio.support;
++
++import org.apache.mina.common.CloseFuture;
++import org.apache.mina.common.IoFilterChain;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoFilter.WriteRequest;
++import org.apache.mina.common.support.AbstractIoFilterChain;
++import org.apache.mina.util.Queue;
++
++/**
++ * An {@link IoFilterChain} for datagram transport (UDP/IP).
++ * 
++ * @author The Apache Directory Project
++ */
++class DatagramFilterChain extends AbstractIoFilterChain {
++
++    DatagramFilterChain( IoSession parent )
++    {
++        super( parent );
++    }
++    
++    protected void doWrite( IoSession session, WriteRequest writeRequest )
++    {
++        DatagramSessionImpl s = ( DatagramSessionImpl ) session;
++        Queue writeRequestQueue = s.getWriteRequestQueue();
++        
++        synchronized( writeRequestQueue )
++        {
++            writeRequestQueue.push( writeRequest );
++            if( writeRequestQueue.size() == 1 &amp;&amp; session.getTrafficMask().isWritable() )
++            {
++                // Notify DatagramSessionManager only when writeRequestQueue was empty.
++                s.getManagerDelegate().flushSession( s );
++            }
++        }
++    }
++
++    protected void doClose( IoSession session, CloseFuture closeFuture )
++    {
++        DatagramSessionImpl s = ( DatagramSessionImpl ) session;
++        DatagramSessionManager manager = s.getManagerDelegate();
++        if( manager instanceof DatagramConnectorDelegate )
++        {
++            ( ( DatagramConnectorDelegate ) manager ).closeSession( s );
++        }
++        else
++        {
++            closeFuture.setClosed();
++        }
++    }
++}
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramSessionImpl.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramSessionImpl.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramSessionImpl.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,174 @@
++/*
++ *   @(#) $Id: DatagramSessionImpl.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio.support;
++
++import java.net.SocketAddress;
++import java.net.SocketException;
++import java.nio.channels.DatagramChannel;
++import java.nio.channels.SelectionKey;
++
++import org.apache.mina.common.CloseFuture;
++import org.apache.mina.common.IoFilterChain;
++import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoSession;
++import org.apache.mina.common.IoSessionManager;
++import org.apache.mina.common.TransportType;
++import org.apache.mina.common.IoFilter.WriteRequest;
++import org.apache.mina.common.support.BaseIoSession;
++import org.apache.mina.transport.socket.nio.DatagramSession;
++import org.apache.mina.util.Queue;
++
++/**
++ * An {@link IoSession} for datagram transport (UDP/IP).
++ * 
++ * @author The Apache Directory Project (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">dev at directory.apache.org</A>)
++ * @version $Rev: 355016 $, $Date: 2005-12-08 16:00:30 +0900 (Thu, 08 Dec 2005) $
++ */
++class DatagramSessionImpl extends BaseIoSession implements DatagramSession
++{
++    private final IoSessionManager wrapperManager;
++    private final DatagramSessionManager managerDelegate;
++    private final DatagramFilterChain filterChain;
++    private final DatagramChannel ch;
++    private final Queue writeRequestQueue;
++    private final IoHandler handler;
++    private final SocketAddress localAddress;
++    private SocketAddress remoteAddress;
++    private SelectionKey key;
++
++    /**
++     * Creates a new instance.
++     */
++    DatagramSessionImpl( IoSessionManager wrapperManager,
++                         DatagramSessionManager managerDelegate,
++                         DatagramChannel ch, IoHandler defaultHandler )
++    {
++        this.wrapperManager = wrapperManager;
++        this.managerDelegate = managerDelegate;
++        this.filterChain = new DatagramFilterChain( this );
++        this.ch = ch;
++        this.writeRequestQueue = new Queue();
++        this.handler = defaultHandler;
++        this.remoteAddress = ch.socket().getRemoteSocketAddress();
++        this.localAddress = ch.socket().getLocalSocketAddress();
++    }
++    
++    public IoSessionManager getManager()
++    {
++        return wrapperManager;
++    }
++    
++    DatagramSessionManager getManagerDelegate()
++    {
++        return managerDelegate;
++    }
++
++    public IoFilterChain getFilterChain()
++    {
++        return filterChain;
++    }
++
++    DatagramChannel getChannel()
++    {
++        return ch;
++    }
++
++    SelectionKey getSelectionKey()
++    {
++        return key;
++    }
++
++    void setSelectionKey( SelectionKey key )
++    {
++        this.key = key;
++    }
++
++    public IoHandler getHandler()
++    {
++        return handler;
++    }
++    
++    protected void close0( CloseFuture closeFuture )
++    {
++        filterChain.filterClose( this, closeFuture );
++    }
++
++    Queue getWriteRequestQueue()
++    {
++        return writeRequestQueue;
++    }
++
++    protected void write0( WriteRequest writeRequest )
++    {
++        filterChain.filterWrite( this, writeRequest );
++    }
++
++    public int getScheduledWriteRequests()
++    {
++        synchronized( writeRequestQueue )
++        {
++            return writeRequestQueue.size();
++        }
++    }
++
++    public TransportType getTransportType()
++    {
++        return TransportType.DATAGRAM;
++    }
++
++    public SocketAddress getRemoteAddress()
++    {
++        return remoteAddress;
++    }
++
++    void setRemoteAddress( SocketAddress remoteAddress )
++    {
++        this.remoteAddress = remoteAddress;
++    }
++
++    public SocketAddress getLocalAddress()
++    {
++        return localAddress;
++    }
++
++    public boolean getReuseAddress() throws SocketException
++    {
++        return ch.socket().getReuseAddress();
++    }
++
++    public void setReuseAddress( boolean on ) throws SocketException
++    {
++        ch.socket().setReuseAddress( on );
++    }
++
++    public int getTrafficClass() throws SocketException
++    {
++        return ch.socket().getTrafficClass();
++    }
++
++    public void setTrafficClass( int tc ) throws SocketException
++    {
++        ch.socket().setTrafficClass( tc );
++    }
++
++    protected void updateTrafficMask()
++    {
++        managerDelegate.updateTrafficMask( this );
++    }
++}
+\ No newline at end of file
+
+Added: trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramSessionManager.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramSessionManager.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/transport/socket/nio/support/DatagramSessionManager.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -0,0 +1,48 @@
++/*
++ *   @(#) $Id: DatagramSessionManager.java 355016 2005-12-08 07:00:30Z trustin $
++ *
++ *   Copyright 2004 The Apache Software Foundation
++ *
++ *   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
++ *   you may not use this file except in compliance with the License.
++ *   You may obtain a copy of the License at
++ *
++ *       <A HREF="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</A>
++ *
++ *   Unless required by applicable law or agreed to in writing, software
++ *   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
++ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *   See the License for the specific language governing permissions and
++ *   limitations under the License.
++ *
++ */
++package rtspproxy.transport.socket.nio.support;
++
++import org.apache.mina.common.IoSessionManager;
++
++/**
++ * A base interface for {@link DatagramAcceptorDelegate} and {@link DatagramConnectorDelegate}.
++ * 
++ * @author The Apache Directory Project (<A HREF="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">dev at directory.apache.org</A>)
++ * @version $Rev: 355016 $, $Date: 2005-12-08 16:00:30 +0900 (Thu, 08 Dec 2005) $
++ */
++interface DatagramSessionManager extends IoSessionManager
++{
++    /**
++     * Requests this processor to flush the write buffer of the specified
++     * session.  This method is invoked by MINA internally.
++     */
++    void flushSession( DatagramSessionImpl session );
++
++    /**
++     * Requests this processor to close the specified session.
++     * This method is invoked by MINA internally.
++     */
++    void closeSession( DatagramSessionImpl session );
++    
++    /**
++     * Requests this processor to update the traffic mask for the specified
++     * session. This method is invoked by MINA internally.
++     */
++    void updateTrafficMask( DatagramSessionImpl session );    
++}
+\ No newline at end of file
+
+Modified: trunk/RTSPProxy-Core/src/test/java/rtspproxy/rdt/BufferUtils.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/test/java/rtspproxy/rdt/BufferUtils.java	2006-01-10 18:48:44 UTC (rev 386)
++++ trunk/RTSPProxy-Core/src/test/java/rtspproxy/rdt/BufferUtils.java	2006-01-10 23:38:43 UTC (rev 387)
+@@ -79,14 +79,16 @@
+ 	public static final boolean buffersEqual(ByteBuffer first, ByteBuffer second) {
+ 		boolean equal = false;
+ 		
+-		System.out.println(&quot;first limit=&quot; + first.limit() + &quot;, second position=&quot; + second.limit());
++		// System.out.println(&quot;first limit=&quot; + first.limit() + &quot;, second position=&quot; + second.limit());
+ 		if(first.limit() == second.limit()) {
+ 			int i;
+ 			
+ 			for(i=0; i&lt;first.limit(); ++i) {
+ 				if(first.get(i) != second.get(i)) {
++					/*
+ 					System.out.println(&quot;index &quot; + i + &quot;: expected=&quot; + Integer.toHexString(first.get(i))
+ 							+ &quot;: got=&quot; + Integer.toHexString(second.get(i)));
++					*/
+ 					break;
+ 				}
+ 			}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000070.html">[Rtspproxy-devel] r386 - in trunk/RTSPProxy-Core/src: main/java/rtspproxy/rdt test test/java/rtspproxy test/java/rtspproxy/rdt test/resources test/resources/rtspproxy test/resources/rtspproxy/rdt
+</A></li>
+	<LI>Next message: <A HREF="000072.html">[Rtspproxy-devel] r388 - in trunk/RTSPProxy-Core/src/main/java/rtspproxy: . filter filter/tracking proxy proxy/track rdt transport/socket/nio transport/socket/nio/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#71">[ date ]</a>
+              <a href="thread.html#71">[ thread ]</a>
+              <a href="subject.html#71">[ subject ]</a>
+              <a href="author.html#71">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>

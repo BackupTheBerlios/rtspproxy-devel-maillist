@@ -1,0 +1,248 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Rtspproxy-devel] r433 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/rtspproxy-devel/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r433%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy&In-Reply-To=%3C200610121517.k9CFHcwD001522%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000114.html">
+   <LINK REL="Next"  HREF="000116.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Rtspproxy-devel] r433 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy</H1>
+    <B>merlimat at mail.berlios.de</B> 
+    <A HREF="mailto:rtspproxy-devel%40lists.berlios.de?Subject=Re%3A%20%5BRtspproxy-devel%5D%20r433%20-%0A%09trunk/RTSPProxy-Core/src/main/java/rtspproxy&In-Reply-To=%3C200610121517.k9CFHcwD001522%40sheep.berlios.de%3E"
+       TITLE="[Rtspproxy-devel] r433 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy">merlimat at mail.berlios.de
+       </A><BR>
+    <I>Thu Oct 12 17:17:38 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000114.html">[Rtspproxy-devel] r432 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+        <LI>Next message: <A HREF="000116.html">[Rtspproxy-devel] r434 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#115">[ date ]</a>
+              <a href="thread.html#115">[ thread ]</a>
+              <a href="subject.html#115">[ subject ]</a>
+              <a href="author.html#115">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: merlimat
+Date: 2006-10-12 17:17:32 +0200 (Thu, 12 Oct 2006)
+New Revision: 433
+
+Modified:
+   trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+Log:
+Refactorized service binding with sockets.
+
+Modified: trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java
+===================================================================
+--- trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-10-12 10:46:50 UTC (rev 432)
++++ trunk/RTSPProxy-Core/src/main/java/rtspproxy/ProxyServiceRegistry.java	2006-10-12 15:17:32 UTC (rev 433)
+@@ -34,6 +34,7 @@
+ import org.apache.mina.common.IoAcceptor;
+ import org.apache.mina.common.IoFilterChainBuilder;
+ import org.apache.mina.common.IoHandler;
++import org.apache.mina.common.IoServiceConfig;
+ import org.apache.mina.common.IoSession;
+ import org.apache.mina.common.TransportType;
+ import org.apache.mina.filter.executor.ExecutorExecutor;
+@@ -67,9 +68,6 @@
+     /** Map a ProxyService to all its bound addresses. */
+     private final ConcurrentMap&lt;ProxyService, Set&lt;SocketAddress&gt;&gt; addresses = new ConcurrentHashMap&lt;ProxyService, Set&lt;SocketAddress&gt;&gt;();
+     
+-    /** Map a ProxyService to its own IoAcceptor. */
+-    private final ConcurrentMap&lt;ProxyService, IoAcceptor&gt; acceptors = new ConcurrentHashMap&lt;ProxyService, IoAcceptor&gt;();
+-    
+     private SocketAcceptor socketAcceptor = null;
+     
+     private DatagramAcceptor datagramAcceptor = null;
+@@ -82,8 +80,21 @@
+      */
+     public ProxyServiceRegistry()
+     {
+-        /// int poolMaxSize = Config.threadPoolSize.getValue();
++        ExecutorExecutor executorProxy = new ExecutorExecutor( executor );
++        socketAcceptor = new SocketAcceptor( 2, executorProxy );
++        SocketAcceptorConfig config = (SocketAcceptorConfig) socketAcceptor
++                .getDefaultConfig();
++        config.setReuseAddress( true );
+         
++        datagramAcceptor = new DatagramAcceptor( executorProxy );
++        DatagramAcceptorConfig datagramConfig = (DatagramAcceptorConfig) datagramAcceptor
++                .getDefaultConfig();
++        DatagramSessionConfig sessionConfig = (DatagramSessionConfig) datagramConfig
++                .getSessionConfig();
++        sessionConfig.setReuseAddress( true );
++        
++        // int poolMaxSize = Config.threadPoolSize.getValue();
++        
+         // Subscribe to thread pool size changes notification
+         Config.threadPoolSize.addObserver( this );
+     }
+@@ -128,10 +139,19 @@
+             InetSocketAddress address, IoFilterChainBuilder filterChainBuilder )
+             throws IOException
+     {
+-        IoAcceptor acceptor = newAcceptor( service );
++        IoAcceptor acceptor = getAcceptor( service );
+         
+-        acceptor.setFilterChainBuilder( filterChainBuilder );
+-        acceptor.bind( address, ioHandler );
++        if ( filterChainBuilder != IoFilterChainBuilder.NOOP )
++        {
++            IoServiceConfig config = (IoServiceConfig) acceptor
++                    .getDefaultConfig().clone();
++            config.setFilterChainBuilder( filterChainBuilder );
++            acceptor.bind( address, ioHandler, config );
++        }
++        else
++        {
++            acceptor.bind( address, ioHandler );
++        }
+         
+         services.put( service.getName(), service );
+         
+@@ -155,7 +175,8 @@
+     public synchronized void unbind( ProxyService service, boolean stopService )
+             throws Exception
+     {
+-        IoAcceptor acceptor = acceptors.get( service );
++        IoAcceptor acceptor = service.getTransportType() == TransportType.SOCKET ? socketAcceptor
++                : datagramAcceptor;
+         
+         for ( SocketAddress address : addresses.get( service ) )
+         {
+@@ -186,7 +207,6 @@
+         }
+         
+         services.remove( service.getName() );
+-        acceptors.remove( service );
+         addresses.remove( service );
+     }
+     
+@@ -235,10 +255,9 @@
+     public IoAcceptor getAcceptor( String serviceName )
+     {
+         ProxyService service = services.get( serviceName );
+-        if ( service == null )
+-            return null;
++        if ( service == null ) return null;
+         
+-        return acceptors.get( service );
++        return getAcceptor( service );
+     }
+     
+     /**
+@@ -250,62 +269,10 @@
+      */
+     public IoAcceptor getAcceptor( ProxyService service )
+     {
+-        return acceptors.get( service );
++        return service.getTransportType() == TransportType.SOCKET ? socketAcceptor
++                : datagramAcceptor;
+     }
+     
+-    /**
+-     * Gets a new IoAcceptor suitable for the specified ProxyService
+-     * 
+-     * @param service
+-     *            the ProxyService
+-     * @return a reference to the IoAcceptor
+-     */
+-    private IoAcceptor newAcceptor( ProxyService service )
+-    {
+-        // First check if there's already an acceptor
+-        IoAcceptor acceptor = acceptors.get( service );
+-        if ( acceptor != null )
+-            return acceptor;
+-        
+-        // Create a new one
+-        TransportType transportType = service.getTransportType();
+-        if ( transportType == TransportType.SOCKET )
+-        {
+-            if ( socketAcceptor == null )
+-            {
+-                socketAcceptor = new SocketAcceptor( 1, new ExecutorExecutor(
+-                        executor ) );
+-                SocketAcceptorConfig config = (SocketAcceptorConfig) socketAcceptor
+-                        .getDefaultConfig();
+-                config.setReuseAddress( true );
+-            }
+-            acceptor = socketAcceptor;
+-            
+-        } else if ( transportType == TransportType.DATAGRAM )
+-        {
+-            if ( datagramAcceptor == null )
+-            {
+-                datagramAcceptor = new DatagramAcceptor( 
+-                        new ExecutorExecutor( executor ) ); 
+-                DatagramAcceptorConfig config = (DatagramAcceptorConfig) datagramAcceptor
+-                        .getDefaultConfig();
+-                DatagramSessionConfig sessionConfig = (DatagramSessionConfig) config
+-                        .getSessionConfig();
+-                sessionConfig.setReuseAddress( true );
+-            }
+-            acceptor = datagramAcceptor;
+-            
+-        } else
+-        {
+-            log.debug( &quot;Unrecognized transport type: {}&quot;, transportType );
+-            return null;
+-        }
+-        
+-        // Save the acceptor
+-        acceptors.put( service, acceptor );
+-        return acceptor;
+-    }
+-    
+     public Executor getExecutor()
+     {
+         return executor;
+@@ -325,10 +292,10 @@
+         {
+             // Update the thread pool size
+             // XXX: Refactor this: the thread pool should have no fixed upper
+-            //      limit
++            // limit
+             // executor.setMaximumPoolSize( Config.threadPoolSize.getValue() );
+             // log.info( &quot;Changed ThreadPool size. New max size: {}&quot;,
+-            //        executor.getMaximumPoolSize() );
++            // executor.getMaximumPoolSize() );
+         }
+     }
+     
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000114.html">[Rtspproxy-devel] r432 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+	<LI>Next message: <A HREF="000116.html">[Rtspproxy-devel] r434 -	trunk/RTSPProxy-Core/src/main/java/rtspproxy/proxy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#115">[ date ]</a>
+              <a href="thread.html#115">[ thread ]</a>
+              <a href="subject.html#115">[ subject ]</a>
+              <a href="author.html#115">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/rtspproxy-devel">More information about the Rtspproxy-devel
+mailing list</a><br>
+</body></html>
